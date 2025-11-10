@@ -173,17 +173,22 @@ app.put('/api/users/:id', async (req, res) => {
 });
 
 app.delete('/api/users/:id', async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+    
     const { id } = req.params;
     
     // Удаляем пользователя из комнат
-    await pool.query('DELETE FROM room_users WHERE user_id = $1', [id]);
+    await client.query('DELETE FROM room_users WHERE user_id = $1', [id]);
     
     // Удаляем комнаты где пользователь был хостом
-    await pool.query('DELETE FROM rooms WHERE host_user_id = $1', [id]);
+    await client.query('DELETE FROM rooms WHERE host_user_id = $1', [id]);
     
     // Удаляем пользователя
-    const result = await pool.query('DELETE FROM users WHERE id = $1', [id]);
+    const result = await client.query('DELETE FROM users WHERE id = $1', [id]);
+    
+    await client.query('COMMIT');
     
     if (result.rowCount === 1) {
       res.status(204).send();
@@ -191,7 +196,10 @@ app.delete('/api/users/:id', async (req, res) => {
       res.status(404).json({ error: 'User not found' });
     }
   } catch (error) {
+    await client.query('ROLLBACK');
     res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
   }
 });
 
@@ -288,17 +296,19 @@ app.post('/api/rooms/join', async (req, res) => {
     );
     
     // Получаем обновленную комнату с участниками
-    const updatedRoom = await client.query(`
+    const updatedRoomResult = await client.query(`
       SELECT r.*, 
-             json_agg(
-               json_build_object(
-                 'id', ru.user_id,
-                 'name', ru.user_name,
-                 'station', ru.user_station,
-                 'wagon', ru.user_wagon,
-                 'color', ru.user_color,
-                 'colorCode', ru.user_color_code
-               )
+             COALESCE(
+               json_agg(
+                 json_build_object(
+                   'id', ru.user_id,
+                   'name', ru.user_name,
+                   'station', ru.user_station,
+                   'wagon', ru.user_wagon,
+                   'color', ru.user_color,
+                   'colorCode', ru.user_color_code
+                 )
+               ) FILTER (WHERE ru.user_id IS NOT NULL), '[]'
              ) as joined_users
       FROM rooms r
       LEFT JOIN room_users ru ON r.id = ru.room_id
@@ -307,7 +317,7 @@ app.post('/api/rooms/join', async (req, res) => {
     `, [roomId]);
     
     await client.query('COMMIT');
-    res.json(updatedRoom.rows[0]);
+    res.json(updatedRoomResult.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
     res.status(500).json({ error: error.message });
@@ -336,14 +346,15 @@ app.post('/api/rooms/leave', async (req, res) => {
     );
     
     // Проверяем, нужно ли удалить комнату
-    const roomUsers = await client.query(
+    const roomUsersResult = await client.query(
       'SELECT COUNT(*) as count FROM room_users WHERE room_id = $1',
       [roomId]
     );
     
-    if (parseInt(roomUsers.rows[0].count) === 0) {
-      const room = await client.query('SELECT * FROM rooms WHERE id = $1', [roomId]);
-      if (room.rows.length > 0 && room.rows[0].host_user_id !== userId) {
+    const userCount = parseInt(roomUsersResult.rows[0].count);
+    if (userCount === 0) {
+      const roomResult = await client.query('SELECT * FROM rooms WHERE id = $1', [roomId]);
+      if (roomResult.rows.length > 0 && roomResult.rows[0].host_user_id != userId) {
         await client.query('DELETE FROM rooms WHERE id = $1', [roomId]);
       }
     }
@@ -364,15 +375,17 @@ app.get('/api/rooms/user/:userId', async (req, res) => {
     
     const result = await pool.query(`
       SELECT r.*, 
-             json_agg(
-               json_build_object(
-                 'id', ru.user_id,
-                 'name', ru.user_name,
-                 'station', ru.user_station,
-                 'wagon', ru.user_wagon,
-                 'color', ru.user_color,
-                 'colorCode', ru.user_color_code
-               )
+             COALESCE(
+               json_agg(
+                 json_build_object(
+                   'id', ru.user_id,
+                   'name', ru.user_name,
+                   'station', ru.user_station,
+                   'wagon', ru.user_wagon,
+                   'color', ru.user_color,
+                   'colorCode', ru.user_color_code
+                 )
+               ) FILTER (WHERE ru.user_id IS NOT NULL), '[]'
              ) as joined_users
       FROM rooms r
       LEFT JOIN room_users ru ON r.id = ru.room_id
@@ -396,15 +409,17 @@ app.get('/api/rooms/:roomId', async (req, res) => {
     
     const result = await pool.query(`
       SELECT r.*, 
-             json_agg(
-               json_build_object(
-                 'id', ru.user_id,
-                 'name', ru.user_name,
-                 'station', ru.user_station,
-                 'wagon', ru.user_wagon,
-                 'color', ru.user_color,
-                 'colorCode', ru.user_color_code
-               )
+             COALESCE(
+               json_agg(
+                 json_build_object(
+                   'id', ru.user_id,
+                   'name', ru.user_name,
+                   'station', ru.user_station,
+                   'wagon', ru.user_wagon,
+                   'color', ru.user_color,
+                   'colorCode', ru.user_color_code
+                 )
+               ) FILTER (WHERE ru.user_id IS NOT NULL), '[]'
              ) as joined_users
       FROM rooms r
       LEFT JOIN room_users ru ON r.id = ru.room_id

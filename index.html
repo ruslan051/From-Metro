@@ -519,59 +519,74 @@
             margin-left: 10px;
         }
 
-        /* Новые стили для статистики */
-        .station-stats {
-            margin: 15px 0;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid #0057b8;
+        /* Новые стили для статистики станций в комнате ожидания */
+        .stations-overview {
+            margin: 20px 0;
         }
         
-        .station-stats-header {
+        .station-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #0057b8;
+            transition: all 0.3s;
+        }
+        
+        .station-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+        }
+        
+        .station-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 10px;
         }
         
-        .station-stats-name {
+        .station-name {
             font-weight: 600;
             color: #0057b8;
             font-size: 18px;
         }
         
-        .station-stats-count {
-            background: #0057b8;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 14px;
-        }
-        
-        .station-stats-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+        .station-stats {
+            display: flex;
+            gap: 15px;
             margin-top: 10px;
         }
         
         .stat-item {
+            flex: 1;
             text-align: center;
             padding: 10px;
-            background: white;
+            background: #f8f9fa;
             border-radius: 8px;
         }
         
         .stat-number {
             font-size: 24px;
             font-weight: bold;
-            color: #28a745;
+            margin-bottom: 5px;
         }
         
         .stat-label {
             font-size: 12px;
             color: #666;
+        }
+        
+        .waiting-count {
+            color: #ffc107;
+        }
+        
+        .connected-count {
+            color: #28a745;
+        }
+        
+        .total-count {
+            color: #0057b8;
         }
         
         .join-stats {
@@ -619,6 +634,16 @@
             color: #666;
         }
         
+        .refresh-info {
+            text-align: center;
+            padding: 10px;
+            background: #e7f1ff;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 14px;
+            color: #0057b8;
+        }
+        
         footer {
             margin-top: 30px;
             text-align: center;
@@ -654,8 +679,9 @@
                 flex-direction: column;
             }
             
-            .station-stats-details {
-                grid-template-columns: 1fr;
+            .station-stats {
+                flex-direction: column;
+                gap: 8px;
             }
             
             .state-card {
@@ -771,14 +797,17 @@
                     <i>←</i> Изменить параметры
                 </button>
                 
-                <h2>Комната ожидания - Ожидание</h2>
-                <p>Просматривайте активные заявки на вашей станции</p>
+                <h2>Комната ожидания</h2>
+                <p>Просматривайте активные станции и присоединяйтесь к группам</p>
                 
-                <!-- Статистика по станциям -->
-                <div class="station-overview">
-                    <h3>Статистика по станциям</h3>
-                    <div id="stations-stats">
-                        <div class="loading">Загрузка статистики...</div>
+                <!-- Обновленная статистика по станциям -->
+                <div class="stations-overview">
+                    <h3>📊 Статистика по станциям</h3>
+                    <div class="refresh-info">
+                        🔄 Данные обновляются автоматически каждые 5 секунд
+                    </div>
+                    <div id="stations-waiting-room">
+                        <div class="loading">Загрузка статистики станций...</div>
                     </div>
                 </div>
                 
@@ -795,6 +824,7 @@
                     </select>
                 </div>
                 
+                <h3 style="margin-top: 20px;">👥 Активные пользователи</h3>
                 <div class="requests-container" id="requests-container">
                     <div class="loading">Загрузка пользователей...</div>
                 </div>
@@ -939,6 +969,7 @@
         const groupMembersContainer = document.getElementById('group-members');
         const leaveGroupBtn = document.getElementById('leave-group');
         const stationSelect = document.getElementById('station');
+        const stationsWaitingRoomContainer = document.getElementById('stations-waiting-room');
         
         // Элементы выбора города и пола
         const cityOptions = document.querySelectorAll('.city-option');
@@ -1072,78 +1103,220 @@
             }
         }
 
-        // Функция для загрузки статистики по станциям
-        async function loadStationsStats() {
-            const users = await getUsers();
-            const stationsStatsContainer = document.getElementById('stations-stats');
-            stationsStatsContainer.innerHTML = '';
-            
-            // Группируем пользователей по станциям
-            const stationsData = {};
-            
-            users.forEach(user => {
-                if (user.city !== selectedCity) return;
+        // Новая функция для загрузки статистики станций в комнате ожидания
+        async function loadStationsWaitingRoom() {
+            try {
+                const response = await fetch(`${API_BASE}/stations/waiting-room?city=${selectedCity}`);
+                const stationsData = await response.json();
                 
-                if (!stationsData[user.station]) {
-                    stationsData[user.station] = {
-                        total: 0,
-                        waiting: 0,
-                        connected: 0,
-                        users: []
-                    };
+                stationsWaitingRoomContainer.innerHTML = '';
+                
+                if (stationsData.length === 0) {
+                    stationsWaitingRoomContainer.innerHTML = `
+                        <div class="no-requests">
+                            <p>Пока нет пользователей на станциях ${selectedCity === 'spb' ? 'Санкт-Петербурга' : 'Москвы'}</p>
+                        </div>
+                    `;
+                    return;
                 }
                 
-                stationsData[user.station].total++;
-                stationsData[user.station].users.push(user);
+                stationsData.forEach(station => {
+                    const stationCard = document.createElement('div');
+                    stationCard.className = 'station-card';
+                    
+                    stationCard.innerHTML = `
+                        <div class="station-header">
+                            <div class="station-name">${station.station}</div>
+                            <div class="total-count stat-number">${station.totalUsers}</div>
+                        </div>
+                        
+                        <div class="station-stats">
+                            <div class="stat-item">
+                                <div class="stat-number waiting-count">${station.waiting}</div>
+                                <div class="stat-label">Ожидают</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number connected-count">${station.connected}</div>
+                                <div class="stat-label">Соединились</div>
+                            </div>
+                        </div>
+                        
+                        ${station.waiting > 0 ? `
+                        <button class="btn btn-success join-station-btn" data-station="${station.station}">
+                            Присоединиться к ожидающим (${station.waiting})
+                        </button>
+                        ` : ''}
+                    `;
+                    
+                    stationsWaitingRoomContainer.appendChild(stationCard);
+                });
                 
-                // Считаем количество соединений
-                const sameStationUsers = users.filter(u => 
-                    u.station === user.station && 
-                    u.wagon === user.wagon && 
-                    u.id !== user.id
-                );
+                // Обработчики для кнопок присоединения к станциям
+                document.querySelectorAll('.join-station-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const station = this.getAttribute('data-station');
+                        joinStation(station);
+                    });
+                });
                 
-                if (sameStationUsers.length > 0) {
-                    stationsData[user.station].connected++;
-                } else {
-                    stationsData[user.station].waiting++;
+            } catch (error) {
+                console.error('Ошибка загрузки статистики станций:', error);
+                stationsWaitingRoomContainer.innerHTML = `
+                    <div class="no-requests">
+                        <p>Ошибка загрузки данных станций</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Функция присоединения к станции
+        async function joinStation(station) {
+            const users = await getUsers();
+            const waitingUsers = users.filter(user => 
+                user.station === station && 
+                user.is_waiting === true &&
+                user.city === selectedCity
+            );
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="
+                    background: white;
+                    padding: 25px;
+                    border-radius: 15px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                    max-width: 500px;
+                    width: 90%;
+                    max-height: 80vh;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                ">
+                    <h3 style="color: #0057b8; margin-bottom: 15px;">Присоединение к станции</h3>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 10px;">
+                            Станция: ${station}
+                        </div>
+                        <div style="font-size: 16px; color: #666; margin-bottom: 15px;">
+                            Город: ${selectedCity === 'spb' ? 'Санкт-Петербург' : 'Москва'}
+                        </div>
+                    </div>
+                    
+                    <div class="join-stats">
+                        <div class="join-stats-label">Сейчас ожидают на станции</div>
+                        <div class="join-stats-count">${waitingUsers.length}</div>
+                        <div class="join-stats-text">человек</div>
+                    </div>
+                    
+                    <div class="join-modal-content" style="flex: 1; overflow-y: auto; margin: 15px 0;">
+                        ${waitingUsers.length > 0 ? `
+                        <div style="text-align: left;">
+                            <div style="font-size: 14px; color: #666; margin-bottom: 10px;">Ожидающие пользователи:</div>
+                            ${waitingUsers.map(user => `
+                                <div class="user-state-display">
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${user.color_code || '#007bff'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: bold;">
+                                        ${user.name.charAt(0)}
+                                    </div>
+                                    <div class="user-state-info">
+                                        <div class="user-state-name">${user.name}</div>
+                                        <div class="user-state-details">
+                                            ${user.status || 'Статус не указан'}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        ` : `
+                        <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 16px; color: #666; margin-bottom: 10px;">Будьте первым на этой станции!</div>
+                            <div style="font-size: 14px; color: #888;">Другие пользователи смогут присоединиться к вам</div>
+                        </div>
+                        `}
+                    </div>
+                    
+                    <div style="margin-top: auto;">
+                        <button id="confirm-join-station" style="
+                            background: linear-gradient(to right, #28a745, #20c997);
+                            color: white;
+                            border: none;
+                            padding: 12px 30px;
+                            border-radius: 8px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            width: 100%;
+                            margin-top: 10px;
+                        ">
+                            Присоединиться к станции
+                        </button>
+                        
+                        <button id="close-modal" style="
+                            background: none;
+                            border: 1px solid #ddd;
+                            color: #666;
+                            padding: 12px 30px;
+                            border-radius: 8px;
+                            font-size: 16px;
+                            cursor: pointer;
+                            width: 100%;
+                            margin-top: 10px;
+                        ">
+                            Отмена
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            modal.querySelector('#confirm-join-station').addEventListener('click', async function() {
+                try {
+                    // Обновляем пользователя - присоединяемся к станции
+                    await updateUser(userId, { 
+                        status: 'Ожидание на станции',
+                        station: station,
+                        is_waiting: true,
+                        is_connected: false
+                    });
+                    
+                    currentGroup = {
+                        station: station,
+                        members: waitingUsers
+                    };
+                    
+                    // Перезагружаем данные
+                    loadStationsWaitingRoom();
+                    loadRequests();
+                    
+                    document.body.removeChild(modal);
+                } catch (error) {
+                    console.error('Ошибка при присоединении к станции:', error);
+                    alert('Ошибка при присоединении к станции');
                 }
             });
             
-            // Сортируем станции по количеству пользователей
-            const sortedStations = Object.entries(stationsData).sort((a, b) => b[1].total - a[1].total);
+            modal.querySelector('#close-modal').addEventListener('click', function() {
+                document.body.removeChild(modal);
+            });
             
-            if (sortedStations.length === 0) {
-                stationsStatsContainer.innerHTML = `
-                    <div class="no-requests">
-                        <p>Пока нет пользователей на станциях ${selectedCity === 'spb' ? 'Санкт-Петербурга' : 'Москвы'}</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            sortedStations.forEach(([stationName, stats]) => {
-                const stationStats = document.createElement('div');
-                stationStats.className = 'station-stats';
-                
-                stationStats.innerHTML = `
-                    <div class="station-stats-header">
-                        <div class="station-stats-name">${stationName}</div>
-                        <div class="station-stats-count">${stats.total} чел.</div>
-                    </div>
-                    <div class="station-stats-details">
-                        <div class="stat-item">
-                            <div class="stat-number">${stats.waiting}</div>
-                            <div class="stat-label">Ожидают</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number">${stats.connected}</div>
-                            <div class="stat-label">Соединились</div>
-                        </div>
-                    </div>
-                `;
-                
-                stationsStatsContainer.appendChild(stationStats);
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
             });
         }
 
@@ -1165,23 +1338,10 @@
                 return;
             }
             
-            // Считаем количество соединений для каждой станции и вагона
-            const connectionStats = {};
-            filteredUsers.forEach(user => {
-                const key = `${user.station}_${user.wagon}`;
-                if (!connectionStats[key]) {
-                    connectionStats[key] = [];
-                }
-                connectionStats[key].push(user);
-            });
-            
             filteredUsers.forEach(user => {
                 const requestCard = document.createElement('div');
                 requestCard.className = 'request-card';
                 const isCurrentUser = userId && user.id === userId;
-                const stationKey = `${user.station}_${user.wagon}`;
-                const connections = connectionStats[stationKey] || [];
-                const connectionCount = connections.length - 1;
                 
                 requestCard.innerHTML = `
                     <div class="request-header">
@@ -1209,20 +1369,22 @@
                     
                     ${user.timer && user.timer !== "00:00" && user.timer !== "Не запущен" ? `<div class="timer-info"><strong>На станции:</strong> ${user.timer}</div>` : ''}
                     
-                    ${connectionCount > 0 ? `
                     <div class="user-connections">
-                        <div class="connections-count">${connectionCount}</div>
-                        <div class="connections-label">человек присоединились на этой станции</div>
+                        <div class="connections-count">
+                            ${user.is_waiting ? '⏳ Ожидает' : '✅ Подключен'}
+                        </div>
+                        <div class="connections-label">
+                            ${user.is_waiting ? 'Ждет присоединения других пользователей' : 'Участвует в группе'}
+                        </div>
                     </div>
-                    ` : ''}
                     
                     <div class="status ${user.online ? 'status-online' : 'status-offline'}">
                         ${user.online ? 'Онлайн' : 'Не в сети'}
                     </div>
                     
-                    ${!isCurrentUser ? `
+                    ${!isCurrentUser && user.is_waiting ? `
                     <button class="btn btn-success join-btn" data-user-id="${user.id}" data-station="${user.station}" data-wagon="${user.wagon}">
-                        Присоединиться (${connectionCount > 0 ? connectionCount + ' с ' : ''}${user.station})
+                        Присоединиться к ${user.name}
                     </button>
                     ` : ''}
                 `;
@@ -1293,7 +1455,7 @@
                     </div>
                     
                     <div class="join-stats">
-                        <div class="join-stats-label">Уже присоединились</div>
+                        <div class="join-stats-label">Уже в группе</div>
                         <div class="join-stats-count">${sameStationUsers.length}</div>
                         <div class="join-stats-text">человек</div>
                     </div>
@@ -1319,8 +1481,8 @@
                         </div>
                         ` : `
                         <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 16px; color: #666; margin-bottom: 10px;">Будьте первым, кто присоединится!</div>
-                            <div style="font-size: 14px; color: #888;">Создайте новую группу на станции ${station}</div>
+                            <div style="font-size: 16px; color: #666; margin-bottom: 10px;">Создайте новую группу!</div>
+                            <div style="font-size: 14px; color: #888;">Вы будете первым участником на станции ${station}</div>
                         </div>
                         `}
                     </div>
@@ -1366,7 +1528,9 @@
                     await updateUser(userId, { 
                         status: 'Ожидание',
                         station: station,
-                        wagon: wagon
+                        wagon: wagon,
+                        is_waiting: false,
+                        is_connected: true
                     });
                     
                     currentGroup = {
@@ -1405,7 +1569,8 @@
             const users = await getUsers();
             const groupUsers = users.filter(user => 
                 user.station === currentGroup.station && 
-                user.wagon === currentGroup.wagon
+                user.wagon === currentGroup.wagon &&
+                user.is_connected === true
             );
             
             groupMembersContainer.innerHTML = '';
@@ -1480,7 +1645,9 @@
                 city: selectedCity,
                 gender: selectedGender,
                 position: '',
-                mood: ''
+                mood: '',
+                isWaiting: true,
+                isConnected: false
             };
             
             try {
@@ -1493,12 +1660,12 @@
                     setupScreen.classList.remove('active');
                     waitingRoomScreen.classList.add('active');
                     
-                    loadStationsStats();
+                    loadStationsWaitingRoom();
                     loadRequests();
                     
                     // Обновляем статистику каждые 5 секунд
                     setInterval(() => {
-                        loadStationsStats();
+                        loadStationsWaitingRoom();
                         loadRequests();
                     }, 5000);
                 }
@@ -1534,7 +1701,9 @@
                     await updateUser(userId, { 
                         status: 'Ожидание',
                         position: '',
-                        mood: ''
+                        mood: '',
+                        is_waiting: true,
+                        is_connected: false
                     });
                 } catch (error) {
                     console.error('Ошибка при обновлении пользователя:', error);
@@ -1543,7 +1712,7 @@
             currentGroup = null;
             joinedRoomScreen.classList.remove('active');
             waitingRoomScreen.classList.add('active');
-            loadStationsStats();
+            loadStationsWaitingRoom();
             loadRequests();
         });
 
@@ -1667,6 +1836,8 @@
             document.querySelector('.timer-option[data-minutes="5"]').classList.add('active');
             
             console.log('🚇 Приложение "Из метро" инициализировано');
+            console.log('🔄 Автоматический сброс сессий каждые 10 минут');
+            console.log('🌐 До 20 сессий с одного IP разрешено');
         });
 
         window.addEventListener('beforeunload', async function() {

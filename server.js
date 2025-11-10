@@ -17,10 +17,113 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-// Initialize database tables
+// Функция для генерации случайного цвета
+function getRandomColor() {
+  const colors = ['#dc3545', '#007bff', '#28a745', '#ffc107', '#6f42c1', '#e83e8c', '#fd7e14', '#20c997'];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
+// Функция для добавления недостающих колонок
+async function migrateDatabase() {
+  try {
+    // Проверяем и добавляем недостающие колонки
+    const columnsToAdd = [
+      { name: 'ip_address', type: 'INET' },
+      { name: 'position', type: 'VARCHAR(100)' },
+      { name: 'mood', type: 'VARCHAR(100)' },
+      { name: 'last_activity', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' },
+      { name: 'user_agent', type: 'TEXT' },
+      { name: 'session_id', type: 'VARCHAR(255)' }
+    ];
+
+    for (const column of columnsToAdd) {
+      try {
+        // Проверяем существование колонки
+        const checkResult = await pool.query(`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name = 'users' AND column_name = $1
+        `, [column.name]);
+
+        if (checkResult.rows.length === 0) {
+          // Колонка не существует, добавляем её
+          await pool.query(`ALTER TABLE users ADD COLUMN ${column.name} ${column.type}`);
+          console.log(`✅ Добавлена колонка: ${column.name}`);
+        }
+      } catch (error) {
+        console.error(`❌ Ошибка при добавлении колонки ${column.name}:`, error.message);
+      }
+    }
+
+    // Проверяем и добавляем таблицу rooms если её нет
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS rooms (
+          id SERIAL PRIMARY KEY,
+          host_user_id INTEGER,
+          host_user_name VARCHAR(255),
+          station VARCHAR(255),
+          wagon VARCHAR(50),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('✅ Таблица rooms проверена/создана');
+    } catch (error) {
+      console.error('❌ Ошибка при создании таблицы rooms:', error.message);
+    }
+
+    // Проверяем и добавляем таблицу room_users если её нет
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS room_users (
+          id SERIAL PRIMARY KEY,
+          room_id INTEGER,
+          user_id INTEGER,
+          user_name VARCHAR(255),
+          user_station VARCHAR(255),
+          user_wagon VARCHAR(50),
+          user_color VARCHAR(100),
+          user_color_code VARCHAR(7),
+          user_position VARCHAR(100),
+          user_mood VARCHAR(100),
+          joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('✅ Таблица room_users проверена/создана');
+    } catch (error) {
+      console.error('❌ Ошибка при создании таблицы room_users:', error.message);
+    }
+
+    // Добавляем индексы для улучшения производительности
+    const indexes = [
+      'CREATE INDEX IF NOT EXISTS idx_users_ip_address ON users(ip_address)',
+      'CREATE INDEX IF NOT EXISTS idx_users_station_wagon ON users(station, wagon)',
+      'CREATE INDEX IF NOT EXISTS idx_users_online ON users(online)',
+      'CREATE INDEX IF NOT EXISTS idx_users_city ON users(city)',
+      'CREATE INDEX IF NOT EXISTS idx_room_users_room_id ON room_users(room_id)',
+      'CREATE INDEX IF NOT EXISTS idx_users_last_activity ON users(last_activity)',
+      'CREATE INDEX IF NOT EXISTS idx_users_session_id ON users(session_id)'
+    ];
+
+    for (const indexQuery of indexes) {
+      try {
+        await pool.query(indexQuery);
+        console.log(`✅ Индекс создан: ${indexQuery.split('ON ')[1]}`);
+      } catch (error) {
+        console.error(`❌ Ошибка при создании индекса:`, error.message);
+      }
+    }
+
+    console.log('✅ Миграция базы данных завершена');
+  } catch (error) {
+    console.error('❌ Ошибка миграции базы данных:', error);
+  }
+}
+
+// Инициализация базы данных
 async function initDB() {
   try {
-    // Users table with new fields
+    // Создаем основную таблицу users если её нет
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -37,73 +140,20 @@ async function initDB() {
         room_id INTEGER,
         city VARCHAR(50) DEFAULT 'spb',
         gender VARCHAR(20) DEFAULT 'male',
-        position VARCHAR(100),
-        mood VARCHAR(100),
-        ip_address INET,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Rooms table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS rooms (
-        id SERIAL PRIMARY KEY,
-        host_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        host_user_name VARCHAR(255),
-        station VARCHAR(255),
-        wagon VARCHAR(50),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    // Room users (many-to-many relationship)
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS room_users (
-        id SERIAL PRIMARY KEY,
-        room_id INTEGER REFERENCES rooms(id) ON DELETE CASCADE,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        user_name VARCHAR(255),
-        user_station VARCHAR(255),
-        user_wagon VARCHAR(50),
-        user_color VARCHAR(100),
-        user_color_code VARCHAR(7),
-        user_position VARCHAR(100),
-        user_mood VARCHAR(100),
-        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Add indexes for better performance
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_users_ip_address ON users(ip_address);
-    `);
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_users_station_wagon ON users(station, wagon);
-    `);
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_users_online ON users(online);
-    `);
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_users_city ON users(city);
-    `);
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_room_users_room_id ON room_users(room_id);
-    `);
-
-    console.log('Database tables initialized');
+    console.log('✅ База данных инициализирована');
+    
+    // Запускаем миграцию для добавления новых полей
+    await migrateDatabase();
   } catch (error) {
-    console.error('Database initialization error:', error);
+    console.error('❌ Ошибка инициализации базы данных:', error);
   }
 }
 
 initDB();
-
-// Функция для генерации случайного цвета
-function getRandomColor() {
-  const colors = ['#dc3545', '#007bff', '#28a745', '#ffc107', '#6f42c1', '#e83e8c', '#fd7e14', '#20c997'];
-  return colors[Math.floor(Math.random() * colors.length)];
-}
 
 // Middleware для очистки неактивных пользователей
 async function cleanupInactiveUsers() {
@@ -115,15 +165,70 @@ async function cleanupInactiveUsers() {
     `);
     
     if (result.rowCount > 0) {
-      console.log(`Cleaned up ${result.rowCount} inactive users`);
+      console.log(`🧹 Очищено ${result.rowCount} неактивных пользователей`);
     }
   } catch (error) {
-    console.error('Error cleaning up inactive users:', error);
+    console.error('❌ Ошибка очистки неактивных пользователей:', error);
   }
 }
 
 // Запускаем очистку каждые 30 минут
 setInterval(cleanupInactiveUsers, 30 * 60 * 1000);
+
+// Генерация уникального ID сессии
+function generateSessionId(req) {
+  const ip = req.clientIp || 'unknown';
+  const userAgent = req.get('User-Agent') || 'unknown';
+  const timestamp = Date.now().toString();
+  
+  // Создаем хеш на основе IP, User-Agent и времени
+  return Buffer.from(`${ip}-${userAgent}-${timestamp}`).toString('base64').slice(0, 32);
+}
+
+// Функция для проверки дублирующих сессий (более гибкая)
+async function checkExistingSessions(client, clientIp, userAgent, sessionId) {
+  try {
+    // Проверяем активные сессии с того же IP за последние 10 минут
+    const existingSessions = await client.query(
+      `SELECT COUNT(*) as count FROM users 
+       WHERE ip_address = $1 AND online = true 
+       AND last_activity > NOW() - INTERVAL '10 minutes'
+       AND station IS NOT NULL`,
+      [clientIp]
+    );
+    
+    const sessionCount = parseInt(existingSessions.rows[0].count);
+    
+    // Разрешаем до 3 сессий с одного IP (для разных устройств)
+    if (sessionCount >= 3) {
+      return {
+        allowed: false,
+        reason: 'С одного IP-адреса разрешено не более 3 активных сессий одновременно. Закройте другие вкладки или подождите несколько минут.'
+      };
+    }
+    
+    // Проверяем точное совпадение сессии (тот же IP и User-Agent)
+    const exactMatch = await client.query(
+      `SELECT id FROM users 
+       WHERE ip_address = $1 AND user_agent = $2 AND online = true 
+       AND last_activity > NOW() - INTERVAL '5 minutes'`,
+      [clientIp, userAgent]
+    );
+    
+    if (exactMatch.rows.length > 0) {
+      return {
+        allowed: false,
+        reason: 'У вас уже есть активная сессия в этом браузере. Закройте предыдущую вкладку или подождите несколько минут.'
+      };
+    }
+    
+    return { allowed: true };
+  } catch (error) {
+    console.error('❌ Ошибка проверки сессий:', error);
+    // В случае ошибки разрешаем создание пользователя
+    return { allowed: true };
+  }
+}
 
 // API Routes
 
@@ -137,11 +242,12 @@ app.get('/api/users', async (req, res) => {
     `);
     res.json(result.rows);
   } catch (error) {
+    console.error('❌ Ошибка получения пользователей:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Создание нового пользователя с проверкой IP
+// Создание нового пользователя с гибкой проверкой IP
 app.post('/api/users', async (req, res) => {
   const client = await pool.connect();
   try {
@@ -149,28 +255,28 @@ app.post('/api/users', async (req, res) => {
     
     const userData = req.body;
     const clientIp = req.clientIp;
+    const userAgent = req.get('User-Agent') || 'unknown';
+    const sessionId = generateSessionId(req);
     
-    // Проверяем, есть ли уже активный пользователь с таким IP
-    const existingUser = await client.query(
-      `SELECT * FROM users 
-       WHERE ip_address = $1 AND online = true 
-       AND last_activity > NOW() - INTERVAL '10 minutes'`,
-      [clientIp]
-    );
+    console.log(`📍 Новый пользователь с IP: ${clientIp}, User-Agent: ${userAgent.substring(0, 50)}...`);
     
-    if (existingUser.rows.length > 0) {
+    // Гибкая проверка существующих сессий
+    const sessionCheck = await checkExistingSessions(client, clientIp, userAgent, sessionId);
+    
+    if (!sessionCheck.allowed) {
       await client.query('ROLLBACK');
       return res.status(400).json({ 
-        error: 'У вас уже есть активная сессия. Подождите несколько минут или закройте предыдущую вкладку.' 
+        error: sessionCheck.reason
       });
     }
     
+    // Создаем пользователя
     const result = await client.query(
       `INSERT INTO users (
         name, station, wagon, color, color_code, status, timer, timer_total, 
-        city, gender, ip_address, position, mood
+        city, gender, ip_address, position, mood, last_activity, user_agent, session_id
       ) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) 
        RETURNING *`,
       [
         userData.name,
@@ -185,14 +291,19 @@ app.post('/api/users', async (req, res) => {
         userData.gender || 'male',
         clientIp,
         userData.position || '',
-        userData.mood || ''
+        userData.mood || '',
+        new Date(),
+        userAgent,
+        sessionId
       ]
     );
     
     await client.query('COMMIT');
+    console.log(`✅ Создан пользователь: ${userData.name} на станции ${userData.station} (IP: ${clientIp})`);
     res.status(201).json(result.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
+    console.error('❌ Ошибка создания пользователя:', error);
     res.status(500).json({ error: error.message });
   } finally {
     client.release();
@@ -261,10 +372,11 @@ app.put('/api/users/:id', async (req, res) => {
     if (result.rows.length > 0) {
       res.json(result.rows[0]);
     } else {
-      res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ error: 'Пользователь не найден' });
     }
   } catch (error) {
     await client.query('ROLLBACK');
+    console.error('❌ Ошибка обновления пользователя:', error);
     res.status(500).json({ error: error.message });
   } finally {
     client.release();
@@ -291,12 +403,14 @@ app.delete('/api/users/:id', async (req, res) => {
     await client.query('COMMIT');
     
     if (result.rowCount === 1) {
+      console.log(`🗑️ Удален пользователь ID: ${id}`);
       res.status(204).send();
     } else {
-      res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ error: 'Пользователь не найден' });
     }
   } catch (error) {
     await client.query('ROLLBACK');
+    console.error('❌ Ошибка удаления пользователя:', error);
     res.status(500).json({ error: error.message });
   } finally {
     client.release();
@@ -317,11 +431,12 @@ app.get('/api/stations', async (req, res) => {
     
     res.json(stats);
   } catch (error) {
+    console.error('❌ Ошибка получения статистики станций:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Получение расширенной статистики по станциям с группировкой по городу
+// Получение расширенной статистики по станциям
 app.get('/api/stations/stats', async (req, res) => {
   try {
     const { city } = req.query;
@@ -333,8 +448,7 @@ app.get('/api/stations/stats', async (req, res) => {
         city,
         COUNT(*) as total_users,
         COUNT(CASE WHEN position != '' THEN 1 END) as users_with_position,
-        COUNT(CASE WHEN mood != '' THEN 1 END) as users_with_mood,
-        COUNT(CASE WHEN room_id IS NOT NULL THEN 1 END) as users_in_rooms
+        COUNT(CASE WHEN mood != '' THEN 1 END) as users_with_mood
       FROM users 
       WHERE online = true
     `;
@@ -360,15 +474,13 @@ app.get('/api/stations/stats', async (req, res) => {
           totalUsers: 0,
           wagons: [],
           usersWithPosition: 0,
-          usersWithMood: 0,
-          usersInRooms: 0
+          usersWithMood: 0
         };
       }
       
       stationStats[row.station].totalUsers += parseInt(row.total_users);
       stationStats[row.station].usersWithPosition += parseInt(row.users_with_position);
       stationStats[row.station].usersWithMood += parseInt(row.users_with_mood);
-      stationStats[row.station].usersInRooms += parseInt(row.users_in_rooms);
       
       if (row.wagon) {
         stationStats[row.station].wagons.push({
@@ -380,6 +492,7 @@ app.get('/api/stations/stats', async (req, res) => {
     
     res.json(Object.values(stationStats));
   } catch (error) {
+    console.error('❌ Ошибка получения расширенной статистики:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -391,17 +504,6 @@ app.post('/api/rooms', async (req, res) => {
     await client.query('BEGIN');
     
     const roomData = req.body;
-    
-    // Проверяем, существует ли уже комната для этой станции и вагона
-    const existingRoom = await client.query(
-      `SELECT * FROM rooms WHERE station = $1 AND wagon = $2`,
-      [roomData.station, roomData.wagon]
-    );
-    
-    if (existingRoom.rows.length > 0) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Room already exists for this station and wagon' });
-    }
     
     // Создаем комнату
     const roomResult = await client.query(
@@ -419,9 +521,11 @@ app.post('/api/rooms', async (req, res) => {
     );
     
     await client.query('COMMIT');
+    console.log(`✅ Создана комната: ${roomData.station}, вагон ${roomData.wagon}`);
     res.status(201).json(room);
   } catch (error) {
     await client.query('ROLLBACK');
+    console.error('❌ Ошибка создания комнаты:', error);
     res.status(500).json({ error: error.message });
   } finally {
     client.release();
@@ -434,50 +538,40 @@ app.post('/api/rooms/join', async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const { roomId, userId, station, wagon } = req.body;
+    const { userId, station, wagon } = req.body;
+    
+    // Ищем существующую комнату
+    const roomResult = await client.query(
+      'SELECT * FROM rooms WHERE station = $1 AND wagon = $2',
+      [station, wagon]
+    );
     
     let room;
     
-    // Если roomId не указан, ищем комнату по станции и вагону
-    if (!roomId && station && wagon) {
-      const roomResult = await client.query(
-        'SELECT * FROM rooms WHERE station = $1 AND wagon = $2',
-        [station, wagon]
+    if (roomResult.rows.length === 0) {
+      // Создаем новую комнату если не найдена
+      const userResult = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+      if (userResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Пользователь не найден' });
+      }
+      
+      const user = userResult.rows[0];
+      const newRoomResult = await client.query(
+        `INSERT INTO rooms (host_user_id, host_user_name, station, wagon) 
+         VALUES ($1, $2, $3, $4) RETURNING *`,
+        [userId, user.name, station, wagon]
       );
       
-      if (roomResult.rows.length === 0) {
-        // Создаем новую комнату если не найдена
-        const userResult = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
-        if (userResult.rows.length === 0) {
-          await client.query('ROLLBACK');
-          return res.status(404).json({ error: 'User not found' });
-        }
-        
-        const user = userResult.rows[0];
-        const newRoomResult = await client.query(
-          `INSERT INTO rooms (host_user_id, host_user_name, station, wagon) 
-           VALUES ($1, $2, $3, $4) RETURNING *`,
-          [userId, user.name, station, wagon]
-        );
-        
-        room = newRoomResult.rows[0];
-      } else {
-        room = roomResult.rows[0];
-      }
+      room = newRoomResult.rows[0];
     } else {
-      // Используем указанный roomId
-      const roomResult = await client.query('SELECT * FROM rooms WHERE id = $1', [roomId]);
-      if (roomResult.rows.length === 0) {
-        await client.query('ROLLBACK');
-        return res.status(404).json({ error: 'Room not found' });
-      }
       room = roomResult.rows[0];
     }
     
     const userResult = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
     if (userResult.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: 'Пользователь не найден' });
     }
     
     const user = userResult.rows[0];
@@ -490,7 +584,7 @@ app.post('/api/rooms/join', async (req, res) => {
     
     if (existingJoin.rows.length > 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'User already joined this room' });
+      return res.status(400).json({ error: 'Пользователь уже в этой комнате' });
     }
     
     // Добавляем пользователя в комнату
@@ -508,44 +602,43 @@ app.post('/api/rooms/join', async (req, res) => {
         user.wagon, 
         user.color, 
         user.color_code,
-        user.position,
-        user.mood
+        user.position || '',
+        user.mood || ''
       ]
     );
     
     // Обновляем пользователя
     await client.query(
-      'UPDATE users SET room_id = $1, station = $2, wagon = $3 WHERE id = $4',
-      [room.id, room.station, room.wagon, userId]
+      'UPDATE users SET room_id = $1, station = $2, wagon = $3, last_activity = $4 WHERE id = $5',
+      [room.id, station, wagon, new Date(), userId]
     );
     
-    // Получаем обновленную комнату с участниками
-    const updatedRoomResult = await client.query(`
-      SELECT r.*, 
-             COALESCE(
-               json_agg(
-                 json_build_object(
-                   'id', ru.user_id,
-                   'name', ru.user_name,
-                   'station', ru.user_station,
-                   'wagon', ru.user_wagon,
-                   'color', ru.user_color,
-                   'colorCode', ru.user_color_code,
-                   'position', ru.user_position,
-                   'mood', ru.user_mood
-                 )
-               ) FILTER (WHERE ru.user_id IS NOT NULL), '[]'
-             ) as joined_users
-      FROM rooms r
-      LEFT JOIN room_users ru ON r.id = ru.room_id
-      WHERE r.id = $1
-      GROUP BY r.id
+    // Получаем участников комнаты
+    const roomUsersResult = await client.query(`
+      SELECT * FROM room_users WHERE room_id = $1
     `, [room.id]);
     
     await client.query('COMMIT');
-    res.json(updatedRoomResult.rows[0]);
+    
+    const response = {
+      ...room,
+      joined_users: roomUsersResult.rows.map(ru => ({
+        id: ru.user_id,
+        name: ru.user_name,
+        station: ru.user_station,
+        wagon: ru.user_wagon,
+        color: ru.user_color,
+        colorCode: ru.user_color_code,
+        position: ru.user_position,
+        mood: ru.user_mood
+      }))
+    };
+    
+    console.log(`✅ Пользователь ${user.name} присоединился к комнате: ${station}, вагон ${wagon}`);
+    res.json(response);
   } catch (error) {
     await client.query('ROLLBACK');
+    console.error('❌ Ошибка присоединения к комнате:', error);
     res.status(500).json({ error: error.message });
   } finally {
     client.release();
@@ -568,8 +661,8 @@ app.post('/api/rooms/leave', async (req, res) => {
     
     // Обновляем пользователя
     await client.query(
-      'UPDATE users SET room_id = NULL WHERE id = $1',
-      [userId]
+      'UPDATE users SET room_id = NULL, last_activity = $1 WHERE id = $2',
+      [new Date(), userId]
     );
     
     // Проверяем, нужно ли удалить комнату
@@ -581,12 +674,15 @@ app.post('/api/rooms/leave', async (req, res) => {
     const userCount = parseInt(roomUsersResult.rows[0].count);
     if (userCount === 0) {
       await client.query('DELETE FROM rooms WHERE id = $1', [roomId]);
+      console.log(`🗑️ Удалена пустая комната ID: ${roomId}`);
     }
     
     await client.query('COMMIT');
+    console.log(`👋 Пользователь ID: ${userId} вышел из комнаты`);
     res.json({ success: true });
   } catch (error) {
     await client.query('ROLLBACK');
+    console.error('❌ Ошибка выхода из комнаты:', error);
     res.status(500).json({ error: error.message });
   } finally {
     client.release();
@@ -598,113 +694,59 @@ app.get('/api/rooms/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     
-    const result = await pool.query(`
-      SELECT r.*, 
-             COALESCE(
-               json_agg(
-                 json_build_object(
-                   'id', ru.user_id,
-                   'name', ru.user_name,
-                   'station', ru.user_station,
-                   'wagon', ru.user_wagon,
-                   'color', ru.user_color,
-                   'colorCode', ru.user_color_code,
-                   'position', ru.user_position,
-                   'mood', ru.user_mood
-                 )
-               ) FILTER (WHERE ru.user_id IS NOT NULL), '[]'
-             ) as joined_users
-      FROM rooms r
-      LEFT JOIN room_users ru ON r.id = ru.room_id
-      WHERE r.host_user_id = $1 OR ru.user_id = $1
-      GROUP BY r.id
-    `, [userId]);
+    const roomResult = await pool.query(
+      'SELECT * FROM rooms WHERE host_user_id = $1',
+      [userId]
+    );
     
-    if (result.rows.length > 0) {
-      res.json(result.rows[0]);
-    } else {
-      res.status(404).json({ error: 'Room not found' });
+    if (roomResult.rows.length === 0) {
+      // Проверяем, есть ли пользователь в room_users
+      const roomUserResult = await pool.query(
+        'SELECT room_id FROM room_users WHERE user_id = $1',
+        [userId]
+      );
+      
+      if (roomUserResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Комната не найдена' });
+      }
+      
+      const roomId = roomUserResult.rows[0].room_id;
+      const room = await pool.query('SELECT * FROM rooms WHERE id = $1', [roomId]);
+      
+      if (room.rows.length === 0) {
+        return res.status(404).json({ error: 'Комната не найдена' });
+      }
+      
+      roomResult.rows = room.rows;
     }
+    
+    const room = roomResult.rows[0];
+    const roomUsersResult = await pool.query(`
+      SELECT * FROM room_users WHERE room_id = $1
+    `, [room.id]);
+    
+    const response = {
+      ...room,
+      joined_users: roomUsersResult.rows.map(ru => ({
+        id: ru.user_id,
+        name: ru.user_name,
+        station: ru.user_station,
+        wagon: ru.user_wagon,
+        color: ru.user_color,
+        colorCode: ru.user_color_code,
+        position: ru.user_position,
+        mood: ru.user_mood
+      }))
+    };
+    
+    res.json(response);
   } catch (error) {
+    console.error('❌ Ошибка получения комнаты пользователя:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Получение комнаты по ID
-app.get('/api/rooms/:roomId', async (req, res) => {
-  try {
-    const { roomId } = req.params;
-    
-    const result = await pool.query(`
-      SELECT r.*, 
-             COALESCE(
-               json_agg(
-                 json_build_object(
-                   'id', ru.user_id,
-                   'name', ru.user_name,
-                   'station', ru.user_station,
-                   'wagon', ru.user_wagon,
-                   'color', ru.user_color,
-                   'colorCode', ru.user_color_code,
-                   'position', ru.user_position,
-                   'mood', ru.user_mood
-                 )
-               ) FILTER (WHERE ru.user_id IS NOT NULL), '[]'
-             ) as joined_users
-      FROM rooms r
-      LEFT JOIN room_users ru ON r.id = ru.room_id
-      WHERE r.id = $1
-      GROUP BY r.id
-    `, [roomId]);
-    
-    if (result.rows.length > 0) {
-      res.json(result.rows[0]);
-    } else {
-      res.status(404).json({ error: 'Room not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Получение комнаты по станции и вагону
-app.get('/api/rooms/station/:station/:wagon', async (req, res) => {
-  try {
-    const { station, wagon } = req.params;
-    
-    const result = await pool.query(`
-      SELECT r.*, 
-             COALESCE(
-               json_agg(
-                 json_build_object(
-                   'id', ru.user_id,
-                   'name', ru.user_name,
-                   'station', ru.user_station,
-                   'wagon', ru.user_wagon,
-                   'color', ru.user_color,
-                   'colorCode', ru.user_color_code,
-                   'position', ru.user_position,
-                   'mood', ru.user_mood
-                 )
-               ) FILTER (WHERE ru.user_id IS NOT NULL), '[]'
-             ) as joined_users
-      FROM rooms r
-      LEFT JOIN room_users ru ON r.id = ru.room_id
-      WHERE r.station = $1 AND r.wagon = $2
-      GROUP BY r.id
-    `, [station, wagon]);
-    
-    if (result.rows.length > 0) {
-      res.json(result.rows[0]);
-    } else {
-      res.status(404).json({ error: 'Room not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Обновление состояния пользователя в комнате
+// Обновление состояния пользователя
 app.put('/api/rooms/user/:userId/state', async (req, res) => {
   const client = await pool.connect();
   try {
@@ -722,7 +764,7 @@ app.put('/api/rooms/user/:userId/state', async (req, res) => {
     
     if (userUpdate.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: 'Пользователь не найден' });
     }
     
     // Обновляем пользователя в комнате
@@ -733,77 +775,50 @@ app.put('/api/rooms/user/:userId/state', async (req, res) => {
     );
     
     await client.query('COMMIT');
+    console.log(`🎯 Обновлено состояние пользователя ID: ${userId} - позиция: ${position}, настроение: ${mood}`);
     res.json(userUpdate.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
+    console.error('❌ Ошибка обновления состояния:', error);
     res.status(500).json({ error: error.message });
   } finally {
     client.release();
   }
 });
 
-// Получение пользователей по станции и вагону
-app.get('/api/users/station/:station/:wagon', async (req, res) => {
-  try {
-    const { station, wagon } = req.params;
-    
-    const result = await pool.query(`
-      SELECT * FROM users 
-      WHERE station = $1 AND wagon = $2 AND online = true
-      ORDER BY created_at DESC
-    `, [station, wagon]);
-    
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Health check и информация о системе
+// Health check
 app.get('/', (req, res) => {
   res.json({ 
-    message: '🚇 Metro API is running!',
-    version: '2.0.0',
+    message: '🚇 Metro API работает!',
+    version: '2.1.0',
     features: [
-      'User management with IP tracking',
-      'Room-based user grouping',
-      'Position and mood states',
-      'Station statistics',
-      'Auto-cleanup of inactive users'
+      'Управление пользователями с гибкой проверкой IP',
+      'Группировка пользователей по комнатам',
+      'Позиции и настроения пользователей',
+      'Статистика по станциям',
+      'Автоочистка неактивных пользователей',
+      'Поддержка нескольких устройств с одного IP'
     ],
-    endpoints: [
-      'GET /api/users',
-      'POST /api/users',
-      'PUT /api/users/:id',
-      'DELETE /api/users/:id',
-      'GET /api/stations',
-      'GET /api/stations/stats',
-      'POST /api/rooms',
-      'POST /api/rooms/join',
-      'POST /api/rooms/leave',
-      'GET /api/rooms/user/:userId',
-      'GET /api/rooms/:roomId',
-      'GET /api/rooms/station/:station/:wagon',
-      'PUT /api/rooms/user/:userId/state',
-      'GET /api/users/station/:station/:wagon'
-    ]
+    timestamp: new Date().toISOString()
   });
 });
 
 // Обработка несуществующих маршрутов
 app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  res.status(404).json({ error: 'Маршрут не найден' });
 });
 
 // Обработка ошибок
 app.use((error, req, res, next) => {
-  console.error('Unhandled error:', error);
-  res.status(500).json({ error: 'Internal server error' });
+  console.error('❌ Необработанная ошибка:', error);
+  res.status(500).json({ error: 'Внутренняя ошибка сервера' });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚇 Сервер "Из метро" запущен на порту ${PORT}`);
   console.log(`📍 URL: http://localhost:${PORT}`);
-  console.log(`📊 Версия: 2.0.0`);
+  console.log(`📊 Версия: 2.1.0`);
   console.log(`🕒 Автоочистка неактивных пользователей включена`);
+  console.log(`🌐 Разрешено до 3 сессий с одного IP`);
+  console.log(`🗃️  Проверка и миграция базы данных...`);
 });

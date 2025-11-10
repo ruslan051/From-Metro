@@ -600,7 +600,8 @@ app.get('/api/stations/stats', async (req, res) => {
     
     // Группируем по станциям для удобного отображения
     const stationStats = {};
-    result.rows.forEach(row) {
+    result.rows.forEach(row) 
+    {
       if (!stationStats[row.station]) {
         stationStats[row.station] = {
           station: row.station,

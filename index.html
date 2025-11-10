@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Из метро | Москва и Санкт-Петербург</title>
+    <style>
+        .disclaimer {
+            font-size: 16px;
+            color: #ff6b6b;
+            font-style: italic;
+            margin-bottom: 20px;
+            text-align: center;
+            padding: 12px;
+            background-color: #fff3f3;
+            border: 1px solid #ff6b6b;
+            border-radius: 8px;
+            font-weight: 500;
+            max-width: 600px;
+            margin: 0 auto 20px auto;
+            box-shadow: 0 2px 5px rgba(255, 107, 107, 0.2);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0057b8 0%, #ffd700 100%);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        
+        header {
+            background: linear-gradient(to right, #0057b8, #003d82);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .metro-icon {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 30px;
+        }
+        
+        .content {
+            padding: 25px;
+        }
+        
+        .screen {
+            display: none;
+        }
+        
+        .active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #0057b8;
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        select:focus, input:focus {
+            border-color: #0057b8;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 87, 184, 0.2);
+        }
+        
+        .gender-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .gender-option {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: #f8f9fa;
+        }
+        
+        .gender-option:hover {
+            background-color: #e9ecef;
+        }
+        
+        .gender-option.active {
+            border-color: #0057b8;
+            background-color: #e7f1ff;
+        }
+        
+        .city-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .city-option {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: #f8f9fa;
+        }
+        
+        .city-option:hover {
+            background-color: #e9ecef;
+        }
+        
+        .city-option.active {
+            border-color: #0057b8;
+            background-color: #e7f1ff;
+        }
+        
+        .city-option.moscow.active {
+            border-color: #0057b8;
+            background-color: #e7f1ff;
+        }
+        
+        .city-option.spb.active {
+            border-color: #0057b8;
+            background-color: #e7f1ff;
+        }
+        
+        .city-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .city-description {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .btn {
+            background: linear-gradient(to right, #0057b8, #003d82);
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(to right, #6c757d, #5a6268);
+        }
+        
+        .btn-success {
+            background: linear-gradient(to right, #28a745, #20c997);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(to right, #ffc107, #fd7e14);
+        }
+        
+        .back-btn {
+            background: none;
+            border: none;
+            color: #0057b8;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .back-btn i {
+            margin-right: 5px;
+        }
+        
+        .requests-container {
+            margin-top: 20px;
+        }
+        
+        .request-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #0057b8;
+            transition: all 0.3s;
+        }
+        
+        .request-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+        }
+        
+        .request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .station {
+            font-weight: 600;
+            color: #0057b8;
+            font-size: 18px;
+        }
+        
+        .wagon {
+            background-color: #0057b8;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        .color-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #0057b8;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-right: 15px;
+        }
+        
+        .user-details {
+            flex: 1;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .user-clothing {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .no-requests {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .status-dropdown {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .status-online {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-offline {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .timer-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .timer-display {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+            color: #0057b8;
+        }
+
+        .timer-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .timer-options .btn {
+            flex: 1;
+        }
+
+        .timer-option.active {
+            background: linear-gradient(to right, #28a745, #20c997);
+        }
+        
+        .timer-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .timer-controls .btn {
+            flex: 1;
+        }
+        
+        .station-overview {
+            margin-top: 20px;
+        }
+        
+        .station-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .station-item {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #0057b8;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .station-item:hover {
+            background-color: #e9ecef;
+            transform: translateY(-2px);
+        }
+        
+        .station-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .station-users {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .status-selector {
+            margin-top: 15px;
+        }
+        
+        .status-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .status-option {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        
+        .status-option:hover {
+            background-color: #e9ecef;
+        }
+        
+        .status-option.active {
+            border-color: #0057b8;
+            background-color: #e7f1ff;
+        }
+
+        /* Новые стили для статистики */
+        .station-stats {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #0057b8;
+        }
+        
+        .station-stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .station-stats-name {
+            font-weight: 600;
+            color: #0057b8;
+            font-size: 18px;
+        }
+        
+        .station-stats-count {
+            background: #0057b8;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        .station-stats-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #28a745;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .join-stats {
+            margin-top: 15px;
+            padding: 12px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .join-stats-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .join-stats-count {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .join-stats-text {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .user-connections {
+            margin-top: 10px;
+            padding: 8px;
+            background: #e7f3ff;
+            border-radius: 8px;
+            border-left: 3px solid #007bff;
+        }
+        
+        .connections-count {
+            font-size: 14px;
+            color: #007bff;
+            font-weight: 600;
+        }
+        
+        .connections-label {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                border-radius: 10px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .content {
+                padding: 15px;
+            }
+            
+            .station-list, .status-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .gender-options, .city-options {
+                flex-direction: column;
+            }
+            
+            .station-stats-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <p class="disclaimer">Сайт использует вымышленные имена пользователей</p>
+    
+    <div class="container">
+        <header>
+            <h1>Из метро</h1>
+            <div class="subtitle">Москва и Санкт-Петербург</div>
+            <div class="metro-icon">🚇</div>
+        </header>
+        
+        <div class="content">
+            <!-- Экран выбора параметров -->
+            <div id="setup-screen" class="screen active">
+                <h2>Настройка профиля</h2>
+                <p>Укажите ваш город и параметры</p>
+                
+                <form id="setup-form">
+                    <div class="form-group">
+                        <label>Выберите город:</label>
+                        <div class="city-options">
+                            <div class="city-option moscow" data-city="moscow">
+                                <div class="city-name">Москва</div>
+                                <div class="city-description">Московский метрополитен</div>
+                            </div>
+                            <div class="city-option spb active" data-city="spb">
+                                <div class="city-name">Санкт-Петербург</div>
+                                <div class="city-description">Петербургский метрополитен</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Ваш пол:</label>
+                        <div class="gender-options">
+                            <div class="gender-option active" data-gender="male">
+                                Мужской
+                            </div>
+                            <div class="gender-option" data-gender="female">
+                                Женский
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="station">Станция метро</label>
+                        <select id="station" required>
+                            <option value="">Выберите станцию</option>
+                            <!-- Станции Санкт-Петербурга -->
+                            <optgroup label="Санкт-Петербург" id="spb-stations">
+                                <option value="Адмиралтейская">Адмиралтейская</option>
+                                <option value="Балтийская">Балтийская</option>
+                                <option value="Василеостровская">Василеостровская</option>
+                                <option value="Владимирская">Владимирская</option>
+                                <option value="Гостиный двор">Гостиный двор</option>
+                                <option value="Горьковская">Горьковская</option>
+                                <option value="Достоевская">Достоевская</option>
+                                <option value="Елизаровская">Елизаровская</option>
+                                <option value="Звенигородская">Звенигородская</option>
+                                <option value="Кировский завод">Кировский завод</option>
+                                <option value="Ладожская">Ладожская</option>
+                                <option value="Лиговский проспект">Лиговский проспект</option>
+                                <option value="Ломоносовская">Ломоносовская</option>
+                                <option value="Маяковская">Маяковская</option>
+                                <option value="Невский проспект">Невский проспект</option>
+                                <option value="Обводный канал">Обводный канал</option>
+                                <option value="Озерки">Озерки</option>
+                                <option value="Парк Победы">Парк Победы</option>
+                                <option value="Петроградская">Петроградская</option>
+                                <option value="Площадь Восстания">Площадь Восстания</option>
+                                <option value="Площадь Ленина">Площадь Ленина</option>
+                                <option value="Приморская">Приморская</option>
+                                <option value="Пролетарская">Пролетарская</option>
+                                <option value="Проспект Ветеранов">Проспект Ветеранов</option>
+                                <option value="Проспект Просвещения">Проспект Просвещения</option>
+                                <option value="Пушкинская">Пушкинская</option>
+                                <option value="Садовая">Садовая</option>
+                                <option value="Сенная площадь">Сенная площадь</option>
+                                <option value="Спасская">Спасская</option>
+                                <option value="Спортивная">Спортивная</option>
+                                <option value="Старая Деревня">Старая Деревня</option>
+                                <option value="Технологический институт">Технологический институт</option>
+                                <option value="Фрунзенская">Фрунзенская</option>
+                                <option value="Чернышевская">Чернышевская</option>
+                                <option value="Чкаловская">Чкаловская</option>
+                            </optgroup>
+                            <!-- Станции Москвы -->
+                            <optgroup label="Москва" id="moscow-stations" style="display:none">
+                                <option value="Авиамоторная">Авиамоторная</option>
+                                <option value="Автозаводская">Автозаводская</option>
+                                <option value="Академическая">Академическая</option>
+                                <option value="Александровский сад">Александровский сад</option>
+                                <option value="Алексеевская">Алексеевская</option>
+                                <option value="Алтуфьево">Алтуфьево</option>
+                                <option value="Аннино">Аннино</option>
+                                <option value="Арбатская">Арбатская</option>
+                                <option value="Аэропорт">Аэропорт</option>
+                                <option value="Бабушкинская">Бабушкинская</option>
+                                <option value="Багратионовская">Багратионовская</option>
+                                <option value="Баррикадная">Баррикадная</option>
+                                <option value="Бауманская">Бауманская</option>
+                                <option value="Беговая">Беговая</option>
+                                <option value="Белорусская">Белорусская</option>
+                                <option value="Беляево">Беляево</option>
+                                <option value="Бибирево">Бибирево</option>
+                                <option value="Библиотека им. Ленина">Библиотека им. Ленина</option>
+                                <option value="Боровицкая">Боровицкая</option>
+                                <option value="Ботанический сад">Ботанический сад</option>
+                                <option value="Братиславская">Братиславская</option>
+                                <option value="Бульвар Дмитрия Донского">Бульвар Дмитрия Донского</option>
+                                <option value="Бунинская аллея">Бунинская аллея</option>
+                                <option value="Варшавская">Варшавская</option>
+                                <option value="ВДНХ">ВДНХ</option>
+                                <option value="Владыкино">Владыкино</option>
+                                <option value="Водный стадион">Водный стадион</option>
+                                <option value="Войковская">Войковская</option>
+                                <option value="Волгоградский проспект">Волгоградский проспект</option>
+                                <option value="Волжская">Волжская</option>
+                                <option value="Воробьёвы горы">Воробьёвы горы</option>
+                                <option value="Выставочная">Выставочная</option>
+                                <option value="Выхино">Выхино</option>
+                                <option value="Деловой центр">Деловой центр</option>
+                                <option value="Динамо">Динамо</option>
+                                <option value="Дмитровская">Дмитровская</option>
+                                <option value="Добрынинская">Добрынинская</option>
+                                <option value="Домодедовская">Домодедовская</option>
+                                <option value="Дубровка">Дубровка</option>
+                                <option value="Жулебино">Жулебино</option>
+                                <option value="Зябликово">Зябликово</option>
+                                <option value="Измайловская">Измайловская</option>
+                                <option value="Калужская">Калужская</option>
+                                <option value="Кантемировская">Кантемировская</option>
+                                <option value="Каховская">Каховская</option>
+                                <option value="Каширская">Каширская</option>
+                                <option value="Киевская">Киевская</option>
+                                <option value="Китай-город">Китай-город</option>
+                                <option value="Кожуховская">Кожуховская</option>
+                                <option value="Коломенская">Коломенская</option>
+                                <option value="Комсомольская">Комсомольская</option>
+                                <option value="Коньково">Коньково</option>
+                                <option value="Красногвардейская">Красногвардейская</option>
+                                <option value="Краснопресненская">Краснопресненская</option>
+                                <option value="Красносельская">Красносельская</option>
+                                <option value="Красные ворота">Красные ворота</option>
+                                <option value="Крестьянская застава">Крестьянская застава</option>
+                                <option value="Кропоткинская">Кропоткинская</option>
+                                <option value="Крылатское">Крылатское</option>
+                                <option value="Кузнецкий мост">Кузнецкий мост</option>
+                                <option value="Кузьминки">Кузьминки</option>
+                                <option value="Кунцевская">Кунцевская</option>
+                                <option value="Курская">Курская</option>
+                                <option value="Кутузовская">Кутузовская</option>
+                                <option value="Ленинский проспект">Ленинский проспект</option>
+                                <option value="Лермонтовский проспект">Лермонтовский проспект</option>
+                                <option value="Лесопарковая">Лесопарковая</option>
+                                <option value="Лубянка">Лубянка</option>
+                                <option value="Люблино">Люблино</option>
+                                <option value="Марксистская">Марксистская</option>
+                                <option value="Марьина роща">Марьина роща</option>
+                                <option value="Марьино">Марьино</option>
+                                <option value="Маяковская">Маяковская</option>
+                                <option value="Медведково">Медведково</option>
+                                <option value="Международная">Международная</option>
+                                <option value="Менделеевская">Менделеевская</option>
+                                <option value="Митино">Митино</option>
+                                <option value="Молодёжная">Молодёжная</option>
+                                <option value="Нагатинская">Нагатинская</option>
+                                <option value="Нагорная">Нагорная</option>
+                                <option value="Нахимовский проспект">Нахимовский проспект</option>
+                                <option value="Новогиреево">Новогиреево</option>
+                                <option value="Новокосино">Новокосино</option>
+                                <option value="Новокузнецкая">Новокузнецкая</option>
+                                <option value="Новослободская">Новослободская</option>
+                                <option value="Новые Черёмушки">Новые Черёмушки</option>
+                                <option value="Октябрьская">Октябрьская</option>
+                                <option value="Октябрьское поле">Октябрьское поле</option>
+                                <option value="Орехово">Орехово</option>
+                                <option value="Отрадное">Отрадное</option>
+                                <option value="Охотный ряд">Охотный ряд</option>
+                                <option value="Павелецкая">Павелецкая</option>
+                                <option value="Парк культуры">Парк культуры</option>
+                                <option value="Парк Победы">Парк Победы</option>
+                                <option value="Партизанская">Партизанская</option>
+                                <option value="Первомайская">Первомайская</option>
+                                <option value="Перово">Перово</option>
+                                <option value="Петровско-Разумовская">Петровско-Разумовская</option>
+                                <option value="Печатники">Печатники</option>
+                                <option value="Пионерская">Пионерская</option>
+                                <option value="Планерная">Планерная</option>
+                                <option value="Площадь Ильича">Площадь Ильича</option>
+                                <option value="Площадь Революции">Площадь Революции</option>
+                                <option value="Полежаевская">Полежаевская</option>
+                                <option value="Полянка">Полянка</option>
+                                <option value="Пражская">Пражская</option>
+                                <option value="Преображенская площадь">Преображенская площадь</option>
+                                <option value="Пролетарская">Пролетарская</option>
+                                <option value="Проспект Вернадского">Проспект Вернадского</option>
+                                <option value="Проспект Мира">Проспект Мира</option>
+                                <option value="Профсоюзная">Профсоюзная</option>
+                                <option value="Пушкинская">Пушкинская</option>
+                                <option value="Речной вокзал">Речной вокзал</option>
+                                <option value="Рижская">Рижская</option>
+                                <option value="Римская">Римская</option>
+                                <option value="Рязанский проспект">Рязанский проспект</option>
+                                <option value="Савеловская">Савеловская</option>
+                                <option value="Свиблово">Свиблово</option>
+                                <option value="Севастопольская">Севастопольская</option>
+                                <option value="Семёновская">Семёновская</option>
+                                <option value="Серпуховская">Серпуховская</option>
+                                <option value="Славянский бульвар">Славянский бульвар</option>
+                                <option value="Смоленская">Смоленская</option>
+                                <option value="Сокол">Сокол</option>
+                                <option value="Сокольники">Сокольники</option>
+                                <option value="Спартак">Спартак</option>
+                                <option value="Спортивная">Спортивная</option>
+                                <option value="Сретенский бульвар">Сретенский бульвар</option>
+                                <option value="Строгино">Строгино</option>
+                                <option value="Студенческая">Студенческая</option>
+                                <option value="Сухаревская">Сухаревская</option>
+                                <option value="Сходненская">Сходненская</option>
+                                <option value="Таганская">Таганская</option>
+                                <option value="Тверская">Тверская</option>
+                                <option value="Театральная">Театральная</option>
+                                <option value="Текстильщики">Текстильщики</option>
+                                <option value="Теплый стан">Теплый стан</option>
+                                <option value="Тимирязевская">Тимирязевская</option>
+                                <option value="Третьяковская">Третьяковская</option>
+                                <option value="Трубная">Трубная</option>
+                                <option value="Тульская">Тульская</option>
+                                <option value="Тургеневская">Тургеневская</option>
+                                <option value="Тушинская">Тушинская</option>
+                                <option value="Улица 1905 года">Улица 1905 года</option>
+                                <option value="Улица Академика Янгеля">Улица Академика Янгеля</option>
+                                <option value="Улица Горчакова">Улица Горчакова</option>
+                                <option value="Улица Скобелевская">Улица Скобелевская</option>
+                                <option value="Университет">Университет</option>
+                                <option value="Филевский парк">Филевский парк</option>
+                                <option value="Фили">Фили</option>
+                                <option value="Фрунзенская">Фрунзенская</option>
+                                <option value="Царицыно">Царицыно</option>
+                                <option value="Цветной бульвар">Цветной бульвар</option>
+                                <option value="Черкизовская">Черкизовская</option>
+                                <option value="Чертановская">Чертановская</option>
+                                <option value="Чеховская">Чеховская</option>
+                                <option value="Чистые пруды">Чистые пруды</option>
+                                <option value="Чкаловская">Чкаловская</option>
+                                <option value="Шаболовская">Шаболовская</option>
+                                <option value="Шоссе Энтузиастов">Шоссе Энтузиастов</option>
+                                <option value="Щёлковская">Щёлковская</option>
+                                <option value="Щукинская">Щукинская</option>
+                                <option value="Электрозаводская">Электрозаводская</option>
+                                <option value="Юго-Западная">Юго-Западная</option>
+                                <option value="Южная">Южная</option>
+                                <option value="Ясенево">Ясенево</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="wagon">Номер вагона (необязательно)</label>
+                        <select id="wagon">
+                            <option value="">Не указывать</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="color">Цвет верхней одежды</label>
+                        <input type="text" id="color" placeholder="Например: черный, синий, красный" required>
+                    </div>
+                    
+                    <div class="timer-section">
+                        <h3>Таймер ожидания</h3>
+                        <p>Выберите время ожидания на станции</p>
+                        <div class="timer-options">
+                            <button type="button" class="btn timer-option active" data-minutes="5">5 минут</button>
+                            <button type="button" class="btn timer-option" data-minutes="10">10 минут</button>
+                            <button type="button" class="btn timer-option" data-minutes="15">15 минут</button>
+                        </div>
+                        <div class="timer-display" id="timer-display">Не запущен</div>
+                        <div class="timer-controls">
+                            <button type="button" class="btn btn-success" id="start-timer">Запустить таймер</button>
+                            <button type="button" class="btn btn-secondary" id="stop-timer" disabled>Остановить</button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn">Войти в комнату ожидания</button>
+                </form>
+            </div>
+            
+            <!-- Экран комнаты ожидания -->
+            <div id="waiting-room-screen" class="screen">
+                <button class="back-btn" id="back-to-setup">
+                    <i>←</i> Изменить параметры
+                </button>
+                
+                <h2>Комната ожидания</h2>
+                <p>Активные заявки на вашей станции</p>
+                
+                <!-- Статистика по станциям -->
+                <div class="station-overview">
+                    <h3>Статистика по станциям</h3>
+                    <div id="stations-stats">
+                        <div class="loading">Загрузка статистики...</div>
+                    </div>
+                </div>
+                
+                <div class="status-selector">
+                    <label>Ваш текущий статус:</label>
+                    <select id="status-select" class="status-dropdown">
+                        <option value="Спускаюсь на эскалаторе">Спускаюсь на эскалаторе</option>
+                        <option value="Жду на станции" selected>Жду на станции</option>
+                        <option value="В вагоне, поезд стоит">В вагоне, поезд стоит</option>
+                        <option value="В вагоне, поезд в пути">В вагоне, поезд в пути</option>
+                        <option value="Готовлюсь выйти из поезда">Готовлюсь выйти из поезда</option>
+                        <option value="Поднимаюсь на эскалаторе">Поднимаюсь на эскалаторе</option>
+                    </select>
+                </div>
+                
+                <div class="requests-container" id="requests-container">
+                    <div class="loading">Загрузка пользователей...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        &copy; 2023 Из метро | Москва и Санкт-Петербург
+    </footer>
+
+    <script>
+        // Сказочные имена для мужчин и женщин
+        const maleNames = ['Иван-Царевич', 'Кощей Бессмертный', 'Добрыня Никитич', 'Леший', 'Водяной', 'Бабай', 'Соловей-Разбойник', 'Змей Горыныч'];
+        const femaleNames = ['Василиса Премудрая', 'Баба Яга', 'Царевна-Лягушка', 'Снегурочка', 'Марья-Искусница', 'Аленушка', 'Кикимора', 'Русалка'];
+
+        // Функция для получения случайного имени в зависимости от пола
+        function getRandomName(gender) {
+            const names = gender === 'male' ? maleNames : femaleNames;
+            return names[Math.floor(Math.random() * names.length)];
+        }
+
+        // API endpoints
+        const getApiBase = () => {
+            const hostname = window.location.hostname;
+            const port = window.location.port || '3000';
+            return `http://${hostname}:${port}/api`;
+        };
+        const API_BASE = getApiBase();
+        
+        // Элементы DOM
+        const setupScreen = document.getElementById('setup-screen');
+        const waitingRoomScreen = document.getElementById('waiting-room-screen');
+        const setupForm = document.getElementById('setup-form');
+        const backToSetupBtn = document.getElementById('back-to-setup');
+        const requestsContainer = document.getElementById('requests-container');
+        const statusSelect = document.getElementById('status-select');
+        const timerDisplay = document.getElementById('timer-display');
+        const startTimerBtn = document.getElementById('start-timer');
+        const stopTimerBtn = document.getElementById('stop-timer');
+        const timerOptions = document.querySelectorAll('.timer-option');
+        
+        // Элементы выбора города и пола
+        const cityOptions = document.querySelectorAll('.city-option');
+        const genderOptions = document.querySelectorAll('.gender-option');
+        const stationSelect = document.getElementById('station');
+        const spbStations = document.getElementById('spb-stations');
+        const moscowStations = document.getElementById('moscow-stations');
+        
+        // Текущий пользователь и состояние
+        let currentUser = null;
+        let timerInterval = null;
+        let timerSeconds = 0;
+        let currentStatus = "Жду на станции";
+        let userId = null;
+        let selectedMinutes = 5;
+        let selectedCity = 'spb';
+        let selectedGender = 'male';
+
+        // Обработчики выбора города
+        cityOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                cityOptions.forEach(opt => opt.classList.remove('active'));
+                this.classList.add('active');
+                selectedCity = this.getAttribute('data-city');
+                
+                // Показываем/скрываем станции в зависимости от выбранного города
+                if (selectedCity === 'spb') {
+                    spbStations.style.display = 'block';
+                    moscowStations.style.display = 'none';
+                } else {
+                    spbStations.style.display = 'none';
+                    moscowStations.style.display = 'block';
+                }
+                
+                // Сбрасываем выбор станции
+                stationSelect.value = '';
+            });
+        });
+
+        // Обработчики выбора пола
+        genderOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                genderOptions.forEach(opt => opt.classList.remove('active'));
+                this.classList.add('active');
+                selectedGender = this.getAttribute('data-gender');
+            });
+        });
+
+        // Функции API
+        async function createUser(userData) {
+            try {
+                const response = await fetch(`${API_BASE}/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('Ошибка создания пользователя:', error);
+                return null;
+            }
+        }
+
+        async function getUsers() {
+            try {
+                const response = await fetch(`${API_BASE}/users`);
+                const users = await response.json();
+                return users.map((user, index) => ({
+                    ...user,
+                    id: user.id || index + 1
+                }));
+            } catch (error) {
+                console.error('Ошибка получения пользователей:', error);
+                return [];
+            }
+        }
+
+        async function updateUser(userId, updates) {
+            try {
+                const response = await fetch(`${API_BASE}/users/${userId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates)
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('Ошибка обновления пользователя:', error);
+                return null;
+            }
+        }
+
+        async function deleteUser(userId) {
+            try {
+                await fetch(`${API_BASE}/users/${userId}`, { method: 'DELETE' });
+            } catch (error) {
+                console.error('Ошибка удаления пользователя:', error);
+            }
+        }
+
+        // Функция для загрузки статистики по станциям
+        async function loadStationsStats() {
+            const users = await getUsers();
+            const stationsStatsContainer = document.getElementById('stations-stats');
+            stationsStatsContainer.innerHTML = '';
+            
+            // Группируем пользователей по станциям
+            const stations = {};
+            
+            users.forEach(user => {
+                if (user.city !== selectedCity) return;
+                
+                if (!stations[user.station]) {
+                    stations[user.station] = {
+                        total: 0,
+                        waiting: 0,
+                        connected: 0,
+                        users: []
+                    };
+                }
+                
+                stations[user.station].total++;
+                stations[user.station].users.push(user);
+                
+                // Считаем количество соединений (пользователи с одинаковой станцией и вагоном)
+                const sameStationUsers = users.filter(u => 
+                    u.station === user.station && 
+                    u.wagon === user.wagon && 
+                    u.id !== user.id
+                );
+                
+                if (sameStationUsers.length > 0) {
+                    stations[user.station].connected++;
+                } else {
+                    stations[user.station].waiting++;
+                }
+            });
+            
+            // Сортируем станции по количеству пользователей
+            const sortedStations = Object.entries(stations).sort((a, b) => b[1].total - a[1].total);
+            
+            if (sortedStations.length === 0) {
+                stationsStatsContainer.innerHTML = `
+                    <div class="no-requests">
+                        <p>Пока нет пользователей на станциях ${selectedCity === 'spb' ? 'Санкт-Петербурга' : 'Москвы'}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            sortedStations.forEach(([stationName, stats]) => {
+                const stationStats = document.createElement('div');
+                stationStats.className = 'station-stats';
+                
+                stationStats.innerHTML = `
+                    <div class="station-stats-header">
+                        <div class="station-stats-name">${stationName}</div>
+                        <div class="station-stats-count">${stats.total} чел.</div>
+                    </div>
+                    <div class="station-stats-details">
+                        <div class="stat-item">
+                            <div class="stat-number">${stats.waiting}</div>
+                            <div class="stat-label">Ожидают</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">${stats.connected}</div>
+                            <div class="stat-label">Соединились</div>
+                        </div>
+                    </div>
+                `;
+                
+                stationsStatsContainer.appendChild(stationStats);
+            });
+        }
+
+        // Обновленная функция загрузки запросов с информацией о соединениях
+        async function loadRequests() {
+            const users = await getUsers();
+            requestsContainer.innerHTML = '';
+            
+            // Фильтруем пользователей по городу
+            const filteredUsers = users.filter(user => user.city === selectedCity);
+            
+            if (filteredUsers.length === 0) {
+                requestsContainer.innerHTML = `
+                    <div class="no-requests">
+                        <h3>Пока нет пользователей на станциях ${selectedCity === 'spb' ? 'Санкт-Петербурга' : 'Москвы'}</h3>
+                        <p>Ожидайте появления других пользователей</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Считаем количество соединений для каждой станции и вагона
+            const connectionStats = {};
+            filteredUsers.forEach(user => {
+                const key = `${user.station}_${user.wagon}`;
+                if (!connectionStats[key]) {
+                    connectionStats[key] = [];
+                }
+                connectionStats[key].push(user);
+            });
+            
+            filteredUsers.forEach(user => {
+                const requestCard = document.createElement('div');
+                requestCard.className = 'request-card';
+                const isCurrentUser = userId && user.id === userId;
+                const stationKey = `${user.station}_${user.wagon}`;
+                const connections = connectionStats[stationKey] || [];
+                const connectionCount = connections.length - 1; // Исключаем текущего пользователя
+                
+                requestCard.innerHTML = `
+                    <div class="request-header">
+                        <div class="station">${user.station}</div>
+                        <div class="wagon">Вагон ${user.wagon}</div>
+                    </div>
+                    
+                    <div class="user-info">
+                        <div class="user-avatar">${user.name.charAt(0)}</div>
+                        <div class="user-details">
+                            <div class="user-name">${user.name} ${isCurrentUser ? '(Вы)' : ''}</div>
+                            <div class="user-clothing">
+                                <span class="color-indicator" style="background-color: ${user.colorCode}"></span>
+                                Верхняя одежда: ${user.color}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="status-info">
+                        <strong>Статус:</strong> ${user.status}
+                    </div>
+                    
+                    ${user.timer !== "00:00" ? `<div class="timer-info"><strong>На станции:</strong> ${user.timer}</div>` : ''}
+                    
+                    ${connectionCount > 0 ? `
+                    <div class="user-connections">
+                        <div class="connections-count">${connectionCount}</div>
+                        <div class="connections-label">человек присоединились на этой станции</div>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="status ${user.online ? 'status-online' : 'status-offline'}">
+                        ${user.online ? 'Онлайн' : 'Не в сети'}
+                    </div>
+                    
+                    ${!isCurrentUser ? `
+                    <button class="btn btn-success join-btn" data-user-id="${user.id}" data-station="${user.station}" data-wagon="${user.wagon}">
+                        Присоединиться (${connectionCount > 0 ? connectionCount + ' с ' : ''}${user.station})
+                    </button>
+                    ` : ''}
+                `;
+                
+                requestsContainer.appendChild(requestCard);
+            });
+            
+            // Обработчики для кнопок присоединения
+            document.querySelectorAll('.join-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const targetUserId = this.getAttribute('data-user-id');
+                    const station = this.getAttribute('data-station');
+                    const wagon = this.getAttribute('data-wagon');
+                    joinUser(targetUserId, station, wagon);
+                });
+            });
+        }
+
+        // Функция присоединения к пользователю
+        async function joinUser(targetUserId, station, wagon) {
+            const users = await getUsers();
+            const targetUser = users.find(u => u.id == targetUserId);
+            
+            if (!targetUser) return;
+            
+            // Находим всех пользователей на этой же станции и в этом же вагоне
+            const sameStationUsers = users.filter(user => 
+                user.station === station && 
+                user.wagon === wagon &&
+                user.id !== targetUserId
+            );
+            
+            // Создаем модальное окно со статистикой
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="
+                    background: white;
+                    padding: 25px;
+                    border-radius: 15px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                    max-width: 400px;
+                    width: 90%;
+                    text-align: center;
+                ">
+                    <h3 style="color: #0057b8; margin-bottom: 15px;">Присоединение к группе</h3>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 10px;">
+                            Станция: ${station}
+                        </div>
+                        <div style="font-size: 16px; color: #666; margin-bottom: 15px;">
+                            Вагон: ${wagon}
+                        </div>
+                    </div>
+                    
+                    <div class="join-stats">
+                        <div class="join-stats-label">Уже присоединились</div>
+                        <div class="join-stats-count">${sameStationUsers.length}</div>
+                        <div class="join-stats-text">человек</div>
+                    </div>
+                    
+                    ${sameStationUsers.length > 0 ? `
+                    <div style="text-align: left; margin: 15px 0;">
+                        <div style="font-size: 14px; color: #666; margin-bottom: 10px;">Участники группы:</div>
+                        ${sameStationUsers.map(user => `
+                            <div style="display: flex; align-items: center; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 5px;">
+                                <div style="width: 30px; height: 30px; border-radius: 50%; background: ${user.colorCode}; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; margin-right: 10px;">
+                                    ${user.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600;">${user.name}</div>
+                                    <div style="font-size: 12px; color: #666;">${user.status}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    ` : `
+                    <div style="padding: 15px; background: #f8f9fa; border-radius: 8px; margin: 15px 0;">
+                        <div style="font-size: 14px; color: #666;">Будьте первым, кто присоединится к ${targetUser.name} на станции ${station}</div>
+                    </div>
+                    `}
+                    
+                    <button id="confirm-join" style="
+                        background: linear-gradient(to right, #28a745, #20c997);
+                        color: white;
+                        border: none;
+                        padding: 12px 30px;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        width: 100%;
+                        margin-top: 10px;
+                    ">
+                        Присоединиться
+                    </button>
+                    
+                    <button id="close-modal" style="
+                        background: none;
+                        border: 1px solid #ddd;
+                        color: #666;
+                        padding: 12px 30px;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        cursor: pointer;
+                        width: 100%;
+                        margin-top: 10px;
+                    ">
+                        Отмена
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Обработчик подтверждения присоединения
+            modal.querySelector('#confirm-join').addEventListener('click', function() {
+                alert(`Вы присоединились к группе на станции ${station}!`);
+                document.body.removeChild(modal);
+            });
+            
+            // Обработчик закрытия модального окна
+            modal.querySelector('#close-modal').addEventListener('click', function() {
+                document.body.removeChild(modal);
+            });
+            
+            // Закрытие при клике на фон
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+        }
+
+        // Обработчики событий
+        setupForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const station = document.getElementById('station').value;
+            const wagon = document.getElementById('wagon').value || 'Не указан';
+            const color = document.getElementById('color').value;
+            
+            // Генерация сказочного имени в зависимости от пола
+            const randomName = getRandomName(selectedGender);
+            
+            const userData = {
+                name: randomName,
+                station: station,
+                wagon: wagon,
+                color: color,
+                colorCode: getRandomColor(),
+                status: currentStatus,
+                timer: "00:00",
+                online: true,
+                city: selectedCity,
+                gender: selectedGender
+            };
+            
+            const createdUser = await createUser(userData);
+            
+            if (createdUser) {
+                currentUser = createdUser;
+                userId = createdUser.id;
+                
+                setupScreen.classList.remove('active');
+                waitingRoomScreen.classList.add('active');
+                
+                loadStationsStats();
+                loadRequests();
+                
+                // Обновляем статистику каждые 5 секунд
+                setInterval(() => {
+                    loadStationsStats();
+                    loadRequests();
+                }, 5000);
+            } else {
+                alert('Ошибка создания профиля. Проверьте подключение к серверу.');
+            }
+        });
+
+        backToSetupBtn.addEventListener('click', async function() {
+            if (userId) await deleteUser(userId);
+            
+            waitingRoomScreen.classList.remove('active');
+            setupScreen.classList.add('active');
+            stopTimer();
+            currentUser = null;
+            userId = null;
+        });
+
+        statusSelect.addEventListener('change', async function() {
+            currentStatus = this.value;
+            if (userId) {
+                await updateUser(userId, { status: currentStatus });
+                loadRequests();
+            }
+        });
+
+        // Обработчики таймера
+        startTimerBtn.addEventListener('click', startTimer);
+        stopTimerBtn.addEventListener('click', stopTimer);
+        
+        timerOptions.forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.timer-option').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedMinutes = parseInt(this.getAttribute('data-minutes'));
+                timerDisplay.textContent = `Готов к запуску: ${selectedMinutes} мин`;
+            });
+        });
+
+        // Функции таймера
+        function startTimer() {
+            if (timerInterval) return;
+            
+            timerSeconds = selectedMinutes * 60;
+            updateTimerDisplay();
+            
+            timerInterval = setInterval(async function() {
+                timerSeconds--;
+                updateTimerDisplay();
+                
+                if (timerSeconds <= 0) {
+                    stopTimer();
+                    alert('Время ожидания истекло!');
+                }
+                
+                if (userId) {
+                    await updateUser(userId, { 
+                        timer: formatTime(timerSeconds),
+                        timerTotal: selectedMinutes * 60
+                    });
+                    loadRequests();
+                }
+            }, 1000);
+            
+            startTimerBtn.disabled = true;
+            stopTimerBtn.disabled = false;
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            timerSeconds = 0;
+            timerDisplay.textContent = 'Не запущен';
+            
+            startTimerBtn.disabled = false;
+            stopTimerBtn.disabled = true;
+            
+            if (userId) {
+                updateUser(userId, { 
+                    timer: "Не запущен",
+                    timerTotal: 0
+                });
+                loadRequests();
+            }
+        }
+
+        function updateTimerDisplay() {
+            if (timerSeconds <= 0) {
+                timerDisplay.textContent = 'Время истекло';
+            } else {
+                const minutes = Math.floor(timerSeconds / 60);
+                const seconds = timerSeconds % 60;
+                timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')} / ${selectedMinutes} мин`;
+            }
+        }
+
+        // Вспомогательные функции
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function getRandomColor() {
+            const colors = ['#dc3545', '#007bff', '#28a745', '#ffc107', '#6f42c1', '#e83e8c', '#fd7e14', '#20c997'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        // Инициализация
+        window.addEventListener('load', function() {
+            document.querySelector('.timer-option[data-minutes="5"]').classList.add('active');
+        });
+
+        window.addEventListener('beforeunload', async function() {
+            if (userId) await deleteUser(userId);
+        });
+    </script>
+</body>
+</html>

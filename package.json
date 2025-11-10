@@ -1,0 +1,16 @@
+{
+  "name": "iz-metro-app",
+  "version": "1.0.0",
+  "description": "Приложение для помощи пассажирам метро Санкт-Петербурга",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["metro", "petersburg", "chat", "vk-play"],
+  "author": "Your Name",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

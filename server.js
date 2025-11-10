@@ -222,8 +222,177 @@ async function autoResetSessions() {
 setInterval(autoResetSessions, 10 * 60 * 1000);
 console.log('⏰ Автоматический сброс сессий настроен каждые 10 минут');
 
+// Функция для проверки и сброса неактивных пользователей
+async function checkAndResetInactiveUsers() {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    console.log('🕒 Проверка активности пользователей...');
+    
+    // Находим пользователей, которые неактивны более 2 минут
+    const inactiveUsers = await client.query(`
+      SELECT id, name, station 
+      FROM users 
+      WHERE online = true 
+      AND last_activity < NOW() - INTERVAL '2 minutes'
+    `);
+    
+    if (inactiveUsers.rows.length > 0) {
+      console.log(`🔍 Найдено ${inactiveUsers.rows.length} неактивных пользователей:`);
+      
+      // Сбрасываем неактивных пользователей
+      const resetResult = await client.query(`
+        UPDATE users 
+        SET 
+          online = false,
+          is_waiting = true,
+          is_connected = false,
+          room_id = NULL,
+          status = 'Не в сети',
+          last_activity = CURRENT_TIMESTAMP
+        WHERE online = true 
+        AND last_activity < NOW() - INTERVAL '2 minutes'
+      `);
+      
+      // Удаляем неактивных пользователей из комнат
+      await client.query(`
+        DELETE FROM room_users 
+        WHERE user_id IN (
+          SELECT id FROM users 
+          WHERE online = false 
+          AND last_activity < NOW() - INTERVAL '2 minutes'
+        )
+      `);
+      
+      // Удаляем пустые комнаты
+      await client.query(`
+        DELETE FROM rooms 
+        WHERE id NOT IN (
+          SELECT DISTINCT room_id FROM room_users WHERE room_id IS NOT NULL
+        )
+      `);
+      
+      await client.query('COMMIT');
+      
+      console.log(`✅ Сброшено ${resetResult.rowCount} неактивных сессий`);
+      inactiveUsers.rows.forEach(user => {
+        console.log(`   - ${user.name} (${user.station})`);
+      });
+      
+      return {
+        success: true,
+        resetCount: resetResult.rowCount,
+        inactiveUsers: inactiveUsers.rows
+      };
+    } else {
+      await client.query('ROLLBACK');
+      console.log('✅ Активных пользователей нет, сброс не требуется');
+      return {
+        success: true,
+        resetCount: 0,
+        inactiveUsers: []
+      };
+    }
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Ошибка проверки активности:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  } finally {
+    client.release();
+  }
+}
+
+// Обновленная функция сброса всех сессий (более мягкая)
+async function resetAllSessions() {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    console.log('🔄 Начинаем мягкий сброс всех сессий...');
+    
+    // Сбрасываем только действительно неактивных пользователей
+    const resetResult = await client.query(`
+      UPDATE users 
+      SET 
+        online = false,
+        is_waiting = true,
+        is_connected = false,
+        room_id = NULL,
+        status = 'Ожидание',
+        last_activity = CURRENT_TIMESTAMP
+      WHERE online = true 
+      AND last_activity < NOW() - INTERVAL '5 minutes'
+    `);
+    
+    // Очищаем комнаты от неактивных пользователей
+    await client.query(`
+      DELETE FROM room_users 
+      WHERE user_id IN (
+        SELECT id FROM users WHERE online = false
+      )
+    `);
+    
+    // Удаляем пустые комнаты
+    await client.query(`
+      DELETE FROM rooms 
+      WHERE id NOT IN (
+        SELECT DISTINCT room_id FROM room_users WHERE room_id IS NOT NULL
+      )
+    `);
+    
+    await client.query('COMMIT');
+    
+    console.log(`✅ Мягкий сброс: ${resetResult.rowCount} неактивных сессий`);
+    
+    return {
+      success: true,
+      resetUsers: resetResult.rowCount,
+      message: `Сброшено ${resetResult.rowCount} неактивных сессий`
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Ошибка сброса сессий:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  } finally {
+    client.release();
+  }
+}
+
+// Функция пинга активности пользователя
+app.post('/api/users/:id/ping', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    await pool.query(
+      'UPDATE users SET last_activity = $1 WHERE id = $2',
+      [new Date(), id]
+    );
+    
+    res.json({ success: true, message: 'Активность обновлена' });
+  } catch (error) {
+    console.error('❌ Ошибка обновления активности:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Запускаем проверку активности каждую минуту
+setInterval(checkAndResetInactiveUsers, 60 * 1000);
+console.log('⏰ Проверка активности пользователей настроена каждую минуту');
+
+// Обновляем интервал автоматического сброса до 15 минут
+setInterval(autoResetSessions, 15 * 60 * 1000);
+console.log('⏰ Автоматический сброс сессий настроен каждые 15 минут');
+
 // Middleware для очистки неактивных пользователей
-async function cleanupInactiveUsers() {
+async function cleanupInactiveUsers() 
+{
   try {
     const result = await pool.query(`
       DELETE FROM users 
@@ -568,6 +737,51 @@ app.get('/api/stations', async (req, res) => {
   }
 });
 
+// Получение всех станций города
+app.get('/api/stations/all', async (req, res) => {
+  try {
+    const { city } = req.query;
+    
+    if (!city) {
+      return res.status(400).json({ error: 'Город не указан' });
+    }
+    
+    const cityStations = city === 'moscow' ? [
+      'Авиамоторная', 'Автозаводская', 'Академическая', 'Александровский сад', 'Алексеевская',
+      'Алтуфьево', 'Аннино', 'Арбатская', 'Аэропорт', 'Бабушкинская'
+      // ... добавьте все станции Москвы
+    ] : [
+      'Адмиралтейская', 'Балтийская', 'Василеостровская', 'Владимирская', 'Гостиный двор',
+      'Горьковская', 'Достоевская', 'Елизаровская', 'Звенигородская', 'Кировский завод'
+      // ... добавьте все станции Петербурга
+    ];
+    
+    // Получаем статистику по станциям
+    const statsResult = await pool.query(`
+      SELECT station, COUNT(*) as user_count 
+      FROM users 
+      WHERE city = $1 AND online = true 
+      GROUP BY station
+    `, [city]);
+    
+    const stationStats = {};
+    statsResult.rows.forEach(row => {
+      stationStats[row.station] = parseInt(row.user_count);
+    });
+    
+    const stationsWithStats = cityStations.map(station => ({
+      name: station,
+      userCount: stationStats[station] || 0,
+      hasUsers: stationStats[station] > 0
+    }));
+    
+    res.json(stationsWithStats);
+    
+  } catch (error) {
+    console.error('❌ Ошибка получения списка станций:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 // Получение расширенной статистики по станциям
 app.get('/api/stations/stats', async (req, res) => {
   try {
@@ -673,42 +887,15 @@ app.post('/api/rooms', async (req, res) => {
   }
 });
 
-// Присоединение к комнате
-app.post('/api/rooms/join', async (req, res) => {
+// Присоединение к комнате станции
+app.post('/api/rooms/join-station', async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     
-    const { userId, station, wagon } = req.body;
+    const { userId, station } = req.body;
     
-    // Ищем существующую комнату
-    const roomResult = await client.query(
-      'SELECT * FROM rooms WHERE station = $1 AND wagon = $2',
-      [station, wagon]
-    );
-    
-    let room;
-    
-    if (roomResult.rows.length === 0) {
-      // Создаем новую комнату если не найдена
-      const userResult = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
-      if (userResult.rows.length === 0) {
-        await client.query('ROLLBACK');
-        return res.status(404).json({ error: 'Пользователь не найден' });
-      }
-      
-      const user = userResult.rows[0];
-      const newRoomResult = await client.query(
-        `INSERT INTO rooms (host_user_id, host_user_name, station, wagon) 
-         VALUES ($1, $2, $3, $4) RETURNING *`,
-        [userId, user.name, station, wagon]
-      );
-      
-      room = newRoomResult.rows[0];
-    } else {
-      room = roomResult.rows[0];
-    }
-    
+    // Получаем информацию о пользователе
     const userResult = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
     if (userResult.rows.length === 0) {
       await client.query('ROLLBACK');
@@ -717,69 +904,39 @@ app.post('/api/rooms/join', async (req, res) => {
     
     const user = userResult.rows[0];
     
-    // Проверяем, не присоединен ли уже
-    const existingJoin = await client.query(
-      'SELECT * FROM room_users WHERE room_id = $1 AND user_id = $2',
-      [room.id, userId]
-    );
-    
-    if (existingJoin.rows.length > 0) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Пользователь уже в этой комнате' });
-    }
-    
-    // Добавляем пользователя в комнату
+    // Обновляем пользователя - присоединяемся к станции
     await client.query(
-      `INSERT INTO room_users (
-        room_id, user_id, user_name, user_station, user_wagon, 
-        user_color, user_color_code, user_position, user_mood
-      ) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [
-        room.id, 
-        userId, 
-        user.name, 
-        user.station, 
-        user.wagon, 
-        user.color, 
-        user.color_code,
-        user.position || '',
-        user.mood || ''
-      ]
+      `UPDATE users SET 
+        station = $1, 
+        is_waiting = false, 
+        is_connected = true,
+        last_activity = $2,
+        status = 'Ожидание на станции'
+       WHERE id = $3`,
+      [station, new Date(), userId]
     );
     
-    // Обновляем пользователя - теперь он подключен, а не ожидает
-    await client.query(
-      'UPDATE users SET room_id = $1, station = $2, wagon = $3, last_activity = $4, is_waiting = false, is_connected = true WHERE id = $5',
-      [room.id, station, wagon, new Date(), userId]
-    );
-    
-    // Получаем участников комнаты
-    const roomUsersResult = await client.query(`
-      SELECT * FROM room_users WHERE room_id = $1
-    `, [room.id]);
+    // Получаем всех пользователей на этой станции
+    const stationUsersResult = await client.query(`
+      SELECT * FROM users 
+      WHERE station = $1 AND is_connected = true AND online = true
+      ORDER BY created_at
+    `, [station]);
     
     await client.query('COMMIT');
     
-    const response = {
-      ...room,
-      joined_users: roomUsersResult.rows.map(ru => ({
-        id: ru.user_id,
-        name: ru.user_name,
-        station: ru.user_station,
-        wagon: ru.user_wagon,
-        color: ru.user_color,
-        colorCode: ru.user_color_code,
-        position: ru.user_position,
-        mood: ru.user_mood
-      }))
-    };
+    console.log(`✅ Пользователь ${user.name} присоединился к станции: ${station}`);
     
-    console.log(`✅ Пользователь ${user.name} присоединился к комнате: ${station}, вагон ${wagon}`);
-    res.json(response);
+    res.json({
+      success: true,
+      station: station,
+      users: stationUsersResult.rows,
+      totalUsers: stationUsersResult.rows.length
+    });
+    
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('❌ Ошибка присоединения к комнате:', error);
+    console.error('❌ Ошибка присоединения к станции:', error);
     res.status(500).json({ error: error.message });
   } finally {
     client.release();

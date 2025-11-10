@@ -1103,222 +1103,200 @@
             }
         }
 
-        // Новая функция для загрузки статистики станций в комнате ожидания
-        async function loadStationsWaitingRoom() {
-            try {
-                const response = await fetch(`${API_BASE}/stations/waiting-room?city=${selectedCity}`);
-                const stationsData = await response.json();
-                
-                stationsWaitingRoomContainer.innerHTML = '';
-                
-                if (stationsData.length === 0) {
-                    stationsWaitingRoomContainer.innerHTML = `
-                        <div class="no-requests">
-                            <p>Пока нет пользователей на станциях ${selectedCity === 'spb' ? 'Санкт-Петербурга' : 'Москвы'}</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                stationsData.forEach(station => {
-                    const stationCard = document.createElement('div');
-                    stationCard.className = 'station-card';
-                    
-                    stationCard.innerHTML = `
-                        <div class="station-header">
-                            <div class="station-name">${station.station}</div>
-                            <div class="total-count stat-number">${station.totalUsers}</div>
-                        </div>
-                        
-                        <div class="station-stats">
-                            <div class="stat-item">
-                                <div class="stat-number waiting-count">${station.waiting}</div>
-                                <div class="stat-label">Ожидают</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-number connected-count">${station.connected}</div>
-                                <div class="stat-label">Соединились</div>
-                            </div>
-                        </div>
-                        
-                        ${station.waiting > 0 ? `
-                        <button class="btn btn-success join-station-btn" data-station="${station.station}">
-                            Присоединиться к ожидающим (${station.waiting})
-                        </button>
-                        ` : ''}
-                    `;
-                    
-                    stationsWaitingRoomContainer.appendChild(stationCard);
-                });
-                
-                // Обработчики для кнопок присоединения к станциям
-                document.querySelectorAll('.join-station-btn').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const station = this.getAttribute('data-station');
-                        joinStation(station);
-                    });
-                });
-                
-            } catch (error) {
-                console.error('Ошибка загрузки статистики станций:', error);
-                stationsWaitingRoomContainer.innerHTML = `
-                    <div class="no-requests">
-                        <p>Ошибка загрузки данных станций</p>
-                    </div>
-                `;
-            }
+        // Обновленная функция загрузки статистики станций
+async function loadStationsWaitingRoom() {
+  try {
+    const response = await fetch(`${API_BASE}/stations/waiting-room?city=${selectedCity}`);
+    const stationsData = await response.json();
+    
+    stationsWaitingRoomContainer.innerHTML = '';
+    
+    if (stationsData.length === 0) {
+      stationsWaitingRoomContainer.innerHTML = `
+        <div class="no-requests">
+          <p>Пока нет пользователей на станциях ${selectedCity === 'spb' ? 'Санкт-Петербурга' : 'Москвы'}</p>
+          <p>Будьте первым - присоединитесь к любой станции!</p>
+        </div>
+      `;
+      return;
+    }
+    
+    // Сортируем станции: сначала с пользователями, потом пустые
+    const sortedStations = [...stationsData].sort((a, b) => {
+      if (b.totalUsers === 0 && a.totalUsers > 0) return -1;
+      if (a.totalUsers === 0 && b.totalUsers > 0) return 1;
+      return b.totalUsers - a.totalUsers;
+    });
+    
+    sortedStations.forEach(station => {
+      const stationCard = document.createElement('div');
+      stationCard.className = 'station-card';
+      
+      // Определяем тип кнопки в зависимости от количества пользователей
+      let buttonHtml = '';
+      if (station.totalUsers > 0) {
+        buttonHtml = `
+          <button class="btn btn-success join-station-btn" data-station="${station.station}">
+            Присоединиться к станции (${station.waiting} ожидают, ${station.connected} в группах)
+          </button>
+        `;
+      } else {
+        buttonHtml = `
+          <button class="btn btn-warning join-station-btn" data-station="${station.station}">
+            Стать первым на этой станции
+          </button>
+        `;
+      }
+      
+      stationCard.innerHTML = `
+        <div class="station-header">
+          <div class="station-name">${station.station}</div>
+          <div class="total-count stat-number">${station.totalUsers}</div>
+        </div>
+        
+        <div class="station-stats">
+          <div class="stat-item">
+            <div class="stat-number waiting-count">${station.waiting}</div>
+            <div class="stat-label">Ожидают</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number connected-count">${station.connected}</div>
+            <div class="stat-label">В группах</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number total-count">${station.totalUsers}</div>
+            <div class="stat-label">Всего</div>
+          </div>
+        </div>
+        
+        ${buttonHtml}
+      `;
+      
+      stationsWaitingRoomContainer.appendChild(stationCard);
+    });
+    
+    // Добавляем карточку для всех станций без пользователей
+    const allStations = stations[selectedCity];
+    const stationsWithUsers = new Set(stationsData.map(s => s.station));
+    const emptyStations = allStations.filter(station => !stationsWithUsers.has(station));
+    
+    if (emptyStations.length > 0) {
+      const emptyStationsCard = document.createElement('div');
+      emptyStationsCard.className = 'station-card';
+      emptyStationsCard.style.opacity = '0.7';
+      
+      emptyStationsCard.innerHTML = `
+        <div class="station-header">
+          <div class="station-name">Другие станции</div>
+          <div class="total-count stat-number">0</div>
+        </div>
+        
+        <div style="margin: 10px 0; font-size: 14px; color: #666;">
+          Ещё ${emptyStations.length} станций без пользователей
+        </div>
+        
+        <select class="empty-station-select" style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px;">
+          <option value="">Выберите станцию для присоединения</option>
+          ${emptyStations.map(station => `<option value="${station}">${station}</option>`).join('')}
+        </select>
+        
+        <button class="btn btn-warning join-empty-station-btn" style="width: 100%;">
+          Присоединиться к выбранной станции
+        </button>
+      `;
+      
+      stationsWaitingRoomContainer.appendChild(emptyStationsCard);
+      
+      // Обработчик для пустых станций
+      document.querySelector('.join-empty-station-btn').addEventListener('click', function() {
+        const select = document.querySelector('.empty-station-select');
+        const selectedStation = select.value;
+        if (selectedStation) {
+          joinStation(selectedStation);
+        } else {
+          alert('Пожалуйста, выберите станцию');
         }
+      });
+    }
+    
+    // Обработчики для кнопок присоединения к станциям
+    document.querySelectorAll('.join-station-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const station = this.getAttribute('data-station');
+        joinStation(station);
+      });
+    });
+    
+  } catch (error) {
+    console.error('Ошибка загрузки статистики станций:', error);
+    stationsWaitingRoomContainer.innerHTML = `
+      <div class="no-requests">
+        <p>Ошибка загрузки данных станций</p>
+        <button class="btn" onclick="loadStationsWaitingRoom()">Попробовать снова</button>
+      </div>
+    `;
+  }
+}
+// Функция пинга активности
+async function pingActivity() {
+  if (userId) {
+    try {
+      await fetch(`${API_BASE}/users/${userId}/ping`, {
+        method: 'POST'
+      });
+    } catch (error) {
+      console.error('Ошибка пинга активности:', error);
+    }
+  }
+}
 
-        // Функция присоединения к станции
-        async function joinStation(station) {
-            const users = await getUsers();
-            const waitingUsers = users.filter(user => 
-                user.station === station && 
-                user.is_waiting === true &&
-                user.city === selectedCity
-            );
-            
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0,0,0,0.5);
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                z-index: 1000;
-            `;
-            
-            modal.innerHTML = `
-                <div style="
-                    background: white;
-                    padding: 25px;
-                    border-radius: 15px;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-                    max-width: 500px;
-                    width: 90%;
-                    max-height: 80vh;
-                    overflow: hidden;
-                    display: flex;
-                    flex-direction: column;
-                ">
-                    <h3 style="color: #0057b8; margin-bottom: 15px;">Присоединение к станции</h3>
-                    
-                    <div style="margin-bottom: 20px;">
-                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 10px;">
-                            Станция: ${station}
-                        </div>
-                        <div style="font-size: 16px; color: #666; margin-bottom: 15px;">
-                            Город: ${selectedCity === 'spb' ? 'Санкт-Петербург' : 'Москва'}
-                        </div>
-                    </div>
-                    
-                    <div class="join-stats">
-                        <div class="join-stats-label">Сейчас ожидают на станции</div>
-                        <div class="join-stats-count">${waitingUsers.length}</div>
-                        <div class="join-stats-text">человек</div>
-                    </div>
-                    
-                    <div class="join-modal-content" style="flex: 1; overflow-y: auto; margin: 15px 0;">
-                        ${waitingUsers.length > 0 ? `
-                        <div style="text-align: left;">
-                            <div style="font-size: 14px; color: #666; margin-bottom: 10px;">Ожидающие пользователи:</div>
-                            ${waitingUsers.map(user => `
-                                <div class="user-state-display">
-                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${user.color_code || '#007bff'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: bold;">
-                                        ${user.name.charAt(0)}
-                                    </div>
-                                    <div class="user-state-info">
-                                        <div class="user-state-name">${user.name}</div>
-                                        <div class="user-state-details">
-                                            ${user.status || 'Статус не указан'}
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                        ` : `
-                        <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; text-align: center;">
-                            <div style="font-size: 16px; color: #666; margin-bottom: 10px;">Будьте первым на этой станции!</div>
-                            <div style="font-size: 14px; color: #888;">Другие пользователи смогут присоединиться к вам</div>
-                        </div>
-                        `}
-                    </div>
-                    
-                    <div style="margin-top: auto;">
-                        <button id="confirm-join-station" style="
-                            background: linear-gradient(to right, #28a745, #20c997);
-                            color: white;
-                            border: none;
-                            padding: 12px 30px;
-                            border-radius: 8px;
-                            font-size: 16px;
-                            font-weight: 600;
-                            cursor: pointer;
-                            width: 100%;
-                            margin-top: 10px;
-                        ">
-                            Присоединиться к станции
-                        </button>
-                        
-                        <button id="close-modal" style="
-                            background: none;
-                            border: 1px solid #ddd;
-                            color: #666;
-                            padding: 12px 30px;
-                            border-radius: 8px;
-                            font-size: 16px;
-                            cursor: pointer;
-                            width: 100%;
-                            margin-top: 10px;
-                        ">
-                            Отмена
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            
-            modal.querySelector('#confirm-join-station').addEventListener('click', async function() {
-                try {
-                    // Обновляем пользователя - присоединяемся к станции
-                    await updateUser(userId, { 
-                        status: 'Ожидание на станции',
-                        station: station,
-                        is_waiting: true,
-                        is_connected: false
-                    });
-                    
-                    currentGroup = {
-                        station: station,
-                        members: waitingUsers
-                    };
-                    
-                    // Перезагружаем данные
-                    loadStationsWaitingRoom();
-                    loadRequests();
-                    
-                    document.body.removeChild(modal);
-                } catch (error) {
-                    console.error('Ошибка при присоединении к станции:', error);
-                    alert('Ошибка при присоединении к станции');
-                }
-            });
-            
-            modal.querySelector('#close-modal').addEventListener('click', function() {
-                document.body.removeChild(modal);
-            });
-            
-            modal.addEventListener('click', function(e) {
-                if (e.target === modal) {
-                    document.body.removeChild(modal);
-                }
-            });
-        }
+// Пинг каждые 30 секунд
+setInterval(pingActivity, 30 * 1000);
+
+// Также пингуем при любом действии пользователя
+document.addEventListener('click', pingActivity);
+document.addEventListener('keypress', pingActivity);
+// Обновленная функция присоединения к станции
+async function joinStation(station) {
+  try {
+    const response = await fetch(`${API_BASE}/rooms/join-station`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: userId,
+        station: station
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Ошибка присоединения к станции');
+    }
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      // Успешно присоединились к станции
+      currentGroup = {
+        station: station,
+        users: result.users
+      };
+      
+      // Переходим на экран присоединенной комнаты
+      waitingRoomScreen.classList.remove('active');
+      joinedRoomScreen.classList.add('active');
+      
+      // Загружаем участников группы
+      loadGroupMembers();
+      
+      console.log(`✅ Успешно присоединились к станции ${station}`);
+    }
+    
+  } catch (error) {
+    console.error('Ошибка при присоединении к станции:', error);
+    alert('Ошибка при присоединении к станции: ' + error.message);
+  }
+}
 
         // Функция загрузки запросов
         async function loadRequests() {

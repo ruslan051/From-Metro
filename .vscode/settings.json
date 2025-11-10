@@ -1,23 +1,67 @@
 {
-  // Автосохранение
   "files.autoSave": "afterDelay",
   "files.autoSaveDelay": 1000,
   
-  // Git автоматизация
-  "git.enableSmartCommit": true,
-  "git.smartCommitChanges": "all",
+  // Настройки Auto Commit расширения
+  "autoCommit.enable": true,
+  "autoCommit.autoPush": true,
+  "autoCommit.autoPull": false,
+  "autoCommit.delay": 5000,
+  "autoCommit.message": "Auto-sync: {timestamp}",
+  
+  // Отключение подтверждений
   "git.confirmSync": false,
-  "git.postCommitCommand": "push",
-  "git.autofetch": true,
-  "git.autofetchPeriod": 10,
-  
-  // Отключение всех подтверждений
-  "git.showPushSuccessNotification": false,
-  "git.confirmNoCommitCommit": false,
-  "git.confirmEmptyCommit": false,
-  "git.confirmForcePush": false,
-  "git.confirmDiscard": false,
-  
-  // Отключение предупреждений
-  "git.decorations.enabled": false
+"git.enableSmartCommit": true,
+"gaac.forceLowerCase": false,
+"gaac.replacePatternWith": [
+    
+    {
+        "pattern": "/^.editorconfig/",
+        "with": "editorconfig"
+    },
+    {
+        "pattern": "/^.gitignore/",
+        "with": "git"
+    },
+    {
+        "pattern": "/^.travis/",
+        "with": "travis"
+    },
+    {
+        "pattern": "/^.vscodeignore/",
+        "with": "vscode"
+    },
+    {
+        "pattern": "/^CHANGELOG[^:]*/",
+        "with": "changelog"
+    },
+    {
+        "pattern": "/^Godeps[^:]*/",
+        "with": "godep"
+    },
+    {
+        "pattern": "/^LICENSE[^:]*/",
+        "with": "license"
+    },
+    {
+        "pattern": "/^Makefile[^:]*/i",
+        "with": "makefile"
+    },
+    {
+        "pattern": "/^(npm-shrinkwrap|.npmignore|package(-lock)?)[^:]*/",
+        "with": "npm"
+    },
+    {
+        "pattern": "/^webpack[^:]*/",
+        "with": "webpack"
+    },
+    {
+        "pattern": "/^README[^:]*/",
+        "with": "readme"
+    },
+    {
+        "pattern": "/^src//",
+        "with": ""
+    }
+]
 }

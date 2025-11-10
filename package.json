@@ -1,16 +1,16 @@
 {
-  "name": "iz-metro-app",
+  "name": "metro-backend",
   "version": "1.0.0",
-  "description": "Приложение для помощи пассажирам метро Санкт-Петербурга",
-  "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js"
   },
-  "keywords": ["metro", "petersburg", "chat", "vk-play"],
-  "author": "Your Name",
-  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18"
   }
 }

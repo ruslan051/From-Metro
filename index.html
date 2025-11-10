@@ -692,6 +692,269 @@
             .state-icon {
                 font-size: 20px;
             }
+.station-header-card {
+    background: linear-gradient(135deg, #0057b8, #003d82);
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    margin: 15px 0 10px 0;
+}
+
+.station-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.user-count-badge {
+    background: rgba(255,255,255,0.2);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.user-info-compact {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar-small {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: #0057b8;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.user-status {
+    font-size: 12px;
+    color: #666;
+}
+
+.request-card {
+    margin-bottom: 10px;
+}
+            /* Стили для интерактивной карты */
+.stations-map-container {
+    margin: 20px 0;
+    padding: 20px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.map-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.map-legend {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.legend-color.connected {
+    background: #28a745;
+}
+
+.legend-color.waiting {
+    background: #ffc107;
+}
+
+.legend-color.empty {
+    background: #6c757d;
+}
+
+.city-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.city-filter select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.metro-map {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    background: #f8f9fa;
+}
+
+.station-map-item {
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 2px solid transparent;
+    text-align: center;
+    background: white;
+}
+
+.station-map-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.station-map-item.connected {
+    border-color: #28a745;
+    background: #d4edda;
+}
+
+.station-map-item.waiting {
+    border-color: #ffc107;
+    background: #fff3cd;
+}
+
+.station-map-item.empty {
+    border-color: #6c757d;
+    background: #f8f9fa;
+    opacity: 0.7;
+}
+
+.station-name {
+    font-weight: 600;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.station-counts {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    font-size: 11px;
+}
+
+.station-count {
+    padding: 2px 6px;
+    border-radius: 10px;
+    color: white;
+    font-weight: bold;
+}
+
+.count-waiting {
+    background: #ffc107;
+}
+
+.count-connected {
+    background: #28a745;
+}
+
+.station-details {
+    margin-top: 20px;
+    padding: 15px;
+    background: #e7f3ff;
+    border-radius: 10px;
+    border-left: 4px solid #007bff;
+}
+
+.station-stats-compact {
+    display: flex;
+    gap: 15px;
+    margin: 15px 0;
+    justify-content: center;
+}
+
+.stat-compact {
+    text-align: center;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+    min-width: 80px;
+}
+
+.stat-compact .stat-number {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stat-compact .stat-label {
+    font-size: 11px;
+    color: #666;
+}
+
+.users-list-section {
+    margin-top: 30px;
+    padding: 20px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+/* Увеличим частоту анимаций */
+.station-map-item, .request-card, .station-card {
+    transition: all 0.2s ease;
+}
+
+.refresh-info {
+    background: #e7f1ff;
+    color: #0057b8;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    text-align: center;
+    margin: 10px 0;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+    .metro-map {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        max-height: 300px;
+    }
+    
+    .map-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .map-legend {
+        justify-content: center;
+    }
+    
+    .station-stats-compact {
+        flex-wrap: wrap;
+    }
+}
         }
     </style>
 </head>
@@ -798,35 +1061,71 @@
                 </button>
                 
                 <h2>Комната ожидания</h2>
-                <p>Просматривайте активные станции и присоединяйтесь к группам</p>
+                <p>Выберите станцию на карте для присоединения</p>
                 
-                <!-- Обновленная статистика по станциям -->
-                <div class="stations-overview">
-                    <h3>📊 Статистика по станциям</h3>
+                <!-- Интерактивная карта станций -->
+                <div class="stations-map-container">
+                    <h3>🗺️ Карта станций метро</h3>
                     <div class="refresh-info">
-                        🔄 Данные обновляются автоматически каждые 5 секунд
+                        🔄 Данные обновляются каждые 2 секунды
                     </div>
-                    <div id="stations-waiting-room">
-                        <div class="loading">Загрузка статистики станций...</div>
+                    
+                    <div class="map-controls">
+                        <div class="map-legend">
+                            <div class="legend-item">
+                                <div class="legend-color connected"></div>
+                                <span>Соединились: 1+</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color waiting"></div>
+                                <span>Ожидают: 1+</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color empty"></div>
+                                <span>Свободно</span>
+                            </div>
+                        </div>
+                        <div class="city-filter">
+                            <label>Город:</label>
+                            <select id="city-filter-select">
+                                <option value="spb" selected>Санкт-Петербург</option>
+                                <option value="moscow">Москва</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="metro-map" id="metro-map">
+                        <div class="loading">Загрузка карты станций...</div>
+                    </div>
+                    
+                    <div class="station-details" id="station-details" style="display: none;">
+                        <h4 id="selected-station-name"></h4>
+                        <div class="station-stats-compact">
+                            <div class="stat-compact">
+                                <div class="stat-number" id="stat-waiting">0</div>
+                                <div class="stat-label">Ожидают</div>
+                            </div>
+                            <div class="stat-compact">
+                                <div class="stat-number" id="stat-connected">0</div>
+                                <div class="stat-label">Соединились</div>
+                            </div>
+                            <div class="stat-compact">
+                                <div class="stat-number" id="stat-total">0</div>
+                                <div class="stat-label">Всего</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-success" id="join-selected-station">
+                            Присоединиться к станции
+                        </button>
                     </div>
                 </div>
                 
-                <div class="status-selector">
-                    <label>Ваш текущий статус:</label>
-                    <select id="status-select" class="status-dropdown">
-                        <option value="Ожидание" selected>Ожидание</option>
-                        <option value="Спускаюсь на эскалаторе">Спускаюсь на эскалаторе</option>
-                        <option value="Жду на станции">Жду на станции</option>
-                        <option value="В вагоне, поезд стоит">В вагоне, поезд стоит</option>
-                        <option value="В вагоне, поезд в пути">В вагоне, поезд в пути</option>
-                        <option value="Готовлюсь выйти из поезда">Готовлюсь выйти из поезда</option>
-                        <option value="Поднимаюсь на эскалаторе">Поднимаюсь на эскалаторе</option>
-                    </select>
-                </div>
-                
-                <h3 style="margin-top: 20px;">👥 Активные пользователи</h3>
-                <div class="requests-container" id="requests-container">
-                    <div class="loading">Загрузка пользователей...</div>
+                <!-- Список пользователей -->
+                <div class="users-list-section">
+                    <h3>👥 Активные пользователи</h3>
+                    <div class="requests-container" id="requests-container">
+                        <div class="loading">Загрузка пользователей...</div>
+                    </div>
                 </div>
             </div>
 
@@ -987,6 +1286,8 @@
         let currentPosition = '';
         let currentMood = '';
         let currentGroup = null;
+        let currentSelectedStation = null;
+        let stationsData = [];
 
         // Инициализация станций метро
         function initializeStations() {
@@ -1067,6 +1368,286 @@
             }
         }
 
+
+        // Обновленная функция загрузки карты станций
+async function loadStationsMap() {
+    try {
+        const response = await fetch(`${API_BASE}/stations/waiting-room?city=${selectedCity}`);
+        stationsData = await response.json();
+        
+        const metroMap = document.getElementById('metro-map');
+        metroMap.innerHTML = '';
+        
+        // Получаем все станции для выбранного города
+        const allStations = stations[selectedCity];
+        
+        // Создаем карту существующих данных по станциям
+        const stationsMap = {};
+        stationsData.forEach(station => {
+            stationsMap[station.station] = station;
+        });
+        
+        // Создаем элементы карты для всех станций
+        allStations.forEach(stationName => {
+            const stationData = stationsMap[stationName];
+            const stationElement = document.createElement('div');
+            stationElement.className = 'station-map-item';
+            
+            let userCount = 0;
+            let waitingCount = 0;
+            let connectedCount = 0;
+            let stationClass = 'empty';
+            
+            if (stationData) {
+                userCount = stationData.totalUsers;
+                waitingCount = stationData.waiting;
+                connectedCount = stationData.connected;
+                
+                if (connectedCount > 0) {
+                    stationClass = 'connected';
+                } else if (waitingCount > 0) {
+                    stationClass = 'waiting';
+                }
+            }
+            
+            stationElement.classList.add(stationClass);
+            stationElement.setAttribute('data-station', stationName);
+            
+            stationElement.innerHTML = `
+                <div class="station-name">${stationName}</div>
+                ${userCount > 0 ? `
+                    <div class="station-counts">
+                        ${waitingCount > 0 ? `<span class="station-count count-waiting">${waitingCount}⏳</span>` : ''}
+                        ${connectedCount > 0 ? `<span class="station-count count-connected">${connectedCount}✅</span>` : ''}
+                    </div>
+                ` : '<div style="font-size: 10px; color: #666;">Свободно</div>'}
+            `;
+            
+            stationElement.addEventListener('click', () => selectStation(stationName, stationData));
+            metroMap.appendChild(stationElement);
+        });
+        
+    } catch (error) {
+        console.error('Ошибка загрузки карты станций:', error);
+        document.getElementById('metro-map').innerHTML = `
+            <div class="no-requests">
+                <p>Ошибка загрузки карты</p>
+                <button class="btn" onclick="loadStationsMap()">Попробовать снова</button>
+            </div>
+        `;
+    }
+}
+
+// Функция выбора станции на карте
+function selectStation(stationName, stationData) {
+    currentSelectedStation = stationName;
+    
+    // Снимаем выделение со всех станций
+    document.querySelectorAll('.station-map-item').forEach(item => {
+        item.style.borderWidth = '2px';
+    });
+    
+    // Выделяем выбранную станцию
+    const selectedElement = document.querySelector(`[data-station="${stationName}"]`);
+    if (selectedElement) {
+        selectedElement.style.borderWidth = '4px';
+    }
+    
+    // Показываем детали станции
+    const detailsPanel = document.getElementById('station-details');
+    const stationNameElement = document.getElementById('selected-station-name');
+    const statWaiting = document.getElementById('stat-waiting');
+    const statConnected = document.getElementById('stat-connected');
+    const statTotal = document.getElementById('stat-total');
+    
+    stationNameElement.textContent = stationName;
+    
+    if (stationData) {
+        statWaiting.textContent = stationData.waiting;
+        statConnected.textContent = stationData.connected;
+        statTotal.textContent = stationData.totalUsers;
+    } else {
+        statWaiting.textContent = '0';
+        statConnected.textContent = '0';
+        statTotal.textContent = '0';
+    }
+    
+    detailsPanel.style.display = 'block';
+    
+    // Прокручиваем к деталям станции
+    detailsPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// Обработчик присоединения к выбранной станции
+document.getElementById('join-selected-station').addEventListener('click', function() {
+    if (currentSelectedStation) {
+        joinStation(currentSelectedStation);
+    } else {
+        alert('Пожалуйста, выберите станцию на карте');
+    }
+});
+
+// Обработчик фильтра по городу
+document.getElementById('city-filter-select').addEventListener('change', function() {
+    selectedCity = this.value;
+    loadStationsMap();
+    loadRequests();
+});
+
+// Обновленная функция загрузки запросов (пользователей)
+async function loadRequests() {
+    const users = await getUsers();
+    requestsContainer.innerHTML = '';
+    
+    // Фильтруем пользователей по городу и статусу
+    const filteredUsers = users.filter(user => 
+        user.city === selectedCity && 
+        user.online === true
+    );
+    
+    if (filteredUsers.length === 0) {
+        requestsContainer.innerHTML = `
+            <div class="no-requests">
+                <h3>Пока нет пользователей на станциях ${selectedCity === 'spb' ? 'Санкт-Петербурга' : 'Москвы'}</h3>
+                <p>Будьте первым - выберите станцию на карте выше!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Группируем пользователей по станциям
+    const usersByStation = {};
+    filteredUsers.forEach(user => {
+        if (!usersByStation[user.station]) {
+            usersByStation[user.station] = [];
+        }
+        usersByStation[user.station].push(user);
+    });
+    
+    // Сортируем станции по количеству пользователей
+    const sortedStations = Object.keys(usersByStation).sort((a, b) => 
+        usersByStation[b].length - usersByStation[a].length
+    );
+    
+    sortedStations.forEach(station => {
+        const stationUsers = usersByStation[station];
+        
+        const stationHeader = document.createElement('div');
+        stationHeader.className = 'station-header-card';
+        stationHeader.innerHTML = `
+            <div class="station-title">
+                <strong>${station}</strong>
+                <span class="user-count-badge">${stationUsers.length} пользователей</span>
+            </div>
+        `;
+        requestsContainer.appendChild(stationHeader);
+        
+        stationUsers.forEach(user => {
+            const requestCard = document.createElement('div');
+            requestCard.className = 'request-card';
+            const isCurrentUser = userId && user.id === userId;
+            
+            requestCard.innerHTML = `
+                <div class="request-header">
+                    <div class="user-info-compact">
+                        <div class="user-avatar-small">${user.name.charAt(0)}</div>
+                        <div class="user-details">
+                            <div class="user-name">${user.name} ${isCurrentUser ? '(Вы)' : ''}</div>
+                            <div class="user-status">
+                                <span class="color-indicator" style="background-color: ${user.color_code || '#007bff'}"></span>
+                                ${user.color} • ${user.status}
+                            </div>
+                        </div>
+                    </div>
+                    ${user.wagon && user.wagon !== 'Не указан' ? `<div class="wagon">Вагон ${user.wagon}</div>` : ''}
+                </div>
+                
+                ${user.position ? `<div class="status-info"><strong>Позиция:</strong> ${user.position}</div>` : ''}
+                ${user.mood ? `<div class="status-info"><strong>Настроение:</strong> ${user.mood}</div>` : ''}
+                
+                <div class="user-connections">
+                    <div class="connections-count">
+                        ${user.is_waiting ? '⏳ Ожидает присоединения' : '✅ Соединился с другими'}
+                    </div>
+                </div>
+                
+                ${!isCurrentUser && user.is_waiting ? `
+                <button class="btn btn-success join-btn" data-user-id="${user.id}" data-station="${user.station}" data-wagon="${user.wagon}">
+                    Присоединиться к ${user.name}
+                </button>
+                ` : ''}
+            `;
+            
+            requestsContainer.appendChild(requestCard);
+        });
+    });
+    
+    // Обработчики для кнопок присоединения
+    document.querySelectorAll('.join-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetUserId = this.getAttribute('data-user-id');
+            const station = this.getAttribute('data-station');
+            const wagon = this.getAttribute('data-wagon');
+            joinUser(targetUserId, station, wagon);
+        });
+    });
+}
+
+// Увеличиваем частоту обновления до 2 секунд
+function startAutoRefresh() {
+    // Обновляем карту каждые 2 секунды
+    setInterval(() => {
+        loadStationsMap();
+    }, 2000);
+    
+    // Обновляем список пользователей каждые 3 секунды
+    setInterval(() => {
+        loadRequests();
+    }, 3000);
+    
+    // Пинг активности каждые 20 секунд
+    setInterval(pingActivity, 20000);
+}
+
+// Инициализация при загрузке
+window.addEventListener('load', function() {
+    initializeStations();
+    document.querySelector('.timer-option[data-minutes="5"]').classList.add('active');
+    
+    // Инициализируем фильтр городов
+    document.getElementById('city-filter-select').value = selectedCity;
+    
+    console.log('🚇 Приложение "Из метро" инициализировано');
+    console.log('🔄 Автообновление каждые 2-3 секунды');
+    
+    // Запускаем автообновление после входа в комнату ожидания
+    if (waitingRoomScreen.classList.contains('active')) {
+        startAutoRefresh();
+    }
+});
+
+// Запускаем автообновление при переходе в комнату ожидания
+// Добавьте этот код в обработчик успешного создания пользователя
+setupForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    // ... существующий код создания пользователя ...
+    
+    if (createdUser) {
+        currentUser = createdUser;
+        userId = createdUser.id;
+        
+        setupScreen.classList.remove('active');
+        waitingRoomScreen.classList.add('active');
+        
+        // Загружаем карту и пользователей
+        loadStationsMap();
+        loadRequests();
+        
+        // Запускаем автообновление
+        startAutoRefresh();
+    }
+});
         async function getUsers() {
             try {
                 const response = await fetch(`${API_BASE}/users`);

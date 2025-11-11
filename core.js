@@ -1,6 +1,11 @@
 // Глобальные флаги для проверки загрузки модулей
 window.optionalModulesLoaded = false;
 window.optionalModulesLoading = false;
+// Глобальные переменные для индикатора
+let usersIndicator = null;
+let usersIndicatorCount = null;
+let usersIndicatorTooltip = null;
+
 // Текущий пользователь и состояние
 let currentUser = null;
 let timerInterval = null;
@@ -35,7 +40,87 @@ function getElementSafe(id) {
     }
     return element;
 }
-
+function initializeUsersIndicator() {
+    usersIndicator = document.getElementById('users-indicator');
+    if (!usersIndicator) {
+        console.warn('❌ Индикатор пользователей не найден');
+        return;
+    }
+    
+    usersIndicatorCount = usersIndicator.querySelector('.indicator-count');
+    usersIndicatorTooltip = usersIndicator.querySelector('.indicator-tooltip');
+    
+    console.log('✅ Индикатор пользователей инициализирован');
+}
+// Функция обновления индикатора пользователей
+async function updateUsersIndicator() {
+    if (!usersIndicator || !usersIndicatorCount || !usersIndicatorTooltip) {
+        return;
+    }
+    
+    try {
+        const users = await getUsers();
+        
+        // Фильтруем только онлайн пользователей в выбранном городе
+        const onlineUsers = users.filter(user => 
+            user.online === true && 
+            user.city === selectedCity
+        );
+        
+        const totalUsers = onlineUsers.length;
+        
+        // Обновляем счетчик
+        usersIndicatorCount.textContent = totalUsers;
+        
+        // Обновляем подсказку с детальной информацией
+        if (totalUsers === 0) {
+            usersIndicatorTooltip.textContent = 'Нет активных пользователей';
+            usersIndicator.classList.remove('active');
+        } else {
+            // Группируем по станциям
+            const usersByStation = {};
+            onlineUsers.forEach(user => {
+                if (!usersByStation[user.station]) {
+                    usersByStation[user.station] = [];
+                }
+                usersByStation[user.station].push(user);
+            });
+            
+            // Сортируем станции по количеству пользователей
+            const sortedStations = Object.keys(usersByStation)
+                .filter(station => station) // убираем пустые станции
+                .sort((a, b) => usersByStation[b].length - usersByStation[a].length)
+                .slice(0, 5); // показываем топ-5 станций
+            
+            let tooltipText = `Всего: ${totalUsers} пользователей\n`;
+            
+            if (sortedStations.length > 0) {
+                tooltipText += '\nТоп станций:\n';
+                sortedStations.forEach(station => {
+                    const count = usersByStation[station].length;
+                    tooltipText += `• ${station}: ${count}\n`;
+                });
+                
+                if (Object.keys(usersByStation).length > 5) {
+                    tooltipText += `... и еще ${Object.keys(usersByStation).length - 5} станций`;
+                }
+            } else {
+                tooltipText += '\nПользователи в режиме ожидания';
+            }
+            
+            usersIndicatorTooltip.textContent = tooltipText;
+            usersIndicator.classList.add('active');
+        }
+        
+        console.log(`👥 Индикатор обновлен: ${totalUsers} пользователей`);
+        
+    } catch (error) {
+        console.error('❌ Ошибка обновления индикатора:', error);
+        usersIndicatorCount.textContent = '?';
+        usersIndicatorTooltip.textContent = 'Ошибка загрузки данных';
+        usersIndicator.classList.remove('active');
+    }
+}
 // Инициализация основных DOM элементов
 function initializeCoreDOMElements() {
     console.log('🔧 Инициализация основных DOM элементов...');
@@ -398,7 +483,8 @@ function startGlobalRefresh() {
     
     globalRefreshInterval = setInterval(async () => {
         console.log('🔄 Глобальное обновление данных...');
-        
+        // ВСЕГДА обновляем индикатор пользователей независимо от страницы
+        await updateUsersIndicator(); 
         if (setupScreen && setupScreen.classList.contains('active')) {
             // На первом экране ничего не обновляем
         } else if (waitingRoomScreen && waitingRoomScreen.classList.contains('active')) {
@@ -474,6 +560,8 @@ function showSetup() {
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
     setupScreen.classList.add('active');
     stopGlobalRefresh();
+      // Но индикатор продолжаем обновлять
+    updateUsersIndicator();
 }
 
 function showWaitingRoom() {
@@ -534,6 +622,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Инициализируем основные DOM элементы
     initializeCoreDOMElements();
+        // Инициализируем индикатор пользователей
+    initializeUsersIndicator();
+ // Первоначальное обновление индикатора
+    setTimeout(() => {
+        updateUsersIndicator();
+    }, 1000);
     
     // Инициализация основных обработчиков
     if (enterWaitingRoomBtn) {

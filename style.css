@@ -925,6 +925,99 @@ footer {
         font-size: 13px;
     }
 }
+
+/* Стили для индикатора пользователей в шапке */
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.users-indicator {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.users-indicator:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+.users-indicator.active {
+    background: rgba(40, 167, 69, 0.2);
+    border-color: #28a745;
+}
+
+.indicator-icon {
+    font-size: 16px;
+    margin-right: 6px;
+}
+
+.indicator-count {
+    font-weight: bold;
+    font-size: 14px;
+    color: #fff;
+    background: #007bff;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.indicator-tooltip {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 5px;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.users-indicator:hover .indicator-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .header-top {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .users-indicator {
+        align-self: flex-end;
+        margin-top: -40px;
+    }
+}
+
+@media (max-width: 480px) {
+    .users-indicator {
+        position: static;
+        margin-top: 10px;
+        align-self: center;
+    }
+}
 @media (max-width: 768px) 
 {
     .metro-map {

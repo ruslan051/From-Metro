@@ -30,6 +30,15 @@ const waitingTimerOptions = document.querySelectorAll('#waiting-timer-expanded .
 if (!waitingTimer || !waitingTimerDisplay) {
     console.warn('❌ Некоторые элементы таймера не найдены');
 }
+// Проверка существования элементов таймера
+console.log('🔍 Проверка элементов таймера:');
+console.log('startTimerBtn:', startTimerBtn);
+console.log('stopTimerBtn:', stopTimerBtn);
+console.log('timerDisplay:', timerDisplay);
+console.log('compactTimer:', compactTimer);
+if (!startTimerBtn || !stopTimerBtn) {
+    console.warn('❌ Элементы таймера не найдены. Возможно, они на другой странице.');
+}
 
 // Станции метро
 const stations = {
@@ -81,15 +90,6 @@ const cityFilterSelect = document.getElementById('city-filter-select');
 const joinSelectedStationBtn = document.getElementById('join-selected-station');
 const stationDetails = document.getElementById('station-details');
 
-// Проверка существования элементов таймера
-console.log('🔍 Проверка элементов таймера:');
-console.log('startTimerBtn:', startTimerBtn);
-console.log('stopTimerBtn:', stopTimerBtn);
-console.log('timerDisplay:', timerDisplay);
-console.log('compactTimer:', compactTimer);
-if (!startTimerBtn || !stopTimerBtn) {
-    console.warn('❌ Элементы таймера не найдены. Возможно, они на другой странице.');
-}
 
 async function handleEnterWaitingRoom() {
     console.log('🚪 Вход в комнату ожидания');

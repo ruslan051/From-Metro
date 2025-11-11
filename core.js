@@ -56,7 +56,8 @@ function initializeCoreDOMElements() {
 }
 
 // Основные обработчики событий
-async function handleEnterWaitingRoom() {
+async function handleEnterWaitingRoom() 
+{
     console.log('🚪 Вход в комнату ожидания');
     
     const getRandomName = (gender) => {
@@ -82,9 +83,11 @@ async function handleEnterWaitingRoom() {
         isWaiting: true,
         isConnected: false
     };
-    
+      console.log('📍 Данные для создания пользователя:', userData);
+
     try {
-        const createdUser = await createUser(userData);
+       const validatedData = validateUserData(userData);
+  const createdUser = await createUser(validatedData);
         
         if (createdUser) {
             currentUser = createdUser;
@@ -103,9 +106,24 @@ async function handleEnterWaitingRoom() {
             console.log('✅ Пользователь создан:', createdUser.name);
         }
     } catch (error) {
+          console.error('❌ Ошибка валидации:', error);
+
         alert(error.message || 'Ошибка создания профиля. Проверьте подключение к серверу.');
     }
+    
+    // Показываем понятное сообщение об ошибке
+    const errorMessage = error.message.includes('Failed to fetch') 
+      ? 'Ошибка подключения к серверу. Проверьте интернет-соединение.'
+      : `Ошибка создания профиля: ${error.message}`;
+    
+    alert(errorMessage);
+     // Показываем кнопку для повторной попытки
+    const retry = confirm('Не удалось подключиться к серверу. Попробовать снова?');
+    if (retry) {
+      handleEnterWaitingRoom();
+    }
 }
+
 
 function handleBackToSetup() {
     console.log('🔙 Назад к настройкам');
@@ -180,6 +198,23 @@ async function handleConfirmStation() {
     }
 }
 
+function validateUserData(userData) {
+  const required = ['name', 'city', 'gender'];
+  const missing = required.filter(field => !userData[field]);
+  
+  if (missing.length > 0) {
+    throw new Error(`Отсутствуют обязательные поля: ${missing.join(', ')}`);
+  }
+  
+  return {
+    ...userData,
+    name: userData.name.trim() || 'Аноним',
+    station: userData.station || '',
+    wagon: userData.wagon || '',
+    color: userData.color || 'Синий',
+    status: userData.status || 'Ожидание'
+  };
+}
 async function handleLeaveGroup() {
     console.log('🚪 Покидаем группу');
       // СБРАСЫВАЕМ СОСТОЯНИЯ ПРИ ВЫХОДЕ ИЗ ГРУППЫ
@@ -231,23 +266,68 @@ function initializeCityAndGenderSelection() {
 
 // Основные функции API
 async function createUser(userData) {
-    try {
-        const response = await fetch(`${API_BASE}/users`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(userData)
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка создания пользователя');
-        }
-        
-        return await response.json();
-    } catch (error) {
-        console.error('Ошибка создания пользователя:', error);
-        throw error;
+  try {
+    console.log('📍 Отправка данных пользователя:', userData);
+    
+    const response = await fetch(`${API_BASE}/users`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(userData)
+    });
+    
+    console.log('📍 Статус ответа:', response.status);
+    
+    if (!response.ok) {
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+        console.error('📍 Детали ошибки от сервера:', errorData);
+      } catch (e) {
+        console.error('📍 Не удалось прочитать тело ошибки');
+      }
+      
+      throw new Error(errorMessage);
     }
+    
+    const result = await response.json();
+    console.log('✅ Пользователь создан успешно:', result);
+    return result;
+    
+  } catch (error) {
+    console.error('❌ Ошибка создания пользователя:', error);
+    
+    // Fallback: сохраняем данные локально
+    const fallbackUser = {
+      id: Date.now(),
+      name: userData.name || 'Аноним',
+      station: userData.station || '',
+      wagon: userData.wagon || '',
+      color: userData.color || 'Синий',
+      color_code: userData.colorCode || getRandomColor(),
+      status: userData.status || 'Ожидание',
+      city: userData.city || 'spb',
+      gender: userData.gender || 'male',
+      online: true,
+      isFallback: true
+    };
+    
+    // Сохраняем в localStorage
+    try {
+      const localUsers = JSON.parse(localStorage.getItem('metroUsers') || '[]');
+      localUsers.push(fallbackUser);
+      localStorage.setItem('metroUsers', JSON.stringify(localUsers));
+      console.log('✅ Пользователь сохранен локально');
+    } catch (e) {
+      console.error('❌ Ошибка локального сохранения:', e);
+    }
+    
+    return fallbackUser;
+  }
 }
 
 async function getUsers() {

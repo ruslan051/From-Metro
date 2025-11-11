@@ -1,3 +1,12 @@
+// Логирование всех входящих запросов
+app.use((req, res, next) => {
+  console.log(`📍 ${new Date().toISOString()} ${req.method} ${req.path}`);
+  console.log('📍 Headers:', req.headers);
+  console.log('📍 Body:', req.body);
+  next();
+});
+
+
 import express from 'express';
 import cors from 'cors';
 import pkg from 'pg';
@@ -463,7 +472,7 @@ app.get('/api/stations/waiting-room', async (req, res) => {
   }
 });
 
-// Создание нового пользователя
+// Создание нового пользователя - ИСПРАВЛЕННАЯ ВЕРСИЯ
 app.post('/api/users', async (req, res) => {
   const client = await pool.connect();
   try {
@@ -474,7 +483,17 @@ app.post('/api/users', async (req, res) => {
     const userAgent = req.get('User-Agent') || 'unknown';
     const sessionId = generateSessionId(req);
     
-    console.log(`📍 Новый пользователь с IP: ${clientIp}, User-Agent: ${userAgent.substring(0, 50)}...`);
+    console.log('📍 Данные нового пользователя:', userData);
+    console.log(`📍 IP: ${clientIp}, User-Agent: ${userAgent.substring(0, 50)}...`);
+    
+    // ВАЖНО: Проверяем обязательные поля
+    if (!userData || !userData.name) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        error: 'Отсутствуют обязательные данные пользователя',
+        receivedData: userData
+      });
+    }
     
     const sessionCheck = await checkExistingSessions(client, clientIp, userAgent, sessionId);
     
@@ -485,43 +504,77 @@ app.post('/api/users', async (req, res) => {
       });
     }
     
+    // Убедимся, что все обязательные поля есть
+    const userRecord = {
+      name: userData.name || 'Аноним',
+      station: userData.station || '',
+      wagon: userData.wagon || null,
+      color: userData.color || 'Синий',
+      color_code: userData.colorCode || getRandomColor(),
+      status: userData.status || 'Ожидание',
+      timer: userData.timer || '00:00',
+      timer_total: userData.timerTotal || 0,
+      city: userData.city || 'spb',
+      gender: userData.gender || 'male',
+      ip_address: clientIp,
+      position: userData.position || '',
+      mood: userData.mood || '',
+      last_activity: new Date(),
+      user_agent: userAgent,
+      session_id: sessionId,
+      is_waiting: true,
+      is_connected: false,
+      online: true
+    };
+    
     const result = await client.query(
       `INSERT INTO users (
         name, station, wagon, color, color_code, status, timer, timer_total, 
         city, gender, ip_address, position, mood, last_activity, user_agent, session_id,
-        is_waiting, is_connected
+        is_waiting, is_connected, online
       ) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) 
        RETURNING *`,
       [
-        userData.name,
-        userData.station,
-        userData.wagon || null,
-        userData.color,
-        userData.colorCode || getRandomColor(),
-        userData.status || 'Ожидание',
-        userData.timer || '00:00',
-        userData.timerTotal || 0,
-        userData.city || 'spb',
-        userData.gender || 'male',
-        clientIp,
-        userData.position || '',
-        userData.mood || '',
-        new Date(),
-        userAgent,
-        sessionId,
-        true,
-        false
+        userRecord.name,
+        userRecord.station,
+        userRecord.wagon,
+        userRecord.color,
+        userRecord.color_code,
+        userRecord.status,
+        userRecord.timer,
+        userRecord.timer_total,
+        userRecord.city,
+        userRecord.gender,
+        userRecord.ip_address,
+        userRecord.position,
+        userRecord.mood,
+        userRecord.last_activity,
+        userRecord.user_agent,
+        userRecord.session_id,
+        userRecord.is_waiting,
+        userRecord.is_connected,
+        userRecord.online
       ]
     );
     
     await client.query('COMMIT');
-    console.log(`✅ Создан пользователь: ${userData.name} на станции ${userData.station} (IP: ${clientIp})`);
-    res.status(201).json(result.rows[0]);
+    
+    const createdUser = result.rows[0];
+    console.log(`✅ Создан пользователь: ${createdUser.name} (ID: ${createdUser.id})`);
+    
+    res.status(201).json(createdUser);
+    
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('❌ Ошибка создания пользователя:', error);
-    res.status(500).json({ error: error.message });
+    
+    // Отправляем понятную ошибку клиенту
+    res.status(500).json({ 
+      error: 'Внутренняя ошибка сервера при создании пользователя',
+      details: error.message,
+      code: error.code
+    });
   } finally {
     client.release();
   }

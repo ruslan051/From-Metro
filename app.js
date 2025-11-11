@@ -214,7 +214,7 @@ function initializeStations() {
         stationSelect.appendChild(option);
     });
 }
-// Обработчик для кнопки подтверждения параметров в комнате ожидания
+// Исправленный обработчик для кнопки подтверждения параметров
 const confirmStationBtn = document.getElementById('confirm-station');
 if (confirmStationBtn) {
     confirmStationBtn.addEventListener('click', async function() {
@@ -255,7 +255,6 @@ if (confirmStationBtn) {
 } else {
     console.warn('Элемент confirm-station не найден');
 }
-
 
 // Обработчики выбора города
 cityOptions.forEach(option => {
@@ -562,9 +561,11 @@ async function joinStation(station) {
             waitingRoomScreen.classList.remove('active');
             joinedRoomScreen.classList.add('active');
             
-            // Немедленно загружаем участников группы
-            await loadGroupMembers();
-            await loadRequests(); // Обновляем список пользователей
+            // Даем время DOM обновиться перед загрузкой участников
+            setTimeout(async () => {
+                await loadGroupMembers();
+                await loadRequests();
+            }, 100);
             
             console.log(`✅ Успешно присоединились к станции ${station}`);
         }
@@ -600,43 +601,60 @@ function restoreSelectedStation() {
     }
 }
 
-// Функция загрузки участников группы
+// Исправленная функция загрузки участников группы
 async function loadGroupMembers() {
-    if (!currentGroup) return;
-    
-    const users = await getUsers();
-    const groupUsers = users.filter(user => 
-        user.station === currentGroup.station && 
-        user.is_connected === true
-    );
-    
-    groupMembersContainer.innerHTML = '';
-    
-    if (groupUsers.length === 0) {
-        groupMembersContainer.innerHTML = '<div class="no-requests">Нет участников на этой станции</div>';
+    if (!currentGroup || !groupMembersContainer) {
+        console.warn('Группа не определена или контейнер не найден');
         return;
     }
     
-    groupUsers.forEach(user => {
-        const memberElement = document.createElement('div');
-        memberElement.className = 'user-state-display';
-        memberElement.innerHTML = `
-            <div style="width: 50px; height: 50px; border-radius: 50%; background: ${user.color_code || '#007bff'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: bold;">
-                ${user.name.charAt(0)}
-            </div>
-            <div class="user-state-info">
-                <div class="user-state-name">${user.name} ${user.id === userId ? '(Вы)' : ''}</div>
-                <div class="user-state-details">
-                    ${user.position || 'Позиция не указана'} • ${user.mood || 'Настроение не указано'}
-                    ${user.wagon ? `• Вагон ${user.wagon}` : ''}
+    try {
+        const users = await getUsers();
+        const groupUsers = users.filter(user => 
+            user.station === currentGroup.station && 
+            user.is_connected === true
+        );
+        
+        // Проверяем существование контейнера перед обновлением
+        if (!groupMembersContainer) {
+            console.error('Контейнер groupMembersContainer не найден');
+            return;
+        }
+        
+        groupMembersContainer.innerHTML = '';
+        
+        if (groupUsers.length === 0) {
+            groupMembersContainer.innerHTML = '<div class="no-requests">Нет участников на этой станции</div>';
+            return;
+        }
+        
+        groupUsers.forEach(user => {
+            const memberElement = document.createElement('div');
+            memberElement.className = 'user-state-display';
+            memberElement.innerHTML = `
+                <div style="width: 50px; height: 50px; border-radius: 50%; background: ${user.color_code || '#007bff'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: bold;">
+                    ${user.name.charAt(0)}
                 </div>
-                <div class="user-state-status">
-                    ${user.status || 'Ожидание'}
+                <div class="user-state-info">
+                    <div class="user-state-name">${user.name} ${user.id === userId ? '(Вы)' : ''}</div>
+                    <div class="user-state-details">
+                        ${user.position || 'Позиция не указана'} • ${user.mood || 'Настроение не указано'}
+                        ${user.wagon ? `• Вагон ${user.wagon}` : ''}
+                    </div>
+                    <div class="user-state-status">
+                        ${user.status || 'Ожидание'}
+                    </div>
                 </div>
-            </div>
-        `;
-        groupMembersContainer.appendChild(memberElement);
-    });
+            `;
+            groupMembersContainer.appendChild(memberElement);
+        });
+        
+    } catch (error) {
+        console.error('Ошибка загрузки участников группы:', error);
+        if (groupMembersContainer) {
+            groupMembersContainer.innerHTML = '<div class="no-requests">Ошибка загрузки участников</div>';
+        }
+    }
 }
 
 // Функция обновления отображения состояния пользователя в списке

@@ -112,21 +112,18 @@ async function handleEnterWaitingRoom() {
                 });
                 
                 console.log('✅ Пользователь создан:', createdUser.name);
-            } 
-            
-            else 
-            {
+            } else {
                 console.error('❌ Экраны не найдены');
                 initializeCoreDOMElements();
             }
         }
     } catch (error) { // Изменил error на err чтобы избежать конфликта
-        console.error('❌ Ошибка создания пользователя:', error);
+        console.error('❌ Ошибка создания пользователя:', err);
         
         // Показываем понятное сообщение об ошибке
-        const errorMessage = error.message.includes('Failed to fetch') 
+        const errorMessage = err.message.includes('Failed to fetch') 
             ? 'Ошибка подключения к серверу. Проверьте интернет-соединение.'
-            : `Ошибка создания профиля: ${error.message}`;
+            : `Ошибка создания профиля: ${err.message}`;
         
         alert(errorMessage);
         

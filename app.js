@@ -241,7 +241,7 @@ async function loadStationsMap() {
                         ${waitingCount > 0 ? `<span class="station-count count-waiting">${waitingCount}⏳</span>` : ''}
                         ${connectedCount > 0 ? `<span class="station-count count-connected">${connectedCount}✅</span>` : ''}
                     </div>
-                ` : '<div style="font-size: 10px; color: #666;">Свободно</div>'}
+                ` : '<div style="font-size: 10px; color: #666;">Пусто</div>'}
             `;
             
             stationElement.addEventListener('click', () => selectStation(stationName, stationData));

@@ -23,6 +23,30 @@ function getRandomColor() {
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
+//Функции для навигации
+function showSetup() {
+    document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+    setupScreen.classList.add('active');
+}
+
+function showWaitingRoom() {
+    if (!userId) {
+        alert('Сначала создайте профиль');
+        return;
+    }
+    document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+    waitingRoomScreen.classList.add('active');
+}
+
+function showJoinedRoom() {
+    if (!currentGroup) {
+        alert('Сначала выберите станцию');
+        return;
+    }
+    document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+    joinedRoomScreen.classList.add('active');
+}
+
 // Функция для добавления недостающих колонок
 async function migrateDatabase() {
   try {
@@ -411,8 +435,8 @@ app.get('/api/stations/waiting-room', async (req, res) => {
       SELECT 
         station,
         COUNT(*) as total_users,
-        COUNT(CASE WHEN is_waiting = true THEN 1 END) as waiting_count,
-        COUNT(CASE WHEN is_connected = true THEN 1 END) as connected_count
+        COUNT(CASE WHEN is_connected = true AND is_waiting = false THEN 1 END) as connected_count,
+        COUNT(CASE WHEN is_waiting = true AND is_connected = false THEN 1 END) as waiting_count
       FROM users 
       WHERE online = true
     `;

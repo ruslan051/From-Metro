@@ -13,6 +13,10 @@
         <header>
             <h1>Из метро</h1>
             <div class="subtitle">Москва и Санкт-Петербург</div>
+            <div class="online-indicator">
+                <span class="online-dot"></span>
+                <span id="online-count">0</span> пользователей онлайн
+            </div>
             <div class="metro-icon">🚇</div>
         </header>
         
@@ -20,6 +24,11 @@
             <!-- Экран выбора параметров 1 страница -->
             <div id="setup-screen" class="screen active">
                 <h2>Настройка профиля</h2>
+                <div class="navigation-buttons">
+                    <button class="nav-btn active">1. Настройка</button>
+                    <button class="nav-btn" onclick="showWaitingRoom()">2. Выбор станции</button>
+                    <button class="nav-btn" onclick="showJoinedRoom()">3. Комната станции</button>
+                </div>
                 <p>Укажите ваш город и параметры</p>
                 
                 <form id="setup-form">
@@ -107,6 +116,11 @@
                 </button>
                 
                 <h2>Комната ожидания</h2>
+                <div class="navigation-buttons">
+                    <button class="nav-btn" onclick="showSetup()">1. Настройка</button>
+                    <button class="nav-btn active">2. Выбор станции</button>
+                    <button class="nav-btn" onclick="showJoinedRoom()">3. Комната станции</button>
+                </div>
                 <p>Выберите станцию на карте для присоединения</p>
                 
                 <!-- Интерактивная карта станций -->
@@ -120,15 +134,15 @@
                         <div class="map-legend">
                             <div class="legend-item">
                                 <div class="legend-color connected"></div>
-                                <span>Соединились: 1+</span>
+                                <span>Выбрали станцию: 1+</span>
                             </div>
                             <div class="legend-item">
                                 <div class="legend-color waiting"></div>
-                                <span>Ожидают: 1+</span>
+                                <span>Не выбрали станцию: 1+</span>
                             </div>
                             <div class="legend-item">
                                 <div class="legend-color empty"></div>
-                                <span>Свободно</span>
+                                <span>Пусто</span>
                             </div>
                         </div>
                         <div class="city-filter">
@@ -149,11 +163,11 @@
                         <div class="station-stats-compact">
                             <div class="stat-compact">
                                 <div class="stat-number" id="stat-waiting">0</div>
-                                <div class="stat-label">Ожидают</div>
+                                <div class="stat-label">Не выбрали станцию</div>
                             </div>
                             <div class="stat-compact">
                                 <div class="stat-number" id="stat-connected">0</div>
-                                <div class="stat-label">Соединились</div>
+                                <div class="stat-label">Выбрали станцию</div>
                             </div>
                             <div class="stat-compact">
                                 <div class="stat-number" id="stat-total">0</div>
@@ -166,13 +180,7 @@
                     </div>
                 </div>
                 
-                <!-- Список пользователей -->
-                <div class="users-list-section">
-                    <h3>👥 Активные пользователи</h3>
-                    <div class="requests-container" id="requests-container">
-                        <div class="loading">Загрузка пользователей...</div>
-                    </div>
-                </div>
+                
             </div>
 
             <!-- Экран после присоединения 3 страница -->
@@ -181,7 +189,12 @@
                     <i>←</i> Вернуться к поиску
                 </button>
                 
-                <h2>Вы соединились!</h2>
+                <h2>Вы выбрали станцию!</h2>
+                <div class="navigation-buttons">
+                    <button class="nav-btn" onclick="showSetup()">1. Настройка</button>
+                    <button class="nav-btn" onclick="showWaitingRoom()">2. Выбор станции</button>
+                    <button class="nav-btn active">3. Комната станции</button>
+                </div>
                 <p>Расскажите о своем состоянии другим участникам</p>
                 
                 <div class="state-section">
@@ -229,9 +242,26 @@
                             <div class="state-icon">😔</div>
                             <div class="state-name">Плохое настроение</div>
                         </div>
+                        <div class="state-card" data-mood="Жду когда ко мне подойдут">
+                            <div class="state-icon">⏳</div>
+                            <div class="state-name">Жду когда ко мне подойдут</div>
+                        </div>
+                        <div class="state-card" data-mood="Собираюсь подойти">
+                            <div class="state-icon">🚶</div>
+                            <div class="state-name">Собираюсь подойти</div>
+                        </div>
                     </div>
                 </div>
-                
+
+                <!-- Список пользователей -->
+
+                <div class="users-list-section">
+                    <h3>👥 Активные пользователи</h3>
+                    <div class="requests-container" id="requests-container">
+                        <div class="loading">Загрузка пользователей...</div>
+                    </div>
+                </div>
+
                 <div class="state-section">
                     <h4>👥 Участники</h4>
                     <div id="group-members">

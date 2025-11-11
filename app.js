@@ -83,10 +83,18 @@ const stationDetails = document.getElementById('station-details');
 
 // Добавьте эту проверку после объявления всех DOM элементов
 document.addEventListener('DOMContentLoaded', function() {
-    // Проверяем существование элементов перед добавлением обработчиков
+    console.log('🔧 Инициализация обработчиков событий...');
+    
+    // Инициализируем элементы
     const backToSetupBtn = document.getElementById('back-to-setup');
+    const backToWaitingBtn = document.getElementById('back-to-waiting');
+    const leaveGroupBtn = document.getElementById('leave-group');
+    const enterWaitingRoomBtn = document.getElementById('enter-waiting-room');
+    
+    // Проверяем и добавляем обработчики
     if (backToSetupBtn) {
         backToSetupBtn.addEventListener('click', async function() {
+            console.log('🔙 Назад к настройкам');
             if (userId) {
                 try {
                     await deleteUser(userId);
@@ -95,6 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
+            stopGlobalRefresh();
             autoRefreshIntervals.forEach(interval => clearInterval(interval));
             autoRefreshIntervals = [];
             
@@ -104,19 +113,23 @@ document.addEventListener('DOMContentLoaded', function() {
             currentUser = null;
             userId = null;
         });
+    } else {
+        console.warn('❌ Элемент back-to-setup не найден');
     }
 
-    const backToWaitingBtn = document.getElementById('back-to-waiting');
     if (backToWaitingBtn) {
         backToWaitingBtn.addEventListener('click', function() {
+            console.log('🔙 Назад к ожиданию');
             joinedRoomScreen.classList.remove('active');
             waitingRoomScreen.classList.add('active');
         });
+    } else {
+        console.warn('❌ Элемент back-to-waiting не найден');
     }
 
-    const leaveGroupBtn = document.getElementById('leave-group');
     if (leaveGroupBtn) {
         leaveGroupBtn.addEventListener('click', async function() {
+            console.log('🚪 Покидаем группу');
             if (userId) {
                 try {
                     await updateUser(userId, { 
@@ -134,12 +147,13 @@ document.addEventListener('DOMContentLoaded', function() {
             joinedRoomScreen.classList.remove('active');
             waitingRoomScreen.classList.add('active');
         });
+    } else {
+        console.warn('❌ Элемент leave-group не найден');
     }
 
-    // Обработчик для кнопки входа в комнату ожидания
-    const enterWaitingRoomBtn = document.getElementById('enter-waiting-room');
     if (enterWaitingRoomBtn) {
         enterWaitingRoomBtn.addEventListener('click', async function() {
+            console.log('🚪 Вход в комнату ожидания');
             // Генерация сказочного имени
             const getRandomName = (gender) => {
                 const names = gender === 'male' ? maleNames : femaleNames;
@@ -177,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     loadStationsMap();
                     loadRequests();
-                    startAutoRefresh();
+                    startGlobalRefresh();
                     
                     console.log('✅ Пользователь создан:', createdUser.name);
                 }
@@ -185,7 +199,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert(error.message || 'Ошибка создания профиля. Проверьте подключение к серверу.');
             }
         });
+    } else {
+        console.warn('❌ Элемент enter-waiting-room не найден');
     }
+    
+    console.log('✅ Обработчики событий инициализированы');
 });
 
 // Элементы выбора города и пола
@@ -206,6 +224,30 @@ let currentGroup = null;
 let currentSelectedStation = null;
 let autoRefreshIntervals = [];
 
+// Добавьте эту функцию для проверки
+function checkAllElements() {
+    const elements = [
+        'back-to-setup',
+        'back-to-waiting', 
+        'leave-group',
+        'enter-waiting-room',
+        'group-members',
+        'joined-room-screen',
+        'waiting-room-screen',
+        'setup-screen'
+    ];
+    
+    console.log('🔍 Проверка элементов DOM:');
+    elements.forEach(id => {
+        const element = document.getElementById(id);
+        console.log(`${id}:`, element ? '✅ Найден' : '❌ Не найден');
+    });
+}
+
+// Вызовите после загрузки
+window.addEventListener('load', function() {
+    setTimeout(checkAllElements, 100);
+});
 // Добавьте эту функцию для отладки
 function checkDOM() {
     console.log('🔍 Проверка DOM элементов:');

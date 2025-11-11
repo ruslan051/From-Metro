@@ -1,3 +1,8 @@
+// Глобальные переменные для DOM элементов
+let wagonSelect, colorSelect, waitingTimer, waitingTimerDisplay, waitingTimerStatus;
+let waitingStartTimerBtn, waitingStopTimerBtn, waitingTimerOptions, waitingTimerExpanded;
+let positionCards, moodCards;
+let groupMembersContainer, metroMap, requestsContainer;
 // Регистрируем функции в глобальной области
 window.loadStationsMap = loadStationsMap;
 window.loadRequests = loadRequests;
@@ -40,46 +45,55 @@ const stations = {
     ]
 };
 
-// Дополнительные DOM элементы
-let wagonSelect, colorSelect, waitingTimer, waitingTimerDisplay, waitingTimerStatus;
-let waitingStartTimerBtn, waitingStopTimerBtn, waitingTimerOptions, waitingTimerExpanded;
-let positionCards, moodCards;
-let groupMembersContainer, metroMap, requestsContainer;
+
 
 // Инициализация дополнительных DOM элементов
 function initializeOptionalDOMElements() {
     console.log('🔧 Инициализация дополнительных DOM элементов...');
     
-    // Элементы комнаты ожидания
-    wagonSelect = document.getElementById('wagon-select');
-    colorSelect = document.getElementById('color-select');
-    waitingTimer = document.getElementById('waiting-room-timer');
-    waitingTimerDisplay = document.getElementById('waiting-timer-display');
-    waitingTimerStatus = document.getElementById('waiting-timer-status');
-    waitingStartTimerBtn = document.getElementById('waiting-start-timer');
-    waitingStopTimerBtn = document.getElementById('waiting-stop-timer');
-    waitingTimerExpanded = document.getElementById('waiting-timer-expanded');
-    waitingTimerOptions = document.querySelectorAll('#waiting-timer-expanded .timer-option');
-    
-    // Карта и группы
-    metroMap = document.getElementById('metro-map');
-    groupMembersContainer = document.getElementById('group-members');
-    
-    // Контейнер для запросов
-    requestsContainer = document.getElementById('requests-container');
-    
-    // Карточки состояний
-    positionCards = document.querySelectorAll('#position-cards .state-card');
-    moodCards = document.querySelectorAll('#mood-cards .state-card');
-       
-
-    console.log('✅ Дополнительные DOM элементы инициализированы');
+    try {
+        // Безопасная инициализация с проверкой элементов
+        wagonSelect = document.getElementById('wagon-select');
+        colorSelect = document.getElementById('color-select');
+        waitingTimer = document.getElementById('waiting-room-timer');
+        waitingTimerDisplay = document.getElementById('waiting-timer-display');
+        waitingTimerStatus = document.getElementById('waiting-timer-status');
+        waitingStartTimerBtn = document.getElementById('waiting-start-timer');
+        waitingStopTimerBtn = document.getElementById('waiting-stop-timer');
+        waitingTimerExpanded = document.getElementById('waiting-timer-expanded');
+        
+        // Элементы с проверкой на существование
+        if (document.querySelectorAll('#waiting-timer-expanded .timer-option').length > 0) {
+            waitingTimerOptions = document.querySelectorAll('#waiting-timer-expanded .timer-option');
+        } else {
+            waitingTimerOptions = [];
+        }
+        
+        // Карта и группы
+        metroMap = document.getElementById('metro-map');
+        groupMembersContainer = document.getElementById('group-members');
+        requestsContainer = document.getElementById('requests-container');
+        
+        // Карточки состояний
+        positionCards = document.querySelectorAll('#position-cards .state-card');
+        moodCards = document.querySelectorAll('#mood-cards .state-card');
+        
+        console.log('✅ Дополнительные DOM элементы инициализированы');
+    } catch (error) {
+        console.error('❌ Ошибка инициализации DOM элементов:', error);
+    }
 }
 
 // Функция загрузки карты станций
 async function loadStationsMap() {
-    if (!metroMap) return;
-    
+  // Проверяем инициализацию
+    if (!metroMap) {
+        metroMap = document.getElementById('metro-map');
+        if (!metroMap) {
+            console.warn('❌ metroMap не найден');
+            return;
+        }
+    }
     try {
         const response = await fetch(`${API_BASE}/stations/waiting-room?city=${selectedCity}`);
         const data = await response.json();
@@ -148,14 +162,16 @@ async function loadStationsMap() {
             }
         });
         
-    } catch (error) {
+      } catch (error) {
         console.error('Ошибка загрузки карты станций:', error);
-        metroMap.innerHTML = `
-            <div class="no-requests">
-                <p>Ошибка загрузки карты</p>
-                <button class="btn" onclick="loadStationsMap()">Попробовать снова</button>
-            </div>
-        `;
+        if (metroMap) {
+            metroMap.innerHTML = `
+                <div class="no-requests">
+                    <p>Ошибка загрузки карты</p>
+                    <button class="btn" onclick="loadStationsMap()">Попробовать снова</button>
+                </div>
+            `;
+        }
     }
 }
 
@@ -184,22 +200,17 @@ function selectStation(stationName, stationData) {
 
 // Функция загрузки запросов
 async function loadRequests() {
-     let container;
-    if (joinedRoomScreen && joinedRoomScreen.classList.contains('active')) {
-
-        return; 
-        
-    } else {
-        container = document.getElementById('requests-container');
-    }
-    
-    if (!container) {
-        console.log('ℹ️ Контейнер запросов не найден для текущей страницы');
-        return;
+    // Проверяем инициализацию
+    if (!requestsContainer) {
+        requestsContainer = document.getElementById('requests-container');
+        if (!requestsContainer) {
+            console.log('ℹ️ Контейнер requests-container не найден, пропускаем загрузку запросов');
+            return;
+        }
     }
     
     const users = await getUsers();
-    container.innerHTML = '';
+    requestsContainer.innerHTML = '';
     
     // Фильтруем пользователей: только те, кто на той же станции, что и текущий пользователь
     let filteredUsers = users.filter(user => 
@@ -295,7 +306,6 @@ async function loadRequests() {
         });
     });
 }
-
 // Функция загрузки участников группы
 async function loadGroupMembers() {
     if (!groupMembersContainer) {
@@ -353,6 +363,12 @@ async function loadGroupMembers() {
 
 // Инициализация таймера в комнате ожидания
 function initializeWaitingRoomTimer() {
+      if (!waitingTimer) {
+        waitingTimer = document.getElementById('waiting-room-timer');
+    }
+     if (!waitingTimerExpanded) {
+        waitingTimerExpanded = document.getElementById('waiting-timer-expanded');
+    }
     if (waitingTimer && waitingTimerExpanded) {
         waitingTimer.addEventListener('click', function() {
             waitingTimerExpanded.classList.toggle('active');
@@ -546,33 +562,7 @@ function restoreSelectedStation() {
     }
 }
 
-// // Улучшенная функция восстановления состояний
-// function restoreSelectedStates() {
-//     const savedPosition = localStorage.getItem('selectedPosition');
-//     const savedMood = localStorage.getItem('selectedMood');
-    
-//     console.log('🔄 Восстановление состояний:', { savedPosition, savedMood });
-    
-//     if (savedPosition) {
-//         currentPosition = savedPosition;
-//         const positionCard = document.querySelector(`[data-position="${savedPosition}"]`);
-//         if (positionCard) {
-//             document.querySelectorAll('#position-cards .state-card').forEach(c => c.classList.remove('active'));
-//             positionCard.classList.add('active');
-//             console.log('📍 Восстановлена позиция:', savedPosition);
-//         }
-//     }
-    
-//     if (savedMood) {
-//         currentMood = savedMood;
-//         const moodCard = document.querySelector(`[data-mood="${savedMood}"]`);
-//         if (moodCard) {
-//             document.querySelectorAll('#mood-cards .state-card').forEach(c => c.classList.remove('active'));
-//             moodCard.classList.add('active');
-//             console.log('😊 Восстановлено настроение:', savedMood);
-//         }
-//     }
-// }
+
 
 // Вспомогательные функции
 function formatTime(seconds) {

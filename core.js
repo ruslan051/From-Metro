@@ -346,15 +346,21 @@ async function loadOptionalModules() {
     console.log('📦 Загрузка дополнительных модулей...');
     
     try {
+         // Сначала инициализируем основные DOM элементы
+        initializeCoreDOMElements();
+          
+        // Затем загружаем скрипт
         await loadScript('optional-modules.js');
+
+        // Затем инициализируем дополнительные элементы
+        if (typeof initializeOptionalDOMElements === 'function') {
+            initializeOptionalDOMElements();
+        }
+        
         window.optionalModulesLoaded = true;
         window.optionalModulesLoading = false;
         console.log('✅ Дополнительные модули загружены');
         
-        // Инициализируем модули после загрузки
-        if (typeof initializeOptionalModules === 'function') {
-            initializeOptionalModules();
-        }
     } catch (error) {
         console.error('❌ Ошибка загрузки модулей:', error);
         window.optionalModulesLoading = false;

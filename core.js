@@ -59,6 +59,8 @@ function initializeUsersIndicator() {
     usersIndicatorTooltip = usersIndicator.querySelector('.indicator-tooltip');
     
     console.log('✅ Индикатор пользователей инициализирован');
+       // ЗАПУСТИТЬ функцию
+    tryInitialize();
 }
 // Функция обновления индикатора пользователей
 async function updateUsersIndicator() {

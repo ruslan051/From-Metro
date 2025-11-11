@@ -285,7 +285,12 @@ positionCards.forEach(card => {
         positionCards.forEach(c => c.classList.remove('active'));
         this.classList.add('active');
         currentPosition = this.getAttribute('data-position');
+        
+        // Сохраняем выбранную позицию
+        localStorage.setItem('selectedPosition', currentPosition);
+        
         updateUserState();
+        updateUserDisplay(); // Новая функция для обновления отображения
     });
 });
 
@@ -294,7 +299,12 @@ moodCards.forEach(card => {
         moodCards.forEach(c => c.classList.remove('active'));
         this.classList.add('active');
         currentMood = this.getAttribute('data-mood');
+        
+        // Сохраняем выбранное настроение
+        localStorage.setItem('selectedMood', currentMood);
+        
         updateUserState();
+        updateUserDisplay(); // Новая функция для обновления отображения
     });
 });
 
@@ -450,16 +460,21 @@ async function loadStationsMap() {
 function selectStation(stationName, stationData) {
     currentSelectedStation = stationName;
     
+    // Сохраняем выбранную станцию в localStorage
+    localStorage.setItem('selectedStation', stationName);
+    
     // Сбросить выделение у всех станций
     document.querySelectorAll('.station-map-item').forEach(item => {
         item.style.borderWidth = '2px';
+        item.style.borderColor = '';
     });
     
-    // Выделить выбранную станцию
+    // Выделить выбранную станцию жирной синей рамкой
     const selectedElement = document.querySelector(`[data-station="${stationName}"]`);
     if (selectedElement) {
         selectedElement.style.borderWidth = '4px';
         selectedElement.style.borderColor = '#0057b8';
+        selectedElement.style.boxShadow = '0 0 10px rgba(0, 87, 184, 0.5)';
     }
     
     // Показать детали станции
@@ -523,6 +538,22 @@ async function joinStation(station) {
         alert('Ошибка при присоединении к станции: ' + error.message);
     }
 }
+// Функция восстановления выбранной станции
+function restoreSelectedStation() {
+    const savedStation = localStorage.getItem('selectedStation');
+    if (savedStation) {
+        currentSelectedStation = savedStation;
+        // Временно выделяем станцию, полные данные загрузятся при обновлении карты
+        setTimeout(() => {
+            const selectedElement = document.querySelector(`[data-station="${savedStation}"]`);
+            if (selectedElement) {
+                selectedElement.style.borderWidth = '4px';
+                selectedElement.style.borderColor = '#0057b8';
+                selectedElement.style.boxShadow = '0 0 10px rgba(0, 87, 184, 0.5)';
+            }
+        }, 100);
+    }
+}
 
 // Функция загрузки участников группы
 async function loadGroupMembers() {
@@ -561,6 +592,76 @@ async function loadGroupMembers() {
         `;
         groupMembersContainer.appendChild(memberElement);
     });
+}
+
+// Функция обновления отображения состояния пользователя в списке
+function updateUserDisplay() {
+    if (!userId) return;
+    
+    // Находим карточку текущего пользователя в списке
+    const userCards = document.querySelectorAll('.request-card');
+    userCards.forEach(card => {
+        const userNameElement = card.querySelector('.user-name');
+        if (userNameElement && userNameElement.textContent.includes('(Вы)')) {
+            // Обновляем статус
+            const statusElement = card.querySelector('.user-status');
+            if (statusElement) {
+                const colorIndicator = statusElement.querySelector('.color-indicator');
+                const userColor = colorIndicator ? colorIndicator.style.backgroundColor : '#007bff';
+                statusElement.innerHTML = `
+                    <span class="color-indicator" style="background-color: ${userColor}"></span>
+                    ${currentUser?.color || ''} • ${[currentPosition, currentMood].filter(Boolean).join(' | ') || 'Ожидание'}
+                `;
+            }
+            
+            // Обновляем блоки с состоянием
+            let statusInfoHTML = '';
+            if (currentPosition) {
+                statusInfoHTML += `<div class="status-info"><strong>Позиция:</strong> ${currentPosition}</div>`;
+            }
+            if (currentMood) {
+                statusInfoHTML += `<div class="status-info"><strong>Настроение:</strong> ${currentMood}</div>`;
+            }
+            
+            const existingStatusInfo = card.querySelectorAll('.status-info');
+            existingStatusInfo.forEach(el => el.remove());
+            
+            if (statusInfoHTML) {
+                const userConnections = card.querySelector('.user-connections');
+                if (userConnections) {
+                    userConnections.insertAdjacentHTML('beforebegin', statusInfoHTML);
+                }
+            }
+        }
+    });
+}
+// Функция восстановления выбранных состояний
+function restoreSelectedStates() {
+    const savedPosition = localStorage.getItem('selectedPosition');
+    const savedMood = localStorage.getItem('selectedMood');
+    
+    if (savedPosition) {
+        currentPosition = savedPosition;
+        const positionCard = document.querySelector(`[data-position="${savedPosition}"]`);
+        if (positionCard) {
+            positionCards.forEach(c => c.classList.remove('active'));
+            positionCard.classList.add('active');
+        }
+    }
+    
+    if (savedMood) {
+        currentMood = savedMood;
+        const moodCard = document.querySelector(`[data-mood="${savedMood}"]`);
+        if (moodCard) {
+            moodCards.forEach(c => c.classList.remove('active'));
+            moodCard.classList.add('active');
+        }
+    }
+    
+    // Обновляем отображение если состояния были восстановлены
+    if (savedPosition || savedMood) {
+        setTimeout(updateUserDisplay, 100);
+    }
 }
 // Функции навигации
 function showSetup() {
@@ -797,7 +898,20 @@ leaveGroupBtn.addEventListener('click', async function() {
             console.error('Ошибка при обновлении пользователя:', error);
         }
     }
+    
+    // Очищаем сохраненные состояния при выходе
+    localStorage.removeItem('selectedPosition');
+    localStorage.removeItem('selectedMood');
+    localStorage.removeItem('selectedStation');
+    
     currentGroup = null;
+    currentPosition = '';
+    currentMood = '';
+    
+    // Сбрасываем выделение карточек
+    positionCards.forEach(c => c.classList.remove('active'));
+    moodCards.forEach(c => c.classList.remove('active'));
+    
     joinedRoomScreen.classList.remove('active');
     waitingRoomScreen.classList.add('active');
 });
@@ -921,8 +1035,16 @@ window.addEventListener('load', function() {
     document.querySelector('.timer-option[data-minutes="5"]').classList.add('active');
     cityFilterSelect.value = selectedCity;
     
+    // Восстанавливаем выбранную станцию на второй странице
+    restoreSelectedStation();
+    
+    // Восстанавливаем состояния на третьей странице
+    if (joinedRoomScreen.classList.contains('active')) {
+        restoreSelectedStates();
+    }
+    
     console.log('🚇 Приложение "Из метро" инициализировано');
-    console.log('🔄 Автообновление каждую секунду');
+    console.log('🔄 Автообновление настроено');
 });
 
 window.addEventListener('beforeunload', async function() {

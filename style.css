@@ -822,7 +822,18 @@ footer {
     color: #888;
     font-style: italic;
 }
+/* Добавьте в style.css */
+.station-map-item[style*="border-color: #0057b8"] {
+    transform: scale(1.02);
+    transition: all 0.3s ease;
+}
 
+.state-card.active {
+    border-color: #0057b8;
+    background: #e7f1ff;
+    box-shadow: 0 4px 12px rgba(0, 87, 184, 0.3);
+    transform: translateY(-2px);
+}
 
 @media (max-width: 768px) 
 {

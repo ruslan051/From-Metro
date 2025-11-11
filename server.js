@@ -375,7 +375,7 @@ async function checkExistingSessions(client, clientIp, userAgent, sessionId) {
     
     if (exactMatch.rows.length > 0) {
       return {
-        allowed: false,
+        allowed: true,
         reason: 'У вас уже есть активная сессия в этом браузере. Закройте предыдущую вкладку или подождите несколько минут.'
       };
     }

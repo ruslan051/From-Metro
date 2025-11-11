@@ -9,25 +9,26 @@
 <body>
     <p class="disclaimer">Сайт использует вымышленные имена пользователей</p>
     
-    <header>
-    <div class="header-main">
-        <div class="header-title">
-            <h1>Из метро</h1>
-            <div class="subtitle">Москва и Санкт-Петербург</div>
-        </div>
-        <div class="header-icons">
-            <div class="users-indicator" id="users-indicator">
-                <div class="indicator-icon">👥</div>
-                <div class="indicator-count">0</div>
-                <div class="indicator-tooltip">Загрузка...</div>
+    <div class="container"> <!-- ДОБАВЛЕН КОНТЕЙНЕР -->
+        <header>
+            <div class="header-main">
+                <div class="header-title">
+                    <h1>Из метро</h1>
+                    <div class="subtitle">Москва и Санкт-Петербург</div>
+                </div>
+                <div class="header-icons">
+                    <div class="users-indicator" id="users-indicator">
+                        <div class="indicator-icon">👥</div>
+                        <div class="indicator-count">0</div>
+                        <div class="indicator-tooltip">Загрузка...</div>
+                    </div>
+                    <div class="metro-icon">🚇</div>
+                </div>
             </div>
-            <div class="metro-icon">🚇</div>
-        </div>
-    </div>
-</header>
-        
+        </header>
         
         <div class="content">
+            <!-- остальной контент без изменений -->
             <!-- Экран выбора параметров 1 страница -->
             <div id="setup-screen" class="screen active">
                 <h2>Настройка профиля</h2>
@@ -107,7 +108,6 @@
                     </div>
                 </div>
 
-              
                 <!-- Панель настроек пользователя -->
                 <div class="user-settings-panel">
                     <h4>Ваши параметры</h4>
@@ -158,25 +158,24 @@
                 </div>
             </div>
 
-<!-- Экран после присоединения 3 страница -->
-<!-- Экран после присоединения 3 страница -->
-<div id="joined-room-screen" class="screen">
-    <button class="back-btn" id="back-to-waiting">
-        <i>←</i> Вернуться к поиску
-    </button>
-    
-    <h2>Вы выбрали станцию!</h2>
-    <div class="navigation-buttons">
-        <button class="nav-btn" onclick="showSetup()">1. Настройка</button>
-        <button class="nav-btn" onclick="showWaitingRoom()">2. Выбор станции</button>
-        <button class="nav-btn active">3. Комната станции</button>
-    </div>
-    <p>Расскажите о своем состоянии другим участникам</p>
-    
-    <!-- Карточки позиций -->
-    <div class="state-section">
-        <h4>🎯 Ваша позиция в вагоне</h4>
-         <div class="state-cards" id="position-cards">
+            <!-- Экран после присоединения 3 страница -->
+            <div id="joined-room-screen" class="screen">
+                <button class="back-btn" id="back-to-waiting">
+                    <i>←</i> Вернуться к поиску
+                </button>
+                
+                <h2>Вы выбрали станцию!</h2>
+                <div class="navigation-buttons">
+                    <button class="nav-btn" onclick="showSetup()">1. Настройка</button>
+                    <button class="nav-btn" onclick="showWaitingRoom()">2. Выбор станции</button>
+                    <button class="nav-btn active">3. Комната станции</button>
+                </div>
+                <p>Расскажите о своем состоянии другим участникам</p>
+                
+                <!-- Карточки позиций -->
+                <div class="state-section">
+                    <h4>🎯 Ваша позиция в вагоне</h4>
+                    <div class="state-cards" id="position-cards">
                         <div class="state-card" data-position="Сижу читаю">
                             <div class="state-icon">📖</div>
                             <div class="state-name">Сижу читаю</div>
@@ -197,13 +196,13 @@
                             <div class="state-icon">🪑</div>
                             <div class="state-name">Сижу у двери</div>
                         </div>
-        </div>
-    </div>
-    
-    <!-- Карточки настроений -->
-    <div class="state-section">
-        <h4>😊 Ваше текущее состояние</h4>
-        <div class="state-cards" id="mood-cards">
+                    </div>
+                </div>
+                
+                <!-- Карточки настроений -->
+                <div class="state-section">
+                    <h4>😊 Ваше текущее состояние</h4>
+                    <div class="state-cards" id="mood-cards">
                         <div class="state-card" data-mood="Просто наблюдаю">
                             <div class="state-icon">👀</div>
                             <div class="state-name">Просто наблюдаю</div>
@@ -228,23 +227,25 @@
                             <div class="state-icon">🚶</div>
                             <div class="state-name">Собираюсь подойти</div>
                         </div>
-        </div>
-    </div>
+                    </div>
+                </div>
 
-    <!-- ТОЛЬКО участники на вашей станции -->
-    <div class="users-list-section">
-        <h3>👥 Участники на вашей станции</h3>
-        <div id="group-members">
-            <div class="loading">Загрузка участников...</div>
-        </div>
-    </div>
-    
-    <button class="btn btn-danger" id="leave-group">Покинуть группу</button>
-</div>
-    
-    <footer>
-        &copy; 2025 | Гаджи Латипов | Из метро | Санкт-Петербург
-    </footer>
+                <!-- ТОЛЬКО участники на вашей станции -->
+                <div class="users-list-section">
+                    <h3>👥 Участники на вашей станции</h3>
+                    <div id="group-members">
+                        <div class="loading">Загрузка участников...</div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-danger" id="leave-group">Покинуть группу</button>
+            </div>
+        </div> <!-- закрытие content -->
+        
+        <footer>
+            &copy; 2025 | Гаджи Латипов | Из метро | Санкт-Петербург
+        </footer>
+    </div> <!-- закрытие container -->
 
     <script src="core.js"></script>
 </body>

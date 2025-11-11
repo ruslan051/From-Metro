@@ -292,13 +292,6 @@ function initializeWaitingRoomTimer() {
     } else {
         console.warn('❌ Кнопка waitingStopTimerBtn не найдена');
     }
-    if (waitingStartTimerBtn) {
-        waitingStartTimerBtn.addEventListener('click', startTimer);
-    }
-    
-    if (waitingStopTimerBtn) {
-        waitingStopTimerBtn.addEventListener('click', stopTimer);
-    }
     
     if (waitingTimerOptions.length > 0) {
         waitingTimerOptions.forEach(btn => {

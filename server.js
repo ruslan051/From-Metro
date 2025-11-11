@@ -23,29 +23,7 @@ function getRandomColor() {
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
-//Функции для навигации
-function showSetup() {
-    document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-    setupScreen.classList.add('active');
-}
 
-function showWaitingRoom() {
-    if (!userId) {
-        alert('Сначала создайте профиль');
-        return;
-    }
-    document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-    waitingRoomScreen.classList.add('active');
-}
-
-function showJoinedRoom() {
-    if (!currentGroup) {
-        alert('Сначала выберите станцию');
-        return;
-    }
-    document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-    joinedRoomScreen.classList.add('active');
-}
 
 // Функция для добавления недостающих колонок
 async function migrateDatabase() {
@@ -429,21 +407,6 @@ app.get('/api/users', async (req, res) => {
 // Получение статистики по станциям для комнаты ожидания
 app.get('/api/stations/waiting-room', async (req, res) => {
   try {
-          // Добавить общую статистику по всему городу
-      const totalStats = await client.query(`
-          SELECT 
-              COUNT(*) as total_users,
-              COUNT(CASE WHEN is_connected = true THEN 1 END) as total_connected,
-              COUNT(CASE WHEN is_waiting = true THEN 1 END) as total_waiting
-          FROM users 
-          WHERE online = true AND city = $1
-      `, [city]);
-          // Вернуть оба набора данных
-      res.json({
-          stationStats: stationStats,
-          totalStats: totalStats.rows[0]
-      });
-    
     const { city } = req.query;
     
     let query = `
@@ -467,6 +430,16 @@ app.get('/api/stations/waiting-room', async (req, res) => {
     
     const result = await pool.query(query, values);
     
+    // Добавить общую статистику по всему городу
+    const totalStats = await pool.query(`
+        SELECT 
+            COUNT(*) as total_users,
+            COUNT(CASE WHEN is_connected = true THEN 1 END) as total_connected,
+            COUNT(CASE WHEN is_waiting = true THEN 1 END) as total_waiting
+        FROM users 
+        WHERE online = true AND city = $1
+    `, [city || 'spb']);
+    
     const stationStats = result.rows.map(row => ({
       station: row.station,
       totalUsers: parseInt(row.total_users),
@@ -474,7 +447,12 @@ app.get('/api/stations/waiting-room', async (req, res) => {
       connected: parseInt(row.connected_count)
     }));
     
-    res.json(stationStats);
+    // Вернуть оба набора данных
+    res.json({
+        stationStats: stationStats,
+        totalStats: totalStats.rows[0]
+    });
+    
   } catch (error) {
     console.error('❌ Ошибка получения статистики для комнаты ожидания:', error);
     res.status(500).json({ error: error.message });

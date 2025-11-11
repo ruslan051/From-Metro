@@ -258,13 +258,14 @@ async function pingActivity() {
 async function loadStationsMap() {
     try {
         const response = await fetch(`${API_BASE}/stations/waiting-room?city=${selectedCity}`);
-        const stationsData = await response.json();
+        const data = await response.json();
         
         metroMap.innerHTML = '';
         const allStations = stations[selectedCity];
         const stationsMap = {};
         
-        stationsData.forEach(station => {
+        // Создаем маппинг станций
+        data.stationStats.forEach(station => {
             stationsMap[station.station] = station;
         });
         
@@ -307,19 +308,18 @@ async function loadStationsMap() {
             metroMap.appendChild(stationElement);
         });
 
-
         // Обновить легенду с общими цифрами
-            const legendItems = document.querySelectorAll('.legend-item');
-            legendItems.forEach(item => {
-                const text = item.textContent;
-                if (text.includes('Выбрали станцию')) {
-                    item.innerHTML = `<div class="legend-color connected"></div>
-                                    <span>Выбрали станцию: ${data.totalStats.total_connected}</span>`;
-                } else if (text.includes('В режиме ожидания')) {
-                    item.innerHTML = `<div class="legend-color waiting"></div>
-                                    <span>В режиме ожидания: ${data.totalStats.total_waiting}</span>`;
-                }
-            });
+        const legendItems = document.querySelectorAll('.legend-item');
+        legendItems.forEach(item => {
+            const text = item.textContent;
+            if (text.includes('Выбрали станцию')) {
+                item.innerHTML = `<div class="legend-color connected"></div>
+                                <span>Выбрали станцию: ${data.totalStats.total_connected}</span>`;
+            } else if (text.includes('В режиме ожидания')) {
+                item.innerHTML = `<div class="legend-color waiting"></div>
+                                <span>В режиме ожидания: ${data.totalStats.total_waiting}</span>`;
+            }
+        });
         
     } catch (error) {
         console.error('Ошибка загрузки карты станций:', error);
@@ -444,7 +444,29 @@ async function loadGroupMembers() {
         groupMembersContainer.appendChild(memberElement);
     });
 }
+// Функции навигации
+function showSetup() {
+    document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+    setupScreen.classList.add('active');
+}
 
+function showWaitingRoom() {
+    if (!userId) {
+        alert('Сначала создайте профиль');
+        return;
+    }
+    document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+    waitingRoomScreen.classList.add('active');
+}
+
+function showJoinedRoom() {
+    if (!currentGroup) {
+        alert('Сначала выберите станцию');
+        return;
+    }
+    document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+    joinedRoomScreen.classList.add('active');
+}
 // Функция обновления состояния пользователя
 async function updateUserState() {
     if (userId && (currentPosition || currentMood)) {

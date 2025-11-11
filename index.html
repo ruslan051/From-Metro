@@ -124,6 +124,58 @@
                             Присоединиться к станции
                         </button>
                     </div>
+
+
+                    <!-- В waiting-room-screen ПЕРЕМЕСТИТЕ весь этот блок ВНУТРЬ stations-map-container -->
+                    <div class="user-settings-panel">
+                        <h4>Ваши параметры</h4>
+                        
+                        <div class="form-group">
+                            <label for="wagon-select">Номер вагона (необязательно)</label>
+                            <select id="wagon-select">
+                                <option value="">Не указывать</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="color-select">Цвет верхней одежды</label>
+                            <input type="text" id="color-select" placeholder="Например: черный, синий, красный" required>
+                        </div>
+                        
+                        <div class="compact-timer" id="waiting-room-timer">
+                            <div class="timer-header">
+                                <div class="timer-title">⏰ Таймер ожидания</div>
+                                <div class="timer-status" id="waiting-timer-status">Не активен</div>
+                            </div>
+                            <div class="timer-expanded" id="waiting-timer-expanded">
+                                <p>Выберите время ожидания на станции</p>
+                                <div class="timer-options">
+                                    <button type="button" class="btn timer-option active" data-minutes="5">5 минут</button>
+                                    <button type="button" class="btn timer-option" data-minutes="10">10 минут</button>
+                                    <button type="button" class="btn timer-option" data-minutes="15">15 минут</button>
+                                </div>
+                                <div class="timer-display" id="waiting-timer-display">Не запущен</div>
+                                <div class="timer-controls">
+                                    <button type="button" class="btn btn-success" id="waiting-start-timer">Запустить таймер</button>
+                                    <button type="button" class="btn btn-secondary" id="waiting-stop-timer" disabled>Остановить</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-success" id="confirm-station">
+                            Подтвердить параметры и присоединиться
+                        </button>
+                    </div>
+
+
                 </div>
                 <div class="form-group">
                     <label for="wagon-select">Номер вагона (необязательно)</label>
@@ -246,9 +298,7 @@
                     <div class="requests-container" id="requests-container">
                         <div class="loading">Загрузка пользователей...</div>
                     </div>
-                     <button class="btn btn-success" id="confirm-station">
-                        Подтвердить параметры и присоединиться
-                    </button>
+                    
                 </div>
 
                

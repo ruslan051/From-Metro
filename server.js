@@ -1,20 +1,23 @@
-// Логирование всех входящих запросов
-app.use((req, res, next) => {
-  console.log(`📍 ${new Date().toISOString()} ${req.method} ${req.path}`);
-  console.log('📍 Headers:', req.headers);
-  console.log('📍 Body:', req.body);
-  next();
-});
-
-
 import express from 'express';
 import cors from 'cors';
 import pkg from 'pg';
 import requestIp from 'request-ip';
 
 const { Pool } = pkg;
+
+// Сначала создаем app
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Логирование всех входящих запросов - ПЕРЕМЕСТИТЕ ЭТО ПОСЛЕ app initialization
+app.use((req, res, next) => {
+  console.log(`📍 ${new Date().toISOString()} ${req.method} ${req.path}`);
+  console.log('📍 Headers:', req.headers);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('📍 Body:', req.body);
+  }
+  next();
+});
 
 // Улучшенная CORS конфигурация
 app.use(cors({
@@ -22,7 +25,8 @@ app.use(cors({
     'https://frommetro.vercel.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'http://localhost:8080'
+    'http://localhost:8080',
+    'https://your-frontend-domain.vercel.app'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -32,21 +36,49 @@ app.use(cors({
 // Явно обрабатываем OPTIONS запросы для preflight
 app.options('*', cors());
 
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(requestIp.mw());
+
+// Увеличьте таймауты
+app.use((req, res, next) => {
+  req.setTimeout(30000); // 30 секунд
+  res.setTimeout(30000);
+  next();
+});
+
 // PostgreSQL connection с улучшенной обработкой ошибок
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  // Добавляем настройки пула соединений
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
-  maxUses: 7500,
 });
 
 // Обработчик ошибок пула
 pool.on('error', (err, client) => {
   console.error('❌ Unexpected error on idle client', err);
 });
+
+// Функция для генерации случайного цвета
+function getRandomColor() {
+  const colors = ['#dc3545', '#007bff', '#28a745', '#ffc107', '#6f42c1', '#e83e8c', '#fd7e14', '#20c997'];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
+// Проверка обязательных переменных окружения
+function checkEnvironment() {
+  const requiredEnvVars = ['DATABASE_URL'];
+  const missing = requiredEnvVars.filter(envVar => !process.env[envVar]);
+  
+  if (missing.length > 0) {
+    console.error('❌ Отсутствуют обязательные переменные окружения:', missing.join(', '));
+    process.exit(1);
+  }
+  
+  console.log('✅ Все переменные окружения настроены');
+}
 
 // Функция для проверки подключения к БД
 async function checkDatabaseConnection() {
@@ -60,12 +92,6 @@ async function checkDatabaseConnection() {
     return false;
   }
 }
-// Функция для генерации случайного цвета
-function getRandomColor() {
-  const colors = ['#dc3545', '#007bff', '#28a745', '#ffc107', '#6f42c1', '#e83e8c', '#fd7e14', '#20c997'];
-  return colors[Math.floor(Math.random() * colors.length)];
-}
-
 
 // Упрощенная функция миграции
 async function migrateDatabase() {
@@ -166,8 +192,6 @@ async function initDB() {
     console.error('❌ Ошибка инициализации базы данных:', error);
   }
 }
-
-initDB();
 
 // Функция для проверки и сброса неактивных пользователей
 async function checkAndResetInactiveUsers() {
@@ -340,17 +364,6 @@ async function cleanupInactiveUsers() {
   }
 }
 
-// Запускаем автоматический сброс каждые 15 минут
-setInterval(autoResetSessions, 15 * 60 * 1000);
-// Запускаем проверку активности каждую минуту
-setInterval(checkAndResetInactiveUsers, 60 * 1000);
-// Запускаем очистку каждые 30 минут
-setInterval(cleanupInactiveUsers, 30 * 60 * 1000);
-
-console.log('⏰ Автоматический сброс сессий настроен каждые 15 минут');
-console.log('⏰ Проверка активности пользователей настроена каждую минуту');
-console.log('⏰ Очистка неактивных пользователей настроена каждые 30 минут');
-
 // Генерация уникального ID сессии
 function generateSessionId(req) {
   const ip = req.clientIp || 'unknown';
@@ -400,80 +413,118 @@ async function checkExistingSessions(client, clientIp, userAgent, sessionId) {
   }
 }
 
+// Обертка для обработки ошибок async функций
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+
 // API Routes
 
-// Получение всех пользователей
-app.get('/api/users', async (req, res) => {
+// Health check с проверкой БД
+app.get('/health', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT * FROM users 
-      WHERE online = true 
-      ORDER BY created_at DESC
-    `);
-    res.json(result.rows);
+    // Проверяем подключение к БД
+    await pool.query('SELECT 1');
+    
+    res.json({
+      status: 'OK',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage()
+    });
   } catch (error) {
-    console.error('❌ Ошибка получения пользователей:', error);
-    res.status(500).json({ error: error.message });
+    res.status(503).json({
+      status: 'ERROR',
+      database: 'disconnected',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
+
+// Проверка готовности API
+app.get('/api/health', async (req, res) => {
+  try {
+    const dbResult = await pool.query('SELECT COUNT(*) as user_count FROM users WHERE online = true');
+    
+    res.json({
+      status: 'operational',
+      database: 'connected',
+      activeUsers: parseInt(dbResult.rows[0].user_count),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'degraded',
+      database: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Получение всех пользователей
+app.get('/api/users', asyncHandler(async (req, res) => {
+  const result = await pool.query(`
+    SELECT * FROM users 
+    WHERE online = true 
+    ORDER BY created_at DESC
+  `);
+  res.json(result.rows);
+}));
 
 // Получение статистики по станциям для комнаты ожидания
-app.get('/api/stations/waiting-room', async (req, res) => {
-  try {
-    const { city } = req.query;
-    
-    let query = `
-      SELECT 
-        station,
-        COUNT(*) as total_users,
-        COUNT(CASE WHEN is_connected = true AND is_waiting = false THEN 1 END) as connected_count,
-        COUNT(CASE WHEN is_waiting = true AND is_connected = false THEN 1 END) as waiting_count
-      FROM users 
-      WHERE online = true
-    `;
-    
-    const values = [];
-    
-    if (city) {
-      query += ` AND city = $1`;
-      values.push(city);
-    }
-    
-    query += ` GROUP BY station ORDER BY total_users DESC, station ASC`;
-    
-    const result = await pool.query(query, values);
-    
-    // Добавить общую статистику по всему городу
-    const totalStats = await pool.query(`
-        SELECT 
-            COUNT(*) as total_users,
-            COUNT(CASE WHEN is_connected = true THEN 1 END) as total_connected,
-            COUNT(CASE WHEN is_waiting = true THEN 1 END) as total_waiting
-        FROM users 
-        WHERE online = true AND city = $1
-    `, [city || 'spb']);
-    
-    const stationStats = result.rows.map(row => ({
-      station: row.station,
-      totalUsers: parseInt(row.total_users),
-      waiting: parseInt(row.waiting_count),
-      connected: parseInt(row.connected_count)
-    }));
-    
-    // Вернуть оба набора данных
-    res.json({
-        stationStats: stationStats,
-        totalStats: totalStats.rows[0]
-    });
-    
-  } catch (error) {
-    console.error('❌ Ошибка получения статистики для комнаты ожидания:', error);
-    res.status(500).json({ error: error.message });
+app.get('/api/stations/waiting-room', asyncHandler(async (req, res) => {
+  const { city } = req.query;
+  
+  let query = `
+    SELECT 
+      station,
+      COUNT(*) as total_users,
+      COUNT(CASE WHEN is_connected = true AND is_waiting = false THEN 1 END) as connected_count,
+      COUNT(CASE WHEN is_waiting = true AND is_connected = false THEN 1 END) as waiting_count
+    FROM users 
+    WHERE online = true
+  `;
+  
+  const values = [];
+  
+  if (city) {
+    query += ` AND city = $1`;
+    values.push(city);
   }
-});
+  
+  query += ` GROUP BY station ORDER BY total_users DESC, station ASC`;
+  
+  const result = await pool.query(query, values);
+  
+  // Добавить общую статистику по всему городу
+  const totalStats = await pool.query(`
+      SELECT 
+          COUNT(*) as total_users,
+          COUNT(CASE WHEN is_connected = true THEN 1 END) as total_connected,
+          COUNT(CASE WHEN is_waiting = true THEN 1 END) as total_waiting
+      FROM users 
+      WHERE online = true AND city = $1
+  `, [city || 'spb']);
+  
+  const stationStats = result.rows.map(row => ({
+    station: row.station,
+    totalUsers: parseInt(row.total_users),
+    waiting: parseInt(row.waiting_count),
+    connected: parseInt(row.connected_count)
+  }));
+  
+  // Вернуть оба набора данных
+  res.json({
+      stationStats: stationStats,
+      totalStats: totalStats.rows[0]
+  });
+}));
 
 // Создание нового пользователя - ИСПРАВЛЕННАЯ ВЕРСИЯ
-app.post('/api/users', async (req, res) => {
+app.post('/api/users', asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -578,10 +629,10 @@ app.post('/api/users', async (req, res) => {
   } finally {
     client.release();
   }
-});
+}));
 
 // Обновление пользователя
-app.put('/api/users/:id', async (req, res) => {
+app.put('/api/users/:id', asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -651,10 +702,10 @@ app.put('/api/users/:id', async (req, res) => {
   } finally {
     client.release();
   }
-});
+}));
 
 // Удаление пользователя
-app.delete('/api/users/:id', async (req, res) => {
+app.delete('/api/users/:id', asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -698,10 +749,10 @@ app.delete('/api/users/:id', async (req, res) => {
   } finally {
     client.release();
   }
-});
+}));
 
 // Функция пинга активности пользователя - ИСПРАВЛЕННАЯ ВЕРСИЯ
-app.post('/api/users/:id/ping', async (req, res) => {
+app.post('/api/users/:id/ping', asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     const { id } = req.params;
@@ -733,94 +784,10 @@ app.post('/api/users/:id/ping', async (req, res) => {
   } finally {
     client.release();
   }
-});
-// Health check с проверкой БД
-app.get('/health', async (req, res) => {
-  try {
-    // Проверяем подключение к БД
-    await pool.query('SELECT 1');
-    
-    res.json({
-      status: 'OK',
-      database: 'connected',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      memory: process.memoryUsage()
-    });
-  } catch (error) {
-    res.status(503).json({
-      status: 'ERROR',
-      database: 'disconnected',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// Проверка готовности API
-app.get('/api/health', async (req, res) => {
-  try {
-    const dbResult = await pool.query('SELECT COUNT(*) as user_count FROM users WHERE online = true');
-    
-    res.json({
-      status: 'operational',
-      database: 'connected',
-      activeUsers: parseInt(dbResult.rows[0].user_count),
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    res.status(503).json({
-      status: 'degraded',
-      database: 'error',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-// Обертка для обработки ошибок async функций
-const asyncHandler = (fn) => (req, res, next) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
-};
-
-// Пример применения ко всем endpoints
-app.get('/api/users', asyncHandler(async (req, res) => {
-  const result = await pool.query(`
-    SELECT * FROM users 
-    WHERE online = true 
-    ORDER BY created_at DESC
-  `);
-  res.json(result.rows);
 }));
-// Проверка обязательных переменных окружения
-function checkEnvironment() {
-  const requiredEnvVars = ['DATABASE_URL'];
-  const missing = requiredEnvVars.filter(envVar => !process.env[envVar]);
-  
-  if (missing.length > 0) {
-    console.error('❌ Отсутствуют обязательные переменные окружения:', missing.join(', '));
-    process.exit(1);
-  }
-  
-  console.log('✅ Все переменные окружения настроены');
-}
-
-// Вызовите в начале
-checkEnvironment();
-
-// Увеличьте лимиты для Express
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Добавьте обработку таймаутов
-app.use((req, res, next) => {
-  req.setTimeout(30000); // 30 секунд
-  res.setTimeout(30000);
-  next();
-});
-
 
 // Присоединение к комнате станции
-app.post('/api/rooms/join-station', async (req, res) => {
+app.post('/api/rooms/join-station', asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -870,10 +837,10 @@ app.post('/api/rooms/join-station', async (req, res) => {
   } finally {
     client.release();
   }
-});
+}));
 
 // Выход из комнаты
-app.post('/api/rooms/leave', async (req, res) => {
+app.post('/api/rooms/leave', asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -919,10 +886,10 @@ app.post('/api/rooms/leave', async (req, res) => {
   } finally {
     client.release();
   }
-});
+}));
 
 // Обновление состояния пользователя
-app.put('/api/rooms/user/:userId/state', async (req, res) => {
+app.put('/api/rooms/user/:userId/state', asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -957,10 +924,10 @@ app.put('/api/rooms/user/:userId/state', async (req, res) => {
   } finally {
     client.release();
   }
-});
+}));
 
 // API для сброса сессий через HTTP
-app.post('/api/admin/reset-sessions', async (req, res) => {
+app.post('/api/admin/reset-sessions', asyncHandler(async (req, res) => {
   try {
     const result = await resetAllSessions();
     if (result.success) {
@@ -975,13 +942,13 @@ app.post('/api/admin/reset-sessions', async (req, res) => {
       error: error.message 
     });
   }
-});
+}));
 
 // Health check
 app.get('/', (req, res) => {
   res.json({ 
     message: '🚇 Metro API работает!',
-    version: '2.3.0',
+    version: '2.3.1',
     features: [
       'Управление пользователями с проверкой активности',
       'Интерактивная карта станций',
@@ -1007,11 +974,45 @@ app.use((error, req, res, next) => {
   res.status(500).json({ error: 'Внутренняя ошибка сервера' });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚇 Сервер "Из метро" запущен на порту ${PORT}`);
-  console.log(`📍 URL: http://localhost:${PORT}`);
-  console.log(`📊 Версия: 2.3.0`);
-  console.log(`🕒 Система активности включена`);
-  console.log(`🗺️  Интерактивная карта станций готова`);
-  console.log(`🔄 Автообновление каждые 2-3 секунды`);
-});
+// Инициализация и запуск сервера
+async function startServer() {
+  try {
+    // Проверяем окружение
+    checkEnvironment();
+    
+    // Проверяем подключение к БД
+    const dbConnected = await checkDatabaseConnection();
+    if (!dbConnected) {
+      console.error('❌ Не удалось подключиться к базе данных');
+      process.exit(1);
+    }
+    
+    // Инициализируем БД
+    await initDB();
+    
+    // Запускаем автоматические задачи
+    setInterval(autoResetSessions, 15 * 60 * 1000);
+    setInterval(checkAndResetInactiveUsers, 60 * 1000);
+    setInterval(cleanupInactiveUsers, 30 * 60 * 1000);
+    
+    console.log('⏰ Автоматический сброс сессий настроен каждые 15 минут');
+    console.log('⏰ Проверка активности пользователей настроена каждую минуту');
+    console.log('⏰ Очистка неактивных пользователей настроена каждые 30 минут');
+    
+    // Запускаем сервер
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚇 Сервер "Из метро" запущен на порту ${PORT}`);
+      console.log(`📍 URL: http://localhost:${PORT}`);
+      console.log(`📊 Версия: 2.3.1`);
+      console.log(`🕒 Система активности включена`);
+      console.log(`🗺️  Интерактивная карта станций готова`);
+    });
+    
+  } catch (error) {
+    console.error('❌ Ошибка запуска сервера:', error);
+    process.exit(1);
+  }
+}
+
+// Запускаем сервер
+startServer();

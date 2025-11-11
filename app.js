@@ -1,3 +1,5 @@
+// В начале файла добавьте глобальную переменную для интервала обновления
+let globalRefreshInterval = null;
 // Сказочные имена для мужчин и женщин
 const maleNames = ['Иван-Царевич', 'Кощей Бессмертный', 'Добрыня Никитич', 'Леший', 'Водяной', 'Бабай', 'Соловей-Разбойник', 'Змей Горыныч'];
 const femaleNames = ['Василиса Премудрая', 'Баба Яга', 'Царевна-Лягушка', 'Снегурочка', 'Марья-Искусница', 'Аленушка', 'Кикимора', 'Русалка'];
@@ -279,34 +281,80 @@ compactTimer.addEventListener('click', function() {
     timerExpanded.classList.toggle('active');
 });
 
-// Обработчики для карточек состояний
+// Обновите обработчики состояний для немедленного сохранения
 positionCards.forEach(card => {
-    card.addEventListener('click', function() {
+    card.addEventListener('click', async function() {
         positionCards.forEach(c => c.classList.remove('active'));
         this.classList.add('active');
         currentPosition = this.getAttribute('data-position');
         
-        // Сохраняем выбранную позицию НАВСЕГДА
+        // Сохраняем выбранную позицию
         localStorage.setItem('selectedPosition', currentPosition);
         
-        updateUserState();
-        updateUserDisplay();
+        // Немедленно обновляем состояние
+        await updateUserState();
     });
 });
 
 moodCards.forEach(card => {
-    card.addEventListener('click', function() {
+    card.addEventListener('click', async function() {
         moodCards.forEach(c => c.classList.remove('active'));
         this.classList.add('active');
         currentMood = this.getAttribute('data-mood');
         
-        // Сохраняем выбранное настроение НАВСЕГДА
+        // Сохраняем выбранное настроение
         localStorage.setItem('selectedMood', currentMood);
         
-        updateUserState();
-        updateUserDisplay();
+        // Немедленно обновляем состояние
+        await updateUserState();
     });
 });
+// Функция для запуска глобального обновления каждые 5 секунд
+function startGlobalRefresh() {
+    // Останавливаем предыдущий интервал
+    if (globalRefreshInterval) {
+        clearInterval(globalRefreshInterval);
+    }
+    
+    // Запускаем новый интервал
+    globalRefreshInterval = setInterval(async () => {
+        console.log('🔄 Глобальное обновление данных...');
+        
+        // Обновляем данные в зависимости от активного экрана
+        if (setupScreen.classList.contains('active')) {
+            // На первом экране ничего не обновляем
+        } else if (waitingRoomScreen.classList.contains('active')) {
+            // На втором экране обновляем карту станций
+            await loadStationsMap();
+            await loadRequests();
+            
+            // Восстанавливаем выделение выбранной станции
+            restoreSelectedStation();
+        } else if (joinedRoomScreen.classList.contains('active')) {
+            // На третьем экране обновляем список пользователей и участников группы
+            await loadRequests();
+            await loadGroupMembers();
+            
+            // Восстанавливаем выделение состояний
+            restoreSelectedStates();
+        }
+        
+        // Пинг активности
+        await pingActivity();
+        
+    }, 5000); // 5 секунд
+    
+    console.log('✅ Глобальное обновление запущено каждые 5 секунд');
+}
+
+// Функция остановки глобального обновления
+function stopGlobalRefresh() {
+    if (globalRefreshInterval) {
+        clearInterval(globalRefreshInterval);
+        globalRefreshInterval = null;
+        console.log('⏹️ Глобальное обновление остановлено');
+    }
+}
 // Функции API
 async function createUser(userData) {
     try {
@@ -461,31 +509,33 @@ async function loadStationsMap() {
     }
 }
 
-// Функция выбора станции на карте
 function selectStation(stationName, stationData) {
     currentSelectedStation = stationName;
     
     // Сохраняем выбранную станцию в localStorage
     localStorage.setItem('selectedStation', stationName);
     
-    // Сбросить выделение у всех станций
+    // Сбрасываем выделение у всех станций
     document.querySelectorAll('.station-map-item').forEach(item => {
         item.style.borderWidth = '2px';
         item.style.borderColor = '';
         item.style.boxShadow = '';
+        item.classList.remove('selected');
     });
     
-    // Выделить выбранную станцию жирной синей рамкой
+    // Выделяем выбранную станцию жирной синей рамкой и добавляем класс
     const selectedElement = document.querySelector(`[data-station="${stationName}"]`);
     if (selectedElement) {
         selectedElement.style.borderWidth = '4px';
         selectedElement.style.borderColor = '#0057b8';
         selectedElement.style.boxShadow = '0 0 10px rgba(0, 87, 184, 0.5)';
+        selectedElement.classList.add('selected');
     }
     
     console.log('📍 Выбрана станция:', stationName);
 }
-// Функция присоединения к станции
+
+// Обновите функцию присоединения к станции
 async function joinStation(station) {
     try {
         const response = await fetch(`${API_BASE}/rooms/join-station`, {
@@ -513,7 +563,10 @@ async function joinStation(station) {
             waitingRoomScreen.classList.remove('active');
             joinedRoomScreen.classList.add('active');
             
-            // УБРАЛИ loadGroupMembers() - участники группы не обновляются
+            // Немедленно загружаем участников группы
+            await loadGroupMembers();
+            await loadRequests(); // Обновляем список пользователей
+            
             console.log(`✅ Успешно присоединились к станции ${station}`);
         }
         
@@ -522,21 +575,29 @@ async function joinStation(station) {
         alert('Ошибка при присоединении к станции: ' + error.message);
     }
 }
-// Функция восстановления выбранной станции
+// Улучшенная функция восстановления выбранной станции
 function restoreSelectedStation() {
     const savedStation = localStorage.getItem('selectedStation');
-    if (savedStation && waitingRoomScreen.classList.contains('active')) {
+    if (savedStation) {
         currentSelectedStation = savedStation;
-        // Восстанавливаем выделение станции после загрузки карты
-        const checkStation = setInterval(() => {
-            const selectedElement = document.querySelector(`[data-station="${savedStation}"]`);
-            if (selectedElement) {
-                selectedElement.style.borderWidth = '4px';
-                selectedElement.style.borderColor = '#0057b8';
-                selectedElement.style.boxShadow = '0 0 10px rgba(0, 87, 184, 0.5)';
-                clearInterval(checkStation);
-            }
-        }, 100);
+        
+        // Восстанавливаем выделение станции
+        const selectedElement = document.querySelector(`[data-station="${savedStation}"]`);
+        if (selectedElement) {
+            // Сбрасываем все выделения
+            document.querySelectorAll('.station-map-item').forEach(item => {
+                item.style.borderWidth = '2px';
+                item.style.borderColor = '';
+                item.style.boxShadow = '';
+                item.classList.remove('selected');
+            });
+            
+            // Применяем выделение к выбранной станции
+            selectedElement.style.borderWidth = '4px';
+            selectedElement.style.borderColor = '#0057b8';
+            selectedElement.style.boxShadow = '0 0 10px rgba(0, 87, 184, 0.5)';
+            selectedElement.classList.add('selected');
+        }
     }
 }
 
@@ -620,7 +681,7 @@ function updateUserDisplay() {
         }
     });
 }
-// Функция восстановления выбранных состояний (вызывается всегда)
+// Улучшенная функция восстановления состояний
 function restoreSelectedStates() {
     const savedPosition = localStorage.getItem('selectedPosition');
     const savedMood = localStorage.getItem('selectedMood');
@@ -641,14 +702,6 @@ function restoreSelectedStates() {
             moodCards.forEach(c => c.classList.remove('active'));
             moodCard.classList.add('active');
         }
-    }
-    
-    // Обновляем отображение если состояния были восстановлены
-    if ((savedPosition || savedMood) && userId) {
-        setTimeout(() => {
-            updateUserState();
-            updateUserDisplay();
-        }, 500);
     }
 }
 // Функции навигации
@@ -674,7 +727,7 @@ function showJoinedRoom() {
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
     joinedRoomScreen.classList.add('active');
 }
-// Функция обновления состояния пользователя
+// Обновите функцию updateUserState для немедленного обновления
 async function updateUserState() {
     if (userId && (currentPosition || currentMood)) {
         const stateText = [currentPosition, currentMood].filter(Boolean).join(' | ');
@@ -683,25 +736,40 @@ async function updateUserState() {
             position: currentPosition,
             mood: currentMood
         });
-        loadGroupMembers();
+        
+        // Немедленно обновляем отображение
+        await loadRequests();
+        await loadGroupMembers();
     }
 }
 
-// Функция загрузки пользователей
+// Обновите функцию loadRequests для фильтрации по станции
 async function loadRequests() {
     const users = await getUsers();
     requestsContainer.innerHTML = '';
     
-    const filteredUsers = users.filter(user => 
+    // Фильтруем пользователей: только те, кто на той же станции, что и текущий пользователь
+    let filteredUsers = users.filter(user => 
         user.city === selectedCity && 
         user.online === true
     );
     
+    // Если мы на третьей странице (joined room), показываем только пользователей текущей станции
+    if (joinedRoomScreen.classList.contains('active') && currentGroup) {
+        filteredUsers = filteredUsers.filter(user => 
+            user.station === currentGroup.station
+        );
+    }
+    
     if (filteredUsers.length === 0) {
+        const message = joinedRoomScreen.classList.contains('active') && currentGroup 
+            ? `Пока нет других пользователей на станции ${currentGroup.station}`
+            : `Пока нет пользователей на станциях ${selectedCity === 'spb' ? 'Санкт-Петербурга' : 'Москвы'}`;
+            
         requestsContainer.innerHTML = `
             <div class="no-requests">
-                <h3>Пока нет пользователей на станциях ${selectedCity === 'spb' ? 'Санкт-Петербурга' : 'Москвы'}</h3>
-                <p>Будьте первым - выберите станцию на карте выше!</p>
+                <h3>${message}</h3>
+                <p>Будьте первым!</p>
             </div>
         `;
         return;
@@ -737,6 +805,12 @@ async function loadRequests() {
             requestCard.className = 'request-card';
             const isCurrentUser = userId && user.id === userId;
             
+            // Формируем информацию о состоянии пользователя
+            const stateInfo = [];
+            if (user.position) stateInfo.push(`Позиция: ${user.position}`);
+            if (user.mood) stateInfo.push(`Настроение: ${user.mood}`);
+            const stateText = stateInfo.join(' • ');
+            
             requestCard.innerHTML = `
                 <div class="request-header">
                     <div class="user-info-compact">
@@ -752,13 +826,14 @@ async function loadRequests() {
                     ${user.wagon && user.wagon !== 'Не указан' ? `<div class="wagon">Вагон ${user.wagon}</div>` : ''}
                 </div>
                 
-                <!-- НА ТРЕТЬЕЙ СТРАНИЦЕ СОСТОЯНИЯ НЕ ОБНОВЛЯЮТСЯ -->
-                ${user.position && user.id === userId ? `<div class="status-info"><strong>Позиция:</strong> ${user.position}</div>` : ''}
-                ${user.mood && user.id === userId ? `<div class="status-info"><strong>Настроение:</strong> ${user.mood}</div>` : ''}
+                ${stateText ? `<div class="user-state-info" style="margin: 10px 0; padding: 8px; background: #f8f9fa; border-radius: 5px; font-size: 14px;">
+                    <strong>Состояние:</strong> ${stateText}
+                </div>` : ''}
                 
                 <div class="user-connections">
                     <div class="connections-count">
                         ${user.is_waiting ? '⏳ Ожидает присоединения' : '✅ Соединился с другими'}
+                        ${stateText ? ` • ${stateText}` : ''}
                     </div>
                 </div>
             `;
@@ -829,25 +904,31 @@ document.getElementById('enter-waiting-room').addEventListener('click', async fu
         const createdUser = await createUser(userData);
         
         if (createdUser) {
-            currentUser = createdUser;
-            userId = createdUser.id;
-            
-            setupScreen.classList.remove('active');
-            waitingRoomScreen.classList.add('active');
-            
-            loadStationsMap();
-            loadRequests();
-            startAutoRefresh();
-            
-            console.log('✅ Пользователь создан:', createdUser.name);
-        }
+        currentUser = createdUser;
+        userId = createdUser.id;
+        
+        setupScreen.classList.remove('active');
+        waitingRoomScreen.classList.add('active');
+        
+        loadStationsMap();
+        loadRequests();
+        
+        // Запускаем глобальное обновление вместо startAutoRefresh
+        startGlobalRefresh();
+        
+        console.log('✅ Пользователь создан:', createdUser.name);
+    }
     } catch (error) {
         alert(error.message || 'Ошибка создания профиля. Проверьте подключение к серверу.');
     }
 });
 
 
+// Обновите обработчики навигации для управления обновлением
 backToSetupBtn.addEventListener('click', async function() {
+    // Останавливаем глобальное обновление
+    stopGlobalRefresh();
+    
     if (userId) {
         try {
             await deleteUser(userId);
@@ -855,10 +936,6 @@ backToSetupBtn.addEventListener('click', async function() {
             console.error('Ошибка при удалении пользователя:', error);
         }
     }
-    
-    // Останавливаем автообновление
-    autoRefreshIntervals.forEach(interval => clearInterval(interval));
-    autoRefreshIntervals = [];
     
     waitingRoomScreen.classList.remove('active');
     setupScreen.classList.add('active');
@@ -1017,14 +1094,15 @@ function getRandomColor() {
     return colors[Math.floor(Math.random() * colors.length)];
 }
 
-// Инициализация
+// Обновите window.load для запуска глобального обновления при необходимости
 window.addEventListener('load', function() {
     initializeStations();
     
     // Восстанавливаем ВСЕ состояния при любой загрузке
-    restoreSelectedStates(); // Состояния позиций и настроений
+    restoreSelectedStates();
+    restoreSelectedStation();
     
-    // Таймеры тоже восстанавливаем
+    // Восстанавливаем таймеры
     const savedTimerMinutes = localStorage.getItem('selectedTimerMinutes');
     if (savedTimerMinutes) {
         selectedMinutes = parseInt(savedTimerMinutes);
@@ -1039,12 +1117,20 @@ window.addEventListener('load', function() {
         cityFilterSelect.value = selectedCity;
     }
     
+    // Если пользователь уже авторизован, запускаем обновление
+    if (userId) {
+        startGlobalRefresh();
+    }
+    
     console.log('🚇 Приложение "Из метро" инициализировано');
-    console.log('🔄 Автообновление каждые 10 секунд');
-    console.log('💾 Все состояния сохраняются постоянно');
+    console.log('🔄 Глобальное обновление каждые 5 секунд');
 });
 
+
+// Обновите beforeunload для остановки обновления
 window.addEventListener('beforeunload', async function() {
+    stopGlobalRefresh(); // Останавливаем обновление
+    
     if (userId) {
         try {
             await deleteUser(userId);
@@ -1052,9 +1138,6 @@ window.addEventListener('beforeunload', async function() {
             console.error('Ошибка при удалении пользователя:', error);
         }
     }
-    
-    // Останавливаем автообновление
-    autoRefreshIntervals.forEach(interval => clearInterval(interval));
 });
 
 // Пинг активности при действиях пользователя

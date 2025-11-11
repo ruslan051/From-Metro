@@ -834,7 +834,42 @@ footer {
     box-shadow: 0 4px 12px rgba(0, 87, 184, 0.3);
     transform: translateY(-2px);
 }
+/* Стили для постоянного выделения */
+.station-map-item.selected {
+    border-width: 4px !important;
+    border-color: #0057b8 !important;
+    box-shadow: 0 0 10px rgba(0, 87, 184, 0.5) !important;
+    transform: scale(1.02);
+}
 
+.state-card.active {
+    border-color: #0057b8 !important;
+    background: #e7f1ff !important;
+    box-shadow: 0 4px 12px rgba(0, 87, 184, 0.3) !important;
+    transform: translateY(-2px);
+}
+
+/* Убедитесь, что выделение сохраняется при обновлениях */
+.station-map-item[style*="border-color: #0057b8"] {
+    border-width: 4px !important;
+    box-shadow: 0 0 10px rgba(0, 87, 184, 0.5) !important;
+}
+
+/* Стили для информации о состоянии пользователя */
+.user-state-info {
+    margin: 10px 0;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    font-size: 14px;
+    border-left: 3px solid #0057b8;
+}
+
+.connections-count {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #495057;
+}
 @media (max-width: 768px) 
 {
     .metro-map {

@@ -12,6 +12,8 @@ let currentGroup = null;
 let currentSelectedStation = null;
 let autoRefreshIntervals = [];
 let globalRefreshInterval = null;
+let waitingTimerExpanded; // ДОБАВЬТЕ ЭТУ СТРОЧКУ
+
 
 // Сказочные имена для мужчин и женщин
 const maleNames = ['Иван-Царевич', 'Кощей Бессмертный', 'Добрыня Никитич', 'Леший', 'Водяной', 'Бабай', 'Соловей-Разбойник', 'Змей Горыныч'];
@@ -105,6 +107,14 @@ function initializeDOMElements() {
     cityFilterSelect = getElementSafe('city-filter-select');
     joinSelectedStationBtn = getElementSafe('join-selected-station');
     stationDetails = getElementSafe('station-details');
+      // Таймеры комнаты ожидания
+    waitingTimer = getElementSafe('waiting-room-timer');
+    waitingTimerExpanded = getElementSafe('waiting-timer-expanded'); // ДОБАВЬТЕ ЭТУ СТРОЧКУ
+    waitingTimerDisplay = getElementSafe('waiting-timer-display');
+    waitingTimerStatus = getElementSafe('waiting-timer-status');
+    waitingStartTimerBtn = getElementSafe('waiting-start-timer');
+    waitingStopTimerBtn = getElementSafe('waiting-stop-timer');
+    waitingTimerOptions = document.querySelectorAll('#waiting-timer-expanded .timer-option');
     
     console.log('✅ DOM элементы инициализированы');
 }

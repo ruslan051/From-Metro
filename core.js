@@ -78,25 +78,25 @@ async function updateUsersIndicator() {
         );
         
         // ВКЛЮЧАЕМ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ДАЖЕ ЕСЛИ ОН ЕЩЕ НЕ СОХРАНЕН НА СЕРВЕРЕ
-        let totalUsersCount = onlineUsers.length;
+        let userCount = onlineUsers.length;
 
         // Если текущий пользователь еще не в списке, но мы на сайте - добавляем его
         if (userId) {
             // Проверяем, есть ли текущий пользователь в списке
             const currentUserInList = onlineUsers.some(user => user.id === userId);
             if (!currentUserInList) {
-                totalUsersCount += 1;
+                userCount += 1;
             }
         } else {
             // Если пользователь еще не создан, но находится на сайте - считаем его
-            totalUsersCount += 1;
+            userCount += 1;
         }
         
         // Обновляем счетчик
-        usersIndicatorCount.textContent = totalUsersCount;
+        usersIndicatorCount.textContent = userCount;
         
         // Обновляем подсказку с детальной информацией
-        if (totalUsersCount === 0) {
+        if (userCount === 0) {
             usersIndicatorTooltip.textContent = 'Нет активных пользователей';
             usersIndicator.classList.remove('active');
         } else {
@@ -129,7 +129,7 @@ async function updateUsersIndicator() {
                 .sort((a, b) => usersByStation[b].length - usersByStation[a].length)
                 .slice(0, 5); // показываем топ-5 станций
             
-            let tooltipText = `Всего: ${totalUsersCount} пользователей\n`;
+            let tooltipText = `Всего: ${userCount} пользователей\n`;
             
             if (sortedStations.length > 0) {
                 tooltipText += '\nТоп станций:\n';
@@ -149,7 +149,7 @@ async function updateUsersIndicator() {
             usersIndicator.classList.add('active');
         }
         
-        console.log(`👥 Индикатор обновлен: ${totalUsersCount} пользователей`);
+        console.log(`👥 Индикатор обновлен: ${userCount} пользователей`);
         
     } catch (error) {
         console.error('❌ Ошибка обновления индикатора:', error);

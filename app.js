@@ -453,7 +453,7 @@ function showSetup() {
 function showWaitingRoom() {
     if (!userId) {
         alert('Сначала создайте профиль');
-        return;
+        return showSetup();
     }
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
     waitingRoomScreen.classList.add('active');
@@ -584,10 +584,8 @@ function startAutoRefresh() {
     console.log('🔄 Автообновление запущено');
 }
 
-// Обработчики событий
-setupForm.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
+// Удалите старый обработчик формы и добавьте этот:
+document.getElementById('enter-waiting-room').addEventListener('click', async function() {
     // Генерация сказочного имени
     const getRandomName = (gender) => {
         const names = gender === 'male' ? maleNames : femaleNames;

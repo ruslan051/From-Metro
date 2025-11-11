@@ -111,22 +111,22 @@ async function loadStationsMap() {
             const stationElement = document.createElement('div');
             stationElement.className = 'station-map-item';
             
-            let userCount = 0;
-            let waitingCount = 0;
-            let connectedCount = 0;
-            let stationClass = 'empty';
-            
-            if (stationData) {
-                userCount = stationData.totalUsers;
-                waitingCount = stationData.waiting;
-                connectedCount = stationData.connected;
-                
-                if (connectedCount > 0) {
-                    stationClass = 'connected';
-                } else if (waitingCount > 0) {
-                    stationClass = 'waiting';
-                }
-            }
+          let userCount = 0;
+let waitingCount = 0;
+let connectedCount = 0;
+let stationClass = 'empty';
+
+if (stationData) {
+    userCount = stationData.totalUsers || 0;  // ← ДОБАВЬ || 0
+    waitingCount = stationData.waiting;
+    connectedCount = stationData.connected;
+    
+    if (connectedCount > 0) {
+        stationClass = 'connected';
+    } else if (waitingCount > 0) {
+        stationClass = 'waiting';
+    }
+}
             
             stationElement.classList.add(stationClass);
             stationElement.setAttribute('data-station', stationName);

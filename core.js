@@ -45,6 +45,13 @@ function initializeCoreDOMElements() {
     waitingRoomScreen = getElementSafe('waiting-room-screen');
     joinedRoomScreen = getElementSafe('joined-room-screen');
     
+     // Если элементы не найдены, попробуем найти их снова
+    if (!setupScreen || !waitingRoomScreen || !joinedRoomScreen) {
+        console.warn('❌ Основные экраны не найдены, повторная попытка...');
+        setupScreen = document.getElementById('setup-screen');
+        waitingRoomScreen = document.getElementById('waiting-room-screen');
+        joinedRoomScreen = document.getElementById('joined-room-screen');
+    }
     // Основные кнопки навигации
     backToSetupBtn = getElementSafe('back-to-setup');
     backToWaitingBtn = getElementSafe('back-to-waiting');
@@ -93,25 +100,30 @@ async function handleEnterWaitingRoom() {
             currentUser = createdUser;
             userId = createdUser.id;
             
-            setupScreen.classList.remove('active');
-            waitingRoomScreen.classList.add('active');
-            
-            // Загружаем дополнительные модули по требованию
-            loadOptionalModules().then(() => {
-                if (typeof loadStationsMap === 'function') loadStationsMap();
-                if (typeof loadRequests === 'function') loadRequests();
-                startGlobalRefresh();
-            });
-            
-            console.log('✅ Пользователь создан:', createdUser.name);
+            if (setupScreen && waitingRoomScreen) {
+                setupScreen.classList.remove('active');
+                waitingRoomScreen.classList.add('active');
+                
+                // Загружаем дополнительные модули по требованию
+                loadOptionalModules().then(() => {
+                    if (typeof loadStationsMap === 'function') loadStationsMap();
+                    if (typeof loadRequests === 'function') loadRequests();
+                    startGlobalRefresh();
+                });
+                
+                console.log('✅ Пользователь создан:', createdUser.name);
+            } else {
+                console.error('❌ Экраны не найдены');
+                initializeCoreDOMElements();
+            }
         }
-    } catch (error) {
-        console.error('❌ Ошибка создания пользователя:', error);
+    } catch (err) { // Изменил error на err чтобы избежать конфликта
+        console.error('❌ Ошибка создания пользователя:', err);
         
         // Показываем понятное сообщение об ошибке
-        const errorMessage = error.message.includes('Failed to fetch') 
+        const errorMessage = err.message.includes('Failed to fetch') 
             ? 'Ошибка подключения к серверу. Проверьте интернет-соединение.'
-            : `Ошибка создания профиля: ${error.message}`;
+            : `Ошибка создания профиля: ${err.message}`;
         
         alert(errorMessage);
         

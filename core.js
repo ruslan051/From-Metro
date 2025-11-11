@@ -239,13 +239,13 @@ async function handleEnterWaitingRoom() {
                 initializeCoreDOMElements();
             }
         }
-    } catch (error) { // Изменил error на err чтобы избежать конфликта
-        console.error('❌ Ошибка создания пользователя:', err);
+    } catch (error) { // ИСПРАВЛЕНО: заменил err на error
+        console.error('❌ Ошибка создания пользователя:', error); // ИСПРАВЛЕНО
         
         // Показываем понятное сообщение об ошибке
-        const errorMessage = err.message.includes('Failed to fetch') 
+        const errorMessage = error.message.includes('Failed to fetch')  // ИСПРАВЛЕНО
             ? 'Ошибка подключения к серверу. Проверьте интернет-соединение.'
-            : `Ошибка создания профиля: ${err.message}`;
+            : `Ошибка создания профиля: ${error.message}`; // ИСПРАВЛЕНО
         
         alert(errorMessage);
         
@@ -256,6 +256,7 @@ async function handleEnterWaitingRoom() {
         }
     }
 }
+
 
 
 function handleBackToSetup() {
@@ -671,10 +672,7 @@ document.addEventListener('DOMContentLoaded', function() {
          // Затем обновляем реальными данными
         updateUsersIndicator();
     }, 500);
- // Первоначальное обновление индикатора
-    setTimeout(() => {
-        updateUsersIndicator();
-    }, 1000);
+
     
     // Инициализация основных обработчиков
     if (enterWaitingRoomBtn) {

@@ -224,6 +224,14 @@ let currentGroup = null;
 let currentSelectedStation = null;
 let autoRefreshIntervals = [];
 
+// В начале app.js добавьте безопасные получения элементов
+function getElementSafe(id) {
+    const element = document.getElementById(id);
+    if (!element) {
+        console.warn(`❌ Элемент ${id} не найден`);
+    }
+    return element;
+}
 // Добавьте эту функцию для проверки
 function checkAllElements() {
     const elements = [
@@ -243,6 +251,7 @@ function checkAllElements() {
         console.log(`${id}:`, element ? '✅ Найден' : '❌ Не найден');
     });
 }
+
 
 // Вызовите после загрузки
 window.addEventListener('load', function() {
@@ -666,10 +675,17 @@ function restoreSelectedStation() {
 
 // Исправленная функция загрузки участников группы
 async function loadGroupMembers() {
-    if (!currentGroup || !groupMembersContainer) {
-        console.warn('Группа не определена или контейнер не найден');
+    const container = getElementSafe('group-members');
+    if (!container) {
+        console.error('Контейнер group-members не найден');
         return;
     }
+    
+    if (!currentGroup) {
+        container.innerHTML = '<div class="no-requests">Выберите станцию для просмотра участников</div>';
+        return;
+    }
+
     
     try {
         const users = await getUsers();

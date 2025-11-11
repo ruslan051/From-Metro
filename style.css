@@ -59,14 +59,18 @@ h1 {
     opacity: 0.9;
 }
 
-.metro-icon { 
-    position: relative;
-    bottom: 30mm;
-    left: 10mm;
-    
-    font-size: 30px;
+.metro-icon {
+    font-size: 24px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    flex-shrink: 0; /* Запрещаем сжатие */
 }
-
 .content {
     padding: 25px;
 }
@@ -933,18 +937,23 @@ footer {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
+     gap: 15px;
+}
+.header-icons {
+    display: flex;
+    gap: 10px; /* Расстояние между значками */
+    align-items: center;
 }
 
 .users-indicator {
-    position: relative;
     display: flex;
     align-items: center;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     padding: 8px 12px;
-    cursor: pointer;
-    transition: all 0.3s ease;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    flex-shrink: 0; /* Запрещаем сжатие */
+    min-width: 60px; /* Минимальная ширина */
 }
 
 .users-indicator:hover {

@@ -466,10 +466,10 @@ function startAutoRefresh() {
     autoRefreshIntervals.forEach(interval => clearInterval(interval));
     autoRefreshIntervals = [];
     
-    // Обновляем карту каждые 2 секунды
-    autoRefreshIntervals.push(setInterval(() => {
-        loadStationsMap();
-    }, 2000));
+    // // Обновляем карту каждые 2 секунды
+    // autoRefreshIntervals.push(setInterval(() => {
+    //     loadStationsMap();
+    // }, 2000));
     
     // Обновляем список пользователей каждые 3 секунды
     autoRefreshIntervals.push(setInterval(() => {

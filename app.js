@@ -76,6 +76,113 @@ const cityFilterSelect = document.getElementById('city-filter-select');
 const joinSelectedStationBtn = document.getElementById('join-selected-station');
 const stationDetails = document.getElementById('station-details');
 
+// Добавьте эту проверку после объявления всех DOM элементов
+document.addEventListener('DOMContentLoaded', function() {
+    // Проверяем существование элементов перед добавлением обработчиков
+    const backToSetupBtn = document.getElementById('back-to-setup');
+    if (backToSetupBtn) {
+        backToSetupBtn.addEventListener('click', async function() {
+            if (userId) {
+                try {
+                    await deleteUser(userId);
+                } catch (error) {
+                    console.error('Ошибка при удалении пользователя:', error);
+                }
+            }
+            
+            autoRefreshIntervals.forEach(interval => clearInterval(interval));
+            autoRefreshIntervals = [];
+            
+            waitingRoomScreen.classList.remove('active');
+            setupScreen.classList.add('active');
+            stopTimer();
+            currentUser = null;
+            userId = null;
+        });
+    }
+
+    const backToWaitingBtn = document.getElementById('back-to-waiting');
+    if (backToWaitingBtn) {
+        backToWaitingBtn.addEventListener('click', function() {
+            joinedRoomScreen.classList.remove('active');
+            waitingRoomScreen.classList.add('active');
+        });
+    }
+
+    const leaveGroupBtn = document.getElementById('leave-group');
+    if (leaveGroupBtn) {
+        leaveGroupBtn.addEventListener('click', async function() {
+            if (userId) {
+                try {
+                    await updateUser(userId, { 
+                        status: 'Ожидание',
+                        position: '',
+                        mood: '',
+                        is_waiting: true,
+                        is_connected: false
+                    });
+                } catch (error) {
+                    console.error('Ошибка при обновлении пользователя:', error);
+                }
+            }
+            currentGroup = null;
+            joinedRoomScreen.classList.remove('active');
+            waitingRoomScreen.classList.add('active');
+        });
+    }
+
+    // Обработчик для кнопки входа в комнату ожидания
+    const enterWaitingRoomBtn = document.getElementById('enter-waiting-room');
+    if (enterWaitingRoomBtn) {
+        enterWaitingRoomBtn.addEventListener('click', async function() {
+            // Генерация сказочного имени
+            const getRandomName = (gender) => {
+                const names = gender === 'male' ? maleNames : femaleNames;
+                return names[Math.floor(Math.random() * names.length)];
+            };
+            
+            const randomName = getRandomName(selectedGender);
+            
+            const userData = {
+                name: randomName,
+                station: '',
+                wagon: '',
+                color: '',
+                colorCode: getRandomColor(),
+                status: 'В режиме ожидания',
+                timer: "00:00",
+                online: true,
+                city: selectedCity,
+                gender: selectedGender,
+                position: '',
+                mood: '',
+                isWaiting: true,
+                isConnected: false
+            };
+            
+            try {
+                const createdUser = await createUser(userData);
+                
+                if (createdUser) {
+                    currentUser = createdUser;
+                    userId = createdUser.id;
+                    
+                    setupScreen.classList.remove('active');
+                    waitingRoomScreen.classList.add('active');
+                    
+                    loadStationsMap();
+                    loadRequests();
+                    startAutoRefresh();
+                    
+                    console.log('✅ Пользователь создан:', createdUser.name);
+                }
+            } catch (error) {
+                alert(error.message || 'Ошибка создания профиля. Проверьте подключение к серверу.');
+            }
+        });
+    }
+});
+
 // Элементы выбора города и пола
 const cityOptions = document.querySelectorAll('.city-option');
 const genderOptions = document.querySelectorAll('.gender-option');
@@ -106,84 +213,48 @@ function initializeStations() {
     });
 }
 // Обработчик для кнопки подтверждения параметров в комнате ожидания
-document.getElementById('confirm-station').addEventListener('click', async function() {
-        const confirmStationBtn = document.getElementById('confirm-station');
-        if (confirmStationBtn) {
-            confirmStationBtn.addEventListener('click', async function() {
-                const wagon = wagonSelect.value || '';
-                const color = colorSelect.value;
-                
-                if (!color) {
-                    alert('Пожалуйста, укажите цвет верхней одежды');
-                    return;
-                }
-                
-                if (!currentSelectedStation) {
-                    alert('Пожалуйста, выберите станцию на карте');
-                    return;
-                }
-                
-                if (userId) {
-                    try {
-                        // Обновляем пользователя с выбранными параметрами
-                        await updateUser(userId, {
-                            station: currentSelectedStation,
-                            wagon: wagon,
-                            color: color,
-                            is_waiting: false,
-                            is_connected: true,
-                            status: 'Выбрал станцию: ' + currentSelectedStation
-                        });
-                        
-                        // Присоединяемся к выбранной станции
-                        await joinStation(currentSelectedStation);
-                        
-                    } catch (error) {
-                        console.error('Ошибка при обновлении параметров:', error);
-                        alert('Ошибка: ' + error.message);
-                    }
-                }
-            });
-        } else {
-            console.warn('Элемент confirm-station не найден');
+const confirmStationBtn = document.getElementById('confirm-station');
+if (confirmStationBtn) {
+    confirmStationBtn.addEventListener('click', async function() {
+        const wagon = wagonSelect.value || '';
+        const color = colorSelect.value;
+        
+        if (!color) {
+            alert('Пожалуйста, укажите цвет верхней одежды');
+            return;
         }
-
-
-
-    const wagon = wagonSelect.value || '';
-    const color = colorSelect.value;
-    
-    if (!color) {
-        alert('Пожалуйста, укажите цвет верхней одежды');
-        return;
-    }
-    
-    if (!currentSelectedStation) {
-        alert('Пожалуйста, выберите станцию на карте');
-        return;
-    }
-    
-    if (userId) {
-        try {
-            // Обновляем пользователя с выбранными параметрами
-            await updateUser(userId, {
-                station: currentSelectedStation,
-                wagon: wagon,
-                color: color,
-                is_waiting: false,
-                is_connected: true,
-                status: 'Выбрал станцию: ' + currentSelectedStation
-            });
-            
-            // Присоединяемся к выбранной станции
-            await joinStation(currentSelectedStation);
-            
-        } catch (error) {
-            console.error('Ошибка при обновлении параметров:', error);
-            alert('Ошибка: ' + error.message);
+        
+        if (!currentSelectedStation) {
+            alert('Пожалуйста, выберите станцию на карте');
+            return;
         }
-    }
-});
+        
+        if (userId) {
+            try {
+                // Обновляем пользователя с выбранными параметрами
+                await updateUser(userId, {
+                    station: currentSelectedStation,
+                    wagon: wagon,
+                    color: color,
+                    is_waiting: false,
+                    is_connected: true,
+                    status: 'Выбрал станцию: ' + currentSelectedStation
+                });
+                
+                // Присоединяемся к выбранной станции
+                await joinStation(currentSelectedStation);
+                
+            } catch (error) {
+                console.error('Ошибка при обновлении параметров:', error);
+                alert('Ошибка: ' + error.message);
+            }
+        }
+    });
+} else {
+    console.warn('Элемент confirm-station не найден');
+}
+
+
 // Обработчики выбора города
 cityOptions.forEach(option => {
     option.addEventListener('click', function() {

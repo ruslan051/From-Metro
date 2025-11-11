@@ -63,7 +63,7 @@ h1 {
     position: relative;
      display: flex;
     top: 15px;
-    left: -20px;
+    right: 20px;
     font-size: 30px;
 }
 

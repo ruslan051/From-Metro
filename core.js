@@ -41,11 +41,19 @@ function getElementSafe(id) {
     return element;
 }
 function initializeUsersIndicator() {
+
+// Несколько попыток найти элемент
+    let attempts = 0;
+    const maxAttempts = 10;
+
+     const tryInitialize = () => {
+    
+
     usersIndicator = document.getElementById('users-indicator');
     if (!usersIndicator) {
         console.warn('❌ Индикатор пользователей не найден');
         return;
-    }
+    }}
     
     usersIndicatorCount = usersIndicator.querySelector('.indicator-count');
     usersIndicatorTooltip = usersIndicator.querySelector('.indicator-tooltip');

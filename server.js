@@ -7,16 +7,50 @@ const { Pool } = pkg;
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(express.json());
-app.use(requestIp.mw());
+// Улучшенная CORS конфигурация
+app.use(cors({
+  origin: [
+    'https://frommetro.vercel.app',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:8080'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
+}));
 
-// PostgreSQL connection
+// Явно обрабатываем OPTIONS запросы для preflight
+app.options('*', cors());
+
+// PostgreSQL connection с улучшенной обработкой ошибок
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  // Добавляем настройки пула соединений
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+  maxUses: 7500,
 });
 
+// Обработчик ошибок пула
+pool.on('error', (err, client) => {
+  console.error('❌ Unexpected error on idle client', err);
+});
+
+// Функция для проверки подключения к БД
+async function checkDatabaseConnection() {
+  try {
+    const client = await pool.connect();
+    console.log('✅ База данных подключена успешно');
+    client.release();
+    return true;
+  } catch (error) {
+    console.error('❌ Ошибка подключения к базе данных:', error);
+    return false;
+  }
+}
 // Функция для генерации случайного цвета
 function getRandomColor() {
   const colors = ['#dc3545', '#007bff', '#28a745', '#ffc107', '#6f42c1', '#e83e8c', '#fd7e14', '#20c997'];
@@ -24,103 +58,73 @@ function getRandomColor() {
 }
 
 
-
-// Функция для добавления недостающих колонок
+// Упрощенная функция миграции
 async function migrateDatabase() {
+  const client = await pool.connect();
   try {
-    // Проверяем и добавляем недостающие колонки
-    const columnsToAdd = [
-      { name: 'ip_address', type: 'INET' },
-      { name: 'position', type: 'VARCHAR(100)' },
-      { name: 'mood', type: 'VARCHAR(100)' },
-      { name: 'last_activity', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' },
-      { name: 'user_agent', type: 'TEXT' },
-      { name: 'session_id', type: 'VARCHAR(255)' },
-      { name: 'is_waiting', type: 'BOOLEAN DEFAULT true' },
-      { name: 'is_connected', type: 'BOOLEAN DEFAULT false' }
+    await client.query('BEGIN');
+    
+    console.log('🔄 Запуск миграции базы данных...');
+    
+    // Основные колонки для добавления
+    const alterQueries = [
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS ip_address INET`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS position VARCHAR(100)`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS mood VARCHAR(100)`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS user_agent TEXT`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS session_id VARCHAR(255)`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_waiting BOOLEAN DEFAULT true`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_connected BOOLEAN DEFAULT false`
     ];
 
-    for (const column of columnsToAdd) {
+    for (const query of alterQueries) {
       try {
-        const checkResult = await pool.query(`
-          SELECT column_name 
-          FROM information_schema.columns 
-          WHERE table_name = 'users' AND column_name = $1
-        `, [column.name]);
-
-        if (checkResult.rows.length === 0) {
-          await pool.query(`ALTER TABLE users ADD COLUMN ${column.name} ${column.type}`);
-          console.log(`✅ Добавлена колонка: ${column.name}`);
-        }
+        await client.query(query);
+        console.log(`✅ Выполнен: ${query.split('ADD COLUMN IF NOT EXISTS')[1]}`);
       } catch (error) {
-        console.error(`❌ Ошибка при добавлении колонки ${column.name}:`, error.message);
+        console.warn(`⚠️ Предупреждение при выполнении миграции:`, error.message);
       }
     }
 
-    // Проверяем и добавляем таблицу rooms если её нет
-    try {
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS rooms (
-          id SERIAL PRIMARY KEY,
-          host_user_id INTEGER,
-          host_user_name VARCHAR(255),
-          station VARCHAR(255),
-          wagon VARCHAR(50),
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      console.log('✅ Таблица rooms проверена/создана');
-    } catch (error) {
-      console.error('❌ Ошибка при создании таблицы rooms:', error.message);
-    }
-
-    // Проверяем и добавляем таблицу room_users если её нет
-    try {
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS room_users (
-          id SERIAL PRIMARY KEY,
-          room_id INTEGER,
-          user_id INTEGER,
-          user_name VARCHAR(255),
-          user_station VARCHAR(255),
-          user_wagon VARCHAR(50),
-          user_color VARCHAR(100),
-          user_color_code VARCHAR(7),
-          user_position VARCHAR(100),
-          user_mood VARCHAR(100),
-          joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      console.log('✅ Таблица room_users проверена/создана');
-    } catch (error) {
-      console.error('❌ Ошибка при создании таблицы room_users:', error.message);
-    }
-
-    // Добавляем индексы для улучшения производительности
-    const indexes = [
-      'CREATE INDEX IF NOT EXISTS idx_users_ip_address ON users(ip_address)',
-      'CREATE INDEX IF NOT EXISTS idx_users_station_wagon ON users(station, wagon)',
-      'CREATE INDEX IF NOT EXISTS idx_users_online ON users(online)',
-      'CREATE INDEX IF NOT EXISTS idx_users_city ON users(city)',
-      'CREATE INDEX IF NOT EXISTS idx_room_users_room_id ON room_users(room_id)',
-      'CREATE INDEX IF NOT EXISTS idx_users_last_activity ON users(last_activity)',
-      'CREATE INDEX IF NOT EXISTS idx_users_session_id ON users(session_id)',
-      'CREATE INDEX IF NOT EXISTS idx_users_is_waiting ON users(is_waiting)',
-      'CREATE INDEX IF NOT EXISTS idx_users_is_connected ON users(is_connected)'
+    // Создание таблиц если не существуют
+    const createTables = [
+      `CREATE TABLE IF NOT EXISTS rooms (
+        id SERIAL PRIMARY KEY,
+        host_user_id INTEGER,
+        host_user_name VARCHAR(255),
+        station VARCHAR(255),
+        wagon VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS room_users (
+        id SERIAL PRIMARY KEY,
+        room_id INTEGER,
+        user_id INTEGER,
+        user_name VARCHAR(255),
+        user_station VARCHAR(255),
+        user_wagon VARCHAR(50),
+        user_color VARCHAR(100),
+        user_color_code VARCHAR(7),
+        user_position VARCHAR(100),
+        user_mood VARCHAR(100),
+        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
     ];
 
-    for (const indexQuery of indexes) {
-      try {
-        await pool.query(indexQuery);
-        console.log(`✅ Индекс создан: ${indexQuery.split('ON ')[1]}`);
-      } catch (error) {
-        console.error(`❌ Ошибка при создании индекса:`, error.message);
-      }
+    for (const query of createTables) {
+      await client.query(query);
     }
 
-    console.log('✅ Миграция базы данных завершена');
+    await client.query('COMMIT');
+    console.log('✅ Миграция базы данных завершена успешно');
+    
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('❌ Ошибка миграции базы данных:', error);
+    throw error;
+  } finally {
+    client.release();
   }
 }
 
@@ -643,22 +647,124 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 });
 
-// Функция пинга активности пользователя
+// Функция пинга активности пользователя - ИСПРАВЛЕННАЯ ВЕРСИЯ
 app.post('/api/users/:id/ping', async (req, res) => {
+  const client = await pool.connect();
   try {
     const { id } = req.params;
     
-    await pool.query(
-      'UPDATE users SET last_activity = $1 WHERE id = $2',
+    // Проверяем существование пользователя
+    const userCheck = await client.query('SELECT id FROM users WHERE id = $1', [id]);
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+    
+    // Обновляем активность
+    const result = await client.query(
+      'UPDATE users SET last_activity = $1 WHERE id = $2 RETURNING id',
       [new Date(), id]
     );
     
-    res.json({ success: true, message: 'Активность обновлена' });
+    res.json({ 
+      success: true, 
+      message: 'Активность обновлена',
+      userId: result.rows[0].id
+    });
+    
   } catch (error) {
     console.error('❌ Ошибка обновления активности:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      success: false,
+      error: 'Внутренняя ошибка сервера' 
+    });
+  } finally {
+    client.release();
   }
 });
+// Health check с проверкой БД
+app.get('/health', async (req, res) => {
+  try {
+    // Проверяем подключение к БД
+    await pool.query('SELECT 1');
+    
+    res.json({
+      status: 'OK',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage()
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'ERROR',
+      database: 'disconnected',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Проверка готовности API
+app.get('/api/health', async (req, res) => {
+  try {
+    const dbResult = await pool.query('SELECT COUNT(*) as user_count FROM users WHERE online = true');
+    
+    res.json({
+      status: 'operational',
+      database: 'connected',
+      activeUsers: parseInt(dbResult.rows[0].user_count),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'degraded',
+      database: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+// Обертка для обработки ошибок async функций
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+
+// Пример применения ко всем endpoints
+app.get('/api/users', asyncHandler(async (req, res) => {
+  const result = await pool.query(`
+    SELECT * FROM users 
+    WHERE online = true 
+    ORDER BY created_at DESC
+  `);
+  res.json(result.rows);
+}));
+// Проверка обязательных переменных окружения
+function checkEnvironment() {
+  const requiredEnvVars = ['DATABASE_URL'];
+  const missing = requiredEnvVars.filter(envVar => !process.env[envVar]);
+  
+  if (missing.length > 0) {
+    console.error('❌ Отсутствуют обязательные переменные окружения:', missing.join(', '));
+    process.exit(1);
+  }
+  
+  console.log('✅ Все переменные окружения настроены');
+}
+
+// Вызовите в начале
+checkEnvironment();
+
+// Увеличьте лимиты для Express
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Добавьте обработку таймаутов
+app.use((req, res, next) => {
+  req.setTimeout(30000); // 30 секунд
+  res.setTimeout(30000);
+  next();
+});
+
 
 // Присоединение к комнате станции
 app.post('/api/rooms/join-station', async (req, res) => {

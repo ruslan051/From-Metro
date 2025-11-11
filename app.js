@@ -26,23 +26,11 @@ const waitingTimerStatus = document.getElementById('waiting-timer-status');
 const waitingStartTimerBtn = document.getElementById('waiting-start-timer');
 const waitingStopTimerBtn = document.getElementById('waiting-stop-timer');
 const waitingTimerOptions = document.querySelectorAll('#waiting-timer-expanded .timer-option');
+// Проверяем существование элементов перед использованием
+if (!waitingTimer || !waitingTimerDisplay) {
+    console.warn('❌ Некоторые элементы таймера не найдены');
+}
 
-// Обработчики для таймера в комнате ожидания
-waitingTimer.addEventListener('click', function() {
-    document.getElementById('waiting-timer-expanded').classList.toggle('active');
-});
-
-waitingTimerOptions.forEach(btn => {
-    btn.addEventListener('click', function() {
-        waitingTimerOptions.forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        selectedMinutes = parseInt(this.getAttribute('data-minutes'));
-        waitingTimerDisplay.textContent = `Готов к запуску: ${selectedMinutes} мин`;
-    });
-});
-
-waitingStartTimerBtn.addEventListener('click', startTimer);
-waitingStopTimerBtn.addEventListener('click', stopTimer);
 // Станции метро
 const stations = {
     spb: [
@@ -92,6 +80,141 @@ const metroMap = document.getElementById('metro-map');
 const cityFilterSelect = document.getElementById('city-filter-select');
 const joinSelectedStationBtn = document.getElementById('join-selected-station');
 const stationDetails = document.getElementById('station-details');
+
+
+async function handleEnterWaitingRoom() {
+    console.log('🚪 Вход в комнату ожидания');
+    
+    const getRandomName = (gender) => {
+        const names = gender === 'male' ? maleNames : femaleNames;
+        return names[Math.floor(Math.random() * names.length)];
+    };
+    
+    const randomName = getRandomName(selectedGender);
+    
+    const userData = {
+        name: randomName,
+        station: '',
+        wagon: '',
+        color: '',
+        colorCode: getRandomColor(),
+        status: 'В режиме ожидания',
+        timer: "00:00",
+        online: true,
+        city: selectedCity,
+        gender: selectedGender,
+        position: '',
+        mood: '',
+        isWaiting: true,
+        isConnected: false
+    };
+    
+    try {
+        const createdUser = await createUser(userData);
+        
+        if (createdUser) {
+            currentUser = createdUser;
+            userId = createdUser.id;
+            
+            setupScreen.classList.remove('active');
+            waitingRoomScreen.classList.add('active');
+            
+            loadStationsMap();
+            loadRequests();
+            startGlobalRefresh();
+            
+            console.log('✅ Пользователь создан:', createdUser.name);
+        }
+    } catch (error) {
+        alert(error.message || 'Ошибка создания профиля. Проверьте подключение к серверу.');
+    }
+}
+
+function handleBackToSetup() {
+    console.log('🔙 Назад к настройкам');
+    setupScreen.classList.add('active');
+    waitingRoomScreen.classList.remove('active');
+    stopGlobalRefresh();
+}
+
+function handleBackToWaiting() {
+    console.log('🔙 Назад к ожиданию');
+    waitingRoomScreen.classList.add('active');
+    joinedRoomScreen.classList.remove('active');
+}
+
+async function handleConfirmStation() {
+    console.log('✅ Подтверждаем станцию');
+    const wagon = wagonSelect.value || '';
+    const color = colorSelect.value;
+    
+    if (!color) {
+        alert('Пожалуйста, укажите цвет верхней одежды');
+        return;
+    }
+    
+    if (!currentSelectedStation) {
+        alert('Пожалуйста, выберите станцию на карте');
+        return;
+    }
+    
+    if (userId) {
+        try {
+            await updateUser(userId, {
+                station: currentSelectedStation,
+                wagon: wagon,
+                color: color,
+                is_waiting: false,
+                is_connected: true,
+                status: 'Выбрал станцию: ' + currentSelectedStation
+            });
+            
+            await joinStation(currentSelectedStation);
+            
+        } catch (error) {
+            console.error('Ошибка при обновлении параметров:', error);
+            alert('Ошибка: ' + error.message);
+        }
+    }
+}
+
+function initializeCityAndGenderSelection() {
+    // Обработчики выбора города
+    const cityOptions = document.querySelectorAll('.city-option');
+    cityOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            cityOptions.forEach(opt => opt.classList.remove('active'));
+            this.classList.add('active');
+            selectedCity = this.getAttribute('data-city');
+            console.log('📍 Выбран город:', selectedCity);
+        });
+    });
+
+    // Обработчики выбора пола
+    const genderOptions = document.querySelectorAll('.gender-option');
+    genderOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            genderOptions.forEach(opt => opt.classList.remove('active'));
+            this.classList.add('active');
+            selectedGender = this.getAttribute('data-gender');
+            console.log('👤 Выбран пол:', selectedGender);
+        });
+    });
+}
+
+// Безопасная инициализация компактного таймера
+function initializeCompactTimer() {
+    const compactTimer = document.getElementById('compact-timer');
+    const timerExpanded = document.getElementById('timer-expanded');
+    
+    if (compactTimer && timerExpanded) {
+        compactTimer.addEventListener('click', function() {
+            timerExpanded.classList.toggle('active');
+        });
+    }
+}
+
+
 
 // Добавьте эту проверку после объявления всех DOM элементов
 document.addEventListener('DOMContentLoaded', function() {
@@ -295,47 +418,7 @@ function initializeStations() {
         stationSelect.appendChild(option);
     });
 }
-// Исправленный обработчик для кнопки подтверждения параметров
-const confirmStationBtn = document.getElementById('confirm-station');
-if (confirmStationBtn) {
-    confirmStationBtn.addEventListener('click', async function() {
-        const wagon = wagonSelect.value || '';
-        const color = colorSelect.value;
-        
-        if (!color) {
-            alert('Пожалуйста, укажите цвет верхней одежды');
-            return;
-        }
-        
-        if (!currentSelectedStation) {
-            alert('Пожалуйста, выберите станцию на карте');
-            return;
-        }
-        
-        if (userId) {
-            try {
-                // Обновляем пользователя с выбранными параметрами
-                await updateUser(userId, {
-                    station: currentSelectedStation,
-                    wagon: wagon,
-                    color: color,
-                    is_waiting: false,
-                    is_connected: true,
-                    status: 'Выбрал станцию: ' + currentSelectedStation
-                });
-                
-                // Присоединяемся к выбранной станции
-                await joinStation(currentSelectedStation);
-                
-            } catch (error) {
-                console.error('Ошибка при обновлении параметров:', error);
-                alert('Ошибка: ' + error.message);
-            }
-        }
-    });
-} else {
-    console.warn('Элемент confirm-station не найден');
-}
+
 
 // Обработчики выбора города
 cityOptions.forEach(option => {
@@ -867,7 +950,8 @@ function initializeStateCards() {
         });
     });
 
-    // Карточки настроений
+    // Исправленная инициализация карточек настроений
+function initializeMoodCards() {
     const moodCards = document.querySelectorAll('#mood-cards .state-card');
     moodCards.forEach(card => {
         card.addEventListener('click', async function() {
@@ -875,14 +959,24 @@ function initializeStateCards() {
             this.classList.add('active');
             currentMood = this.getAttribute('data-mood');
             
-            // Сохраняем выбранное настроение
             localStorage.setItem('selectedMood', currentMood);
-            
-            // Немедленно обновляем состояние
             await updateUserState();
-            console.log('😊 Настроение обновлено:', currentMood);
         });
     });
+}
+
+// И добавьте вызов в initializeEventHandlers:
+function initializeEventHandlers() {
+    console.log('🔧 Инициализация обработчиков событий...');
+    
+    // ... существующий код ...
+    
+    // Инициализация карточек состояний
+    initializeStateCards();
+    initializeMoodCards();
+    
+    console.log('✅ Все обработчики инициализированы');
+}
 
     // Восстанавливаем сохраненные состояния
     restoreSelectedStates();
@@ -1066,55 +1160,7 @@ function startAutoRefresh() {
     console.log('   - 3 страница: только активные пользователи (каждую секунду)');
     console.log('   - Состояния пользователей не обновляются');
 }
-// Удалите старый обработчик формы и добавьте этот:
-document.getElementById('enter-waiting-room').addEventListener('click', async function() {
-    // Генерация сказочного имени
-    const getRandomName = (gender) => {
-        const names = gender === 'male' ? maleNames : femaleNames;
-        return names[Math.floor(Math.random() * names.length)];
-    };
-    
-    const randomName = getRandomName(selectedGender);
-    
-    const userData = {
-        name: randomName,
-        station: '', // Пустая станция
-        wagon: '', // Пустой вагон
-        color: '', // Пустой цвет
-        colorCode: getRandomColor(),
-        status: 'В режиме ожидания',
-        timer: "00:00",
-        online: true,
-        city: selectedCity,
-        gender: selectedGender,
-        position: '',
-        mood: '',
-        isWaiting: true,
-        isConnected: false
-    };
-    
-    try {
-        const createdUser = await createUser(userData);
-        
-        if (createdUser) {
-        currentUser = createdUser;
-        userId = createdUser.id;
-        
-        setupScreen.classList.remove('active');
-        waitingRoomScreen.classList.add('active');
-        
-        loadStationsMap();
-        loadRequests();
-        
-        // Запускаем глобальное обновление вместо startAutoRefresh
-        startGlobalRefresh();
-        
-        console.log('✅ Пользователь создан:', createdUser.name);
-    }
-    } catch (error) {
-        alert(error.message || 'Ошибка создания профиля. Проверьте подключение к серверу.');
-    }
-});
+
 
 
 // Обновите обработчики навигации для управления обновлением

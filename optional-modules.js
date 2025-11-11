@@ -1,3 +1,23 @@
+// Регистрируем функции в глобальной области
+window.loadStationsMap = loadStationsMap;
+window.loadRequests = loadRequests;
+window.loadGroupMembers = loadGroupMembers;
+window.initializeWaitingRoomTimer = initializeWaitingRoomTimer;
+window.initializeStateCards = initializeStateCards;
+window.restoreSelectedStation = restoreSelectedStation;
+window.restoreSelectedStates = restoreSelectedStates;
+window.joinStation = joinStation;
+window.updateUserState = updateUserState;
+window.startTimer = startTimer;
+window.stopTimer = stopTimer;
+
+// Функция инициализации после загрузки
+function initializeOptionalModules() {
+    initializeOptionalDOMElements();
+    initializeWaitingRoomTimer();
+    initializeStateCards();
+    console.log('🎯 Дополнительные модули инициализированы');
+}
 // Станции метро (редко используемые данные)
 const stations = {
     spb: [

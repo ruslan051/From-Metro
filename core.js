@@ -1,3 +1,6 @@
+// Глобальные флаги для проверки загрузки модулей
+window.optionalModulesLoaded = false;
+window.optionalModulesLoading = false;
 // Текущий пользователь и состояние
 let currentUser = null;
 let timerInterval = null;
@@ -312,21 +315,28 @@ function stopGlobalRefresh() {
     }
 }
 
-// Загрузка дополнительных модулей по требованию
+// Функция загрузки дополнительных модулей
 async function loadOptionalModules() {
-    // Если модули уже загружены, ничего не делаем
-    if (window.optionalModulesLoaded) return;
+    if (window.optionalModulesLoaded || window.optionalModulesLoading) return;
+    
+    window.optionalModulesLoading = true;
+    console.log('📦 Загрузка дополнительных модулей...');
     
     try {
-        // Динамически загружаем дополнительные модули
         await loadScript('optional-modules.js');
         window.optionalModulesLoaded = true;
+        window.optionalModulesLoading = false;
         console.log('✅ Дополнительные модули загружены');
+        
+        // Инициализируем модули после загрузки
+        if (typeof initializeOptionalModules === 'function') {
+            initializeOptionalModules();
+        }
     } catch (error) {
-        console.error('❌ Ошибка загрузки дополнительных модулей:', error);
+        console.error('❌ Ошибка загрузки модулей:', error);
+        window.optionalModulesLoading = false;
     }
 }
-
 // Вспомогательная функция для загрузки скриптов
 function loadScript(src) {
     return new Promise((resolve, reject) => {

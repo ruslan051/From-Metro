@@ -95,10 +95,8 @@
                         <div class="loading">Загрузка карты станций...</div>
                     </div>
                 </div>
-
-               
                 
-                <!-- Панель настроек пользователя -->
+                <!-- Панель настроек пользователя (ПЕРЕМЕЩЕНА СЮДА) -->
                 <div class="user-settings-panel">
                     <h4>Ваши параметры</h4>
                     
@@ -148,96 +146,93 @@
                 </div>
             </div>
 
-<!-- Экран после присоединения 3 страница -->
-<!-- Экран после присоединения 3 страница -->
-<div id="joined-room-screen" class="screen">
-    <button class="back-btn" id="back-to-waiting">
-        <i>←</i> Вернуться к поиску
-    </button>
-    
-    <!-- ЗАГОЛОВОК С НАЗВАНИЕМ СТАНЦИИ -->
-    <h2 id="station-title">Станция: Загрузка...</h2>
-    
-    <div class="navigation-buttons">
-        <button class="nav-btn" onclick="showSetup()">1. Настройка</button>
-        <button class="nav-btn" onclick="showWaitingRoom()">2. Выбор станции</button>
-        <button class="nav-btn active">3. Комната станции</button>
-    </div>
-    <p>Расскажите о своем состоянии другим участникам</p>
-    
-    <!-- Карточки позиций -->
-    <div class="state-section">
-        <h4>🎯 Ваша позиция в вагоне</h4>
-        <div class="state-cards" id="position-cards">
-            <div class="state-card" data-position="У двери">
-                <div class="state-icon">🚪</div>
-                <div class="state-name">У двери</div>
-            </div>
-            <div class="state-card" data-position="В центре вагона">
-                <div class="state-icon">🚶</div>
-                <div class="state-name">В центре вагона</div>
-            </div>
-            <div class="state-card" data-position="У окна">
-                <div class="state-icon">🪟</div>
-                <div class="state-name">У окна</div>
-            </div>
-            <div class="state-card" data-position="Сидя">
-                <div class="state-icon">💺</div>
-                <div class="state-name">Сидя</div>
-            </div>
-            <div class="state-card" data-position="У края">
-                <div class="state-icon">🔚</div>
-                <div class="state-name">У края</div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Карточки настроений -->
-    <div class="state-section">
-        <h4>😊 Ваше текущее состояние</h4>
-        <div class="state-cards" id="mood-cards">
-            <div class="state-card" data-mood="Спокойный">
-                <div class="state-icon">😌</div>
-                <div class="state-name">Спокойный</div>
-            </div>
-            <div class="state-card" data-mood="Общительный">
-                <div class="state-icon">💬</div>
-                <div class="state-name">Общительный</div>
-            </div>
-            <div class="state-card" data-mood="Занятой">
-                <div class="state-icon">📱</div>
-                <div class="state-name">Занятой</div>
-            </div>
-            <div class="state-card" data-mood="Уставший">
-                <div class="state-icon">😴</div>
-                <div class="state-name">Уставший</div>
-            </div>
-            <div class="state-card" data-mood="Слушаю музыку">
-                <div class="state-icon">🎧</div>
-                <div class="state-name">Слушаю музыку</div>
-            </div>
-            <div class="state-card" data-mood="Рабочее настроение">
-                <div class="state-icon">💼</div>
-                <div class="state-name">Рабочее настроение</div>
-            </div>
-        </div>
-    </div>
+            <!-- Экран после присоединения 3 страница -->
+            <div id="joined-room-screen" class="screen">
+                <button class="back-btn" id="back-to-waiting">
+                    <i>←</i> Вернуться к поиску
+                </button>
+                
+                <h2>Вы выбрали станцию!</h2>
+                <div class="navigation-buttons">
+                    <button class="nav-btn" onclick="showSetup()">1. Настройка</button>
+                    <button class="nav-btn" onclick="showWaitingRoom()">2. Выбор станции</button>
+                    <button class="nav-btn active">3. Комната станции</button>
+                </div>
+                <p>Расскажите о своем состоянии другим участникам</p>
+                
+                <div class="state-section">
+                    <h4>🎯 Ваша позиция в вагоне</h4>
+                    <div class="state-cards" id="position-cards">
+                        <div class="state-card" data-position="Сижу читаю">
+                            <div class="state-icon">📖</div>
+                            <div class="state-name">Сижу читаю</div>
+                        </div>
+                        <div class="state-card" data-position="Стою по центру">
+                            <div class="state-icon">🧍</div>
+                            <div class="state-name">Стою по центру</div>
+                        </div>
+                        <div class="state-card" data-position="Стою у двери">
+                            <div class="state-icon">🚪</div>
+                            <div class="state-name">Стою у двери</div>
+                        </div>
+                        <div class="state-card" data-position="Сижу по центру">
+                            <div class="state-icon">💺</div>
+                            <div class="state-name">Сижу по центру</div>
+                        </div>
+                        <div class="state-card" data-position="Сижу у двери">
+                            <div class="state-icon">🪑</div>
+                            <div class="state-name">Сижу у двери</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="state-section">
+                    <h4>😊 Ваше текущее состояние</h4>
+                    <div class="state-cards" id="mood-cards">
+                        <div class="state-card" data-mood="Просто наблюдаю">
+                            <div class="state-icon">👀</div>
+                            <div class="state-name">Просто наблюдаю</div>
+                        </div>
+                        <div class="state-card" data-mood="Сплю">
+                            <div class="state-icon">😴</div>
+                            <div class="state-name">Сплю</div>
+                        </div>
+                        <div class="state-card" data-mood="Хорошее настроение, улыбаюсь">
+                            <div class="state-icon">😊</div>
+                            <div class="state-name">Хорошее настроение</div>
+                        </div>
+                        <div class="state-card" data-mood="Плохое настроение, грустно">
+                            <div class="state-icon">😔</div>
+                            <div class="state-name">Плохое настроение</div>
+                        </div>
+                        <div class="state-card" data-mood="Жду когда ко мне подойдут">
+                            <div class="state-icon">⏳</div>
+                            <div class="state-name">Жду когда ко мне подойдут</div>
+                        </div>
+                        <div class="state-card" data-mood="Собираюсь подойти">
+                            <div class="state-icon">🚶</div>
+                            <div class="state-name">Собираюсь подойти</div>
+                        </div>
+                    </div>
+                </div>
 
-    <!-- ТОЛЬКО участники на вашей станции -->
-    <div class="users-list-section">
-        <h3>👥 Участники на вашей станции</h3>
-        <div id="group-members">
-            <div class="loading">Загрузка участников...</div>
+                <!-- Список пользователей -->
+                <div class="users-list-section">
+                    <h3>👥 Участники на вашей станции</h3>
+                    <div id="group-members">
+                        <div class="loading">Загрузка участников...</div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-danger" id="leave-group">Покинуть группу</button>
+            </div>
         </div>
     </div>
-    
-    <button class="btn btn-danger" id="leave-group">Покинуть группу</button>
-</div>
     
     <footer>
         &copy; 2025 | Гаджи Латипов | Из метро | Санкт-Петербург
     </footer>
 
-    <script src="core.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

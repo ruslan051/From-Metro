@@ -788,7 +788,40 @@ footer {
     margin-top: 20px;
 }
 
+.user-state-display {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: white;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border-left: 4px solid #0057b8;
+}
 
+.user-state-info {
+    flex: 1;
+}
+
+.user-state-name {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 5px;
+    color: #0057b8;
+}
+
+.user-state-details {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.user-state-status {
+    font-size: 12px;
+    color: #888;
+    font-style: italic;
+}
 
 
 @media (max-width: 768px) 

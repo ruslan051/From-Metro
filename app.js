@@ -514,6 +514,9 @@ async function joinStation(station) {
             waitingRoomScreen.classList.remove('active');
             joinedRoomScreen.classList.add('active');
             
+            // Сразу загружаем участников группы
+            loadGroupMembers();
+            
             console.log(`✅ Успешно присоединились к станции ${station}`);
         }
         
@@ -536,7 +539,7 @@ async function loadGroupMembers() {
     groupMembersContainer.innerHTML = '';
     
     if (groupUsers.length === 0) {
-        groupMembersContainer.innerHTML = '<div class="no-requests">Нет участников</div>';
+        groupMembersContainer.innerHTML = '<div class="no-requests">Нет участников на этой станции</div>';
         return;
     }
     
@@ -551,9 +554,12 @@ async function loadGroupMembers() {
                 <div class="user-state-name">${user.name} ${user.id === userId ? '(Вы)' : ''}</div>
                 <div class="user-state-details">
                     ${user.position || 'Позиция не указана'} • ${user.mood || 'Настроение не указано'}
+                    ${user.wagon ? `• Вагон ${user.wagon}` : ''}
+                </div>
+                <div class="user-state-status">
+                    ${user.status || 'Ожидание'}
                 </div>
             </div>
-            ${user.position ? `<div class="state-badge">${user.position}</div>` : ''}
         `;
         groupMembersContainer.appendChild(memberElement);
     });
@@ -680,22 +686,33 @@ function startAutoRefresh() {
     autoRefreshIntervals.forEach(interval => clearInterval(interval));
     autoRefreshIntervals = [];
     
-    // // Обновляем карту каждые 2 секунды
-    // autoRefreshIntervals.push(setInterval(() => {
-    //     loadStationsMap();
-    // }, 2000));
-    
-    // Обновляем список пользователей каждые 3 секунды
+    // Обновляем карту каждую секунду
     autoRefreshIntervals.push(setInterval(() => {
-        loadRequests();
-    }, 3000));
+        if (waitingRoomScreen.classList.contains('active')) {
+            loadStationsMap();
+        }
+    }, 1000));
+    
+    // Обновляем список пользователей каждую секунду
+    autoRefreshIntervals.push(setInterval(() => {
+        if (waitingRoomScreen.classList.contains('active') || joinedRoomScreen.classList.contains('active')) {
+            loadRequests();
+        }
+    }, 1000));
+    
+    // Обновляем участников группы каждую секунду
+    autoRefreshIntervals.push(setInterval(() => {
+        if (joinedRoomScreen.classList.contains('active')) {
+            loadGroupMembers();
+        }
+    }, 1000));
     
     // Пинг активности каждые 20 секунд
     autoRefreshIntervals.push(setInterval(() => {
         pingActivity();
     }, 20000));
     
-    console.log('🔄 Автообновление запущено');
+    console.log('🔄 Автообновление запущено (каждую секунду)');
 }
 
 // Удалите старый обработчик формы и добавьте этот:
@@ -911,7 +928,7 @@ window.addEventListener('load', function() {
     cityFilterSelect.value = selectedCity;
     
     console.log('🚇 Приложение "Из метро" инициализировано');
-    console.log('🔄 Автообновление каждые 2-3 секунды');
+    console.log('🔄 Автообновление каждую секунду');
 });
 
 window.addEventListener('beforeunload', async function() {

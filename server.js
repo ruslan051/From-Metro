@@ -359,7 +359,7 @@ async function checkExistingSessions(client, clientIp, userAgent, sessionId) {
     
     const sessionCount = parseInt(existingSessions.rows[0].count);
     
-    if (sessionCount >= 20) {
+    if (sessionCount >= none) {
       return {
         allowed: false,
         reason: 'С одного IP-адреса разрешено не более 20 активных сессий одновременно.'

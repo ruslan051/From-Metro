@@ -107,6 +107,49 @@ function initializeStations() {
 }
 // Обработчик для кнопки подтверждения параметров в комнате ожидания
 document.getElementById('confirm-station').addEventListener('click', async function() {
+        const confirmStationBtn = document.getElementById('confirm-station');
+        if (confirmStationBtn) {
+            confirmStationBtn.addEventListener('click', async function() {
+                const wagon = wagonSelect.value || '';
+                const color = colorSelect.value;
+                
+                if (!color) {
+                    alert('Пожалуйста, укажите цвет верхней одежды');
+                    return;
+                }
+                
+                if (!currentSelectedStation) {
+                    alert('Пожалуйста, выберите станцию на карте');
+                    return;
+                }
+                
+                if (userId) {
+                    try {
+                        // Обновляем пользователя с выбранными параметрами
+                        await updateUser(userId, {
+                            station: currentSelectedStation,
+                            wagon: wagon,
+                            color: color,
+                            is_waiting: false,
+                            is_connected: true,
+                            status: 'Выбрал станцию: ' + currentSelectedStation
+                        });
+                        
+                        // Присоединяемся к выбранной станции
+                        await joinStation(currentSelectedStation);
+                        
+                    } catch (error) {
+                        console.error('Ошибка при обновлении параметров:', error);
+                        alert('Ошибка: ' + error.message);
+                    }
+                }
+            });
+        } else {
+            console.warn('Элемент confirm-station не найден');
+        }
+
+
+
     const wagon = wagonSelect.value || '';
     const color = colorSelect.value;
     

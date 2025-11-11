@@ -60,7 +60,7 @@ h1 {
 }
 
 .metro-icon {
-    position: absolute;
+    position: relative;
     top: 15px;
     right: 20px;
     font-size: 30px;
@@ -935,7 +935,8 @@ footer {
 }
 
 .users-indicator {
-    position: sticky;
+    position: absolute;
+    left: 30%;
     display: flex;
     align-items: center;
     background: rgba(255, 255, 255, 0.1);

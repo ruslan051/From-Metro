@@ -52,21 +52,24 @@ header {
 
 .header-main {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    justify-content: center; /* Горизонтальное центрирование */
+    align-items: center;     /* Вертикальное центрирование */
     gap: 20px;
+    width: 100%;
+    position: relative; /* Для позиционирования значков */
 }
 
 .header-title {
-    flex: 1;
     text-align: center;
+    /* flex: 1 убираем, т.к. не нужно растягивать */
 }
 
 .header-icons {
+    position: absolute;
+    right: 0;
     display: flex;
     gap: 10px;
     align-items: center;
-    flex-shrink: 0;
 }
 
 h1 {

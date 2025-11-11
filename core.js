@@ -56,8 +56,7 @@ function initializeCoreDOMElements() {
 }
 
 // Основные обработчики событий
-async function handleEnterWaitingRoom() 
-{
+async function handleEnterWaitingRoom() {
     console.log('🚪 Вход в комнату ожидания');
     
     const getRandomName = (gender) => {
@@ -83,11 +82,12 @@ async function handleEnterWaitingRoom()
         isWaiting: true,
         isConnected: false
     };
-      console.log('📍 Данные для создания пользователя:', userData);
+    
+    console.log('📍 Данные для создания пользователя:', userData);
 
     try {
-       const validatedData = validateUserData(userData);
-  const createdUser = await createUser(validatedData);
+        const validatedData = validateUserData(userData);
+        const createdUser = await createUser(validatedData);
         
         if (createdUser) {
             currentUser = createdUser;
@@ -106,21 +106,20 @@ async function handleEnterWaitingRoom()
             console.log('✅ Пользователь создан:', createdUser.name);
         }
     } catch (error) {
-          console.error('❌ Ошибка валидации:', error);
-
-        alert(error.message || 'Ошибка создания профиля. Проверьте подключение к серверу.');
-    }
-    
-    // Показываем понятное сообщение об ошибке
-    const errorMessage = error.message.includes('Failed to fetch') 
-      ? 'Ошибка подключения к серверу. Проверьте интернет-соединение.'
-      : `Ошибка создания профиля: ${error.message}`;
-    
-    alert(errorMessage);
-     // Показываем кнопку для повторной попытки
-    const retry = confirm('Не удалось подключиться к серверу. Попробовать снова?');
-    if (retry) {
-      handleEnterWaitingRoom();
+        console.error('❌ Ошибка создания пользователя:', error);
+        
+        // Показываем понятное сообщение об ошибке
+        const errorMessage = error.message.includes('Failed to fetch') 
+            ? 'Ошибка подключения к серверу. Проверьте интернет-соединение.'
+            : `Ошибка создания профиля: ${error.message}`;
+        
+        alert(errorMessage);
+        
+        // Показываем кнопку для повторной попытки
+        const retry = confirm('Не удалось подключиться к серверу. Попробовать снова?');
+        if (retry) {
+            handleEnterWaitingRoom();
+        }
     }
 }
 

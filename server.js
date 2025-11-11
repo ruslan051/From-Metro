@@ -366,12 +366,12 @@ async function checkExistingSessions(client, clientIp, userAgent, sessionId) {
     //   };
     // }
     
-    const exactMatch = await client.query(
-      `SELECT id FROM users 
-       WHERE ip_address = $1 AND user_agent = $2 AND online = true 
-       AND last_activity > NOW() - INTERVAL '5 minutes'`,
-      [clientIp, userAgent]
-    );
+    // const exactMatch = await client.query(
+    //   `SELECT id FROM users 
+    //    WHERE ip_address = $1 AND user_agent = $2 AND online = true 
+    //    AND last_activity > NOW() - INTERVAL '5 minutes'`,
+    //   [clientIp, userAgent]
+    // );
     
     // if (exactMatch.rows.length > 0) {
     //   return {

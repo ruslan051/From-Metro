@@ -1,6 +1,20 @@
 // В начале файла добавьте глобальную переменную для интервала обновления
 let globalRefreshInterval = null;
 let groupMembersContainer = document.getElementById('group-members');
+// Глобальные переменные состояния
+let currentUser = null;
+let timerInterval = null;
+let timerSeconds = 0;
+let userId = null;
+let selectedMinutes = 5;
+let selectedCity = 'spb';
+let selectedGender = 'male';
+let currentPosition = '';
+let currentMood = '';
+let currentGroup = null;
+let currentSelectedStation = null;
+let autoRefreshIntervals = [];
+let globalRefreshInterval = null;
 
 // Сказочные имена для мужчин и женщин
 const maleNames = ['Иван-Царевич', 'Кощей Бессмертный', 'Добрыня Никитич', 'Леший', 'Водяной', 'Бабай', 'Соловей-Разбойник', 'Змей Горыныч'];

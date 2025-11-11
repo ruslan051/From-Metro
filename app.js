@@ -222,6 +222,7 @@ let currentMood = '';
 let currentGroup = null;
 let currentSelectedStation = null;
 let autoRefreshIntervals = [];
+let globalRefreshInterval = null;
 
 // В начале app.js добавьте безопасные получения элементов
 function getElementSafe(id) {

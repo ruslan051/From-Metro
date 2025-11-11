@@ -105,7 +105,42 @@ function initializeStations() {
         stationSelect.appendChild(option);
     });
 }
-
+// Обработчик для кнопки подтверждения параметров в комнате ожидания
+document.getElementById('confirm-station').addEventListener('click', async function() {
+    const wagon = wagonSelect.value || '';
+    const color = colorSelect.value;
+    
+    if (!color) {
+        alert('Пожалуйста, укажите цвет верхней одежды');
+        return;
+    }
+    
+    if (!currentSelectedStation) {
+        alert('Пожалуйста, выберите станцию на карте');
+        return;
+    }
+    
+    if (userId) {
+        try {
+            // Обновляем пользователя с выбранными параметрами
+            await updateUser(userId, {
+                station: currentSelectedStation,
+                wagon: wagon,
+                color: color,
+                is_waiting: false,
+                is_connected: true,
+                status: 'Выбрал станцию: ' + currentSelectedStation
+            });
+            
+            // Присоединяемся к выбранной станции
+            await joinStation(currentSelectedStation);
+            
+        } catch (error) {
+            console.error('Ошибка при обновлении параметров:', error);
+            alert('Ошибка: ' + error.message);
+        }
+    }
+});
 // Обработчики выбора города
 cityOptions.forEach(option => {
     option.addEventListener('click', function() {
@@ -301,15 +336,19 @@ async function loadStationsMap() {
 function selectStation(stationName, stationData) {
     currentSelectedStation = stationName;
     
+    // Сбросить выделение у всех станций
     document.querySelectorAll('.station-map-item').forEach(item => {
         item.style.borderWidth = '2px';
     });
     
+    // Выделить выбранную станцию
     const selectedElement = document.querySelector(`[data-station="${stationName}"]`);
     if (selectedElement) {
         selectedElement.style.borderWidth = '4px';
+        selectedElement.style.borderColor = '#0057b8';
     }
     
+    // Показать детали станции
     const stationNameElement = document.getElementById('selected-station-name');
     const statWaiting = document.getElementById('stat-waiting');
     const statConnected = document.getElementById('stat-connected');
@@ -329,6 +368,8 @@ function selectStation(stationName, stationData) {
     
     stationDetails.style.display = 'block';
     stationDetails.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    
+    console.log('📍 Выбрана станция:', stationName);
 }
 
 // Функция присоединения к станции
@@ -359,7 +400,6 @@ async function joinStation(station) {
             waitingRoomScreen.classList.remove('active');
             joinedRoomScreen.classList.add('active');
             
-            loadGroupMembers();
             console.log(`✅ Успешно присоединились к станции ${station}`);
         }
         
@@ -526,20 +566,6 @@ function startAutoRefresh() {
 setupForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    const station = document.getElementById('station').value;
-    const wagon = document.getElementById('wagon').value || 'Не указан';
-    const color = document.getElementById('color').value;
-    
-    if (!station) {
-        alert('Пожалуйста, выберите станцию метро');
-        return;
-    }
-    
-    if (!color) {
-        alert('Пожалуйста, укажите цвет верхней одежды');
-        return;
-    }
-    
     // Генерация сказочного имени
     const getRandomName = (gender) => {
         const names = gender === 'male' ? maleNames : femaleNames;
@@ -550,11 +576,11 @@ setupForm.addEventListener('submit', async function(e) {
     
     const userData = {
         name: randomName,
-        station: '',
-        wagon: '',
-        color: '',
+        station: '', // Пустая станция
+        wagon: '', // Пустой вагон
+        color: '', // Пустой цвет
         colorCode: getRandomColor(),
-        status: 'Ожидание',
+        status: 'В режиме ожидания',
         timer: "00:00",
         online: true,
         city: selectedCity,
@@ -578,11 +604,14 @@ setupForm.addEventListener('submit', async function(e) {
             loadStationsMap();
             loadRequests();
             startAutoRefresh();
+            
+            console.log('✅ Пользователь создан:', createdUser.name);
         }
     } catch (error) {
         alert(error.message || 'Ошибка создания профиля. Проверьте подключение к серверу.');
     }
 });
+
 
 backToSetupBtn.addEventListener('click', async function() {
     if (userId) {

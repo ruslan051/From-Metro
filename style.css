@@ -784,7 +784,9 @@ footer {
     color: #0057b8;
 }
 
-
+.user-settings-panel .btn {
+    margin-top: 20px;
+}
 
 
 

@@ -24,11 +24,10 @@ const stations = {
 let wagonSelect, colorSelect, waitingTimer, waitingTimerDisplay, waitingTimerStatus;
 let waitingStartTimerBtn, waitingStopTimerBtn, waitingTimerOptions, waitingTimerExpanded;
 let positionCards, moodCards;
-let groupMembersContainer, metroMap;
-// УДАЛЕНО: requestsContainer;
-
+let groupMembersContainer, metroMap, requestsContainer;
 // Регистрируем функции в глобальной области
 window.loadStationsMap = loadStationsMap;
+window.loadRequests = loadRequests;
 window.loadGroupMembers = loadGroupMembers;
 window.initializeWaitingRoomTimer = initializeWaitingRoomTimer;
 window.initializeStateCards = initializeStateCards;
@@ -37,7 +36,6 @@ window.joinStation = joinStation;
 window.updateUserState = updateUserState;
 window.startTimer = startTimer;
 window.stopTimer = stopTimer;
-window.restoreSelectedStates = restoreSelectedStates; // ДОБАВЛЕНО
 
 // Функция инициализации после загрузки
 function initializeOptionalModules() {
@@ -46,6 +44,8 @@ function initializeOptionalModules() {
     initializeStateCards();
     console.log('🎯 Дополнительные модули инициализированы');
 }
+
+
 
 // Инициализация дополнительных DOM элементов
 function initializeOptionalDOMElements() {
@@ -72,7 +72,7 @@ function initializeOptionalDOMElements() {
         // Карта и группы
         metroMap = document.getElementById('metro-map');
         groupMembersContainer = document.getElementById('group-members');
-        // УДАЛЕНО: requestsContainer = document.getElementById('requests-container');
+        requestsContainer = document.getElementById('requests-container');
         
         // Карточки состояний
         positionCards = document.querySelectorAll('#position-cards .state-card');
@@ -86,7 +86,7 @@ function initializeOptionalDOMElements() {
 
 // Функция загрузки карты станций
 async function loadStationsMap() {
-    // Проверяем инициализацию
+  // Проверяем инициализацию
     if (!metroMap) {
         metroMap = document.getElementById('metro-map');
         if (!metroMap) {
@@ -162,7 +162,7 @@ async function loadStationsMap() {
             }
         });
         
-    } catch (error) {
+      } catch (error) {
         console.error('Ошибка загрузки карты станций:', error);
         if (metroMap) {
             metroMap.innerHTML = `
@@ -198,6 +198,114 @@ function selectStation(stationName, stationData) {
     console.log('📍 Выбрана станция:', stationName);
 }
 
+// Функция загрузки запросов
+async function loadRequests() {
+    // Проверяем инициализацию
+    if (!requestsContainer) {
+        requestsContainer = document.getElementById('requests-container');
+        if (!requestsContainer) {
+            console.log('ℹ️ Контейнер requests-container не найден, пропускаем загрузку запросов');
+            return;
+        }
+    }
+    
+    const users = await getUsers();
+    requestsContainer.innerHTML = '';
+    
+    // Фильтруем пользователей: только те, кто на той же станции, что и текущий пользователь
+    let filteredUsers = users.filter(user => 
+        user.city === selectedCity && 
+        user.online === true
+    );
+    
+    // Если мы на третьей странице (joined room), показываем только пользователей текущей станции
+    if (joinedRoomScreen && joinedRoomScreen.classList.contains('active') && currentGroup) {
+        filteredUsers = filteredUsers.filter(user => 
+            user.station === currentGroup.station
+        );
+    }
+    
+    if (filteredUsers.length === 0) {
+        const message = joinedRoomScreen && joinedRoomScreen.classList.contains('active') && currentGroup 
+            ? `Пока нет других пользователей на станции ${currentGroup.station}`
+            : `Пока нет пользователей на станциях ${selectedCity === 'spb' ? 'Санкт-Петербурга' : 'Москвы'}`;
+            
+        requestsContainer.innerHTML = `
+            <div class="no-requests">
+                <h3>${message}</h3>
+                <p>Будьте первым!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const usersByStation = {};
+    filteredUsers.forEach(user => {
+        if (!usersByStation[user.station]) {
+            usersByStation[user.station] = [];
+        }
+        usersByStation[user.station].push(user);
+    });
+    
+    const sortedStations = Object.keys(usersByStation).sort((a, b) => 
+        usersByStation[b].length - usersByStation[a].length
+    );
+    
+    sortedStations.forEach(station => {
+        const stationUsers = usersByStation[station];
+        
+        const stationHeader = document.createElement('div');
+        stationHeader.className = 'station-header-card';
+        stationHeader.innerHTML = `
+            <div class="station-title">
+                <strong>${station}</strong>
+                <span class="user-count-badge">${stationUsers.length} пользователей</span>
+            </div>
+        `;
+        requestsContainer.appendChild(stationHeader);
+        
+        stationUsers.forEach(user => {
+            const requestCard = document.createElement('div');
+            requestCard.className = 'request-card';
+            const isCurrentUser = userId && user.id === userId;
+            
+            // Формируем информацию о состоянии пользователя
+            const stateInfo = [];
+            if (user.position) stateInfo.push(`Позиция: ${user.position}`);
+            if (user.mood) stateInfo.push(`Настроение: ${user.mood}`);
+            const stateText = stateInfo.join(' • ');
+            
+            requestCard.innerHTML = `
+                <div class="request-header">
+                    <div class="user-info-compact">
+                        <div class="user-avatar-small">${user.name.charAt(0)}</div>
+                        <div class="user-details">
+                            <div class="user-name">${user.name} ${isCurrentUser ? '(Вы)' : ''}</div>
+                            <div class="user-status">
+                                <span class="color-indicator" style="background-color: ${user.color_code || '#007bff'}"></span>
+                                ${user.color} • ${user.status}
+                            </div>
+                        </div>
+                    </div>
+                    ${user.wagon && user.wagon !== 'Не указан' ? `<div class="wagon">Вагон ${user.wagon}</div>` : ''}
+                </div>
+                
+                ${stateText ? `<div class="user-state-info" style="margin: 10px 0; padding: 8px; background: #f8f9fa; border-radius: 5px; font-size: 14px;">
+                    <strong>Состояние:</strong> ${stateText}
+                </div>` : ''}
+                
+                <div class="user-connections">
+                    <div class="connections-count">
+                        ${user.is_waiting ? '⏳ Ожидает присоединения' : '✅ Соединился с другими'}
+                        ${stateText ? ` • ${stateText}` : ''}
+                    </div>
+                </div>
+            `;
+            
+            requestsContainer.appendChild(requestCard);
+        });
+    });
+}
 // Функция загрузки участников группы
 async function loadGroupMembers() {
     if (!groupMembersContainer) {
@@ -227,13 +335,6 @@ async function loadGroupMembers() {
         groupUsers.forEach(user => {
             const memberElement = document.createElement('div');
             memberElement.className = 'user-state-display';
-            
-            // Формируем информацию о состоянии пользователя
-            const stateInfo = [];
-            if (user.position) stateInfo.push(`Позиция: ${user.position}`);
-            if (user.mood) stateInfo.push(`Настроение: ${user.mood}`);
-            const stateText = stateInfo.join(' • ');
-            
             memberElement.innerHTML = `
                 <div style="width: 50px; height: 50px; border-radius: 50%; background: ${user.color_code || '#007bff'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: bold;">
                     ${user.name.charAt(0)}
@@ -241,7 +342,7 @@ async function loadGroupMembers() {
                 <div class="user-state-info">
                     <div class="user-state-name">${user.name} ${user.id === userId ? '(Вы)' : ''}</div>
                     <div class="user-state-details">
-                        ${stateText || 'Состояние не указано'}
+                        ${user.position || 'Позиция не указана'} • ${user.mood || 'Настроение не указано'}
                         ${user.wagon ? `• Вагон ${user.wagon}` : ''}
                     </div>
                     <div class="user-state-status">
@@ -260,14 +361,20 @@ async function loadGroupMembers() {
     }
 }
 
-// Инициализация таймера в комнате ожидания - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// Инициализация таймера в комнате ожидания
 function initializeWaitingRoomTimer() {
-    if (!waitingTimer) {
+      if (!waitingTimer) {
         waitingTimer = document.getElementById('waiting-room-timer');
     }
-    
-    // Убираем переключение при клике на весь таймер
-    // и делаем только кнопки интерактивными
+     if (!waitingTimerExpanded) {
+        waitingTimerExpanded = document.getElementById('waiting-timer-expanded');
+    }
+    if (waitingTimer && waitingTimerExpanded) {
+        waitingTimer.addEventListener('click', function() {
+            waitingTimerExpanded.classList.toggle('active');
+        });
+        console.log('✅ Таймер комнаты ожидания инициализирован');
+    }
     
     if (waitingStartTimerBtn) {
         waitingStartTimerBtn.addEventListener('click', startTimer);
@@ -277,7 +384,7 @@ function initializeWaitingRoomTimer() {
         waitingStopTimerBtn.addEventListener('click', stopTimer);
     }
     
-    if (waitingTimerOptions && waitingTimerOptions.length > 0) {
+    if (waitingTimerOptions.length > 0) {
         waitingTimerOptions.forEach(btn => {
             btn.addEventListener('click', function() {
                 waitingTimerOptions.forEach(b => b.classList.remove('active'));
@@ -289,8 +396,6 @@ function initializeWaitingRoomTimer() {
             });
         });
     }
-    
-    console.log('✅ Таймер комнаты ожидания инициализирован');
 }
 
 // Функции таймера
@@ -372,12 +477,9 @@ function updateTimerDisplay() {
     }
 }
 
-// Инициализация карточек состояний - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// Инициализация карточек состояний
 function initializeStateCards() {
     console.log('🎯 Инициализация карточек состояний...');
-    
-    // Восстанавливаем выбранные состояния из localStorage
-    restoreSelectedStates();
     
     if (positionCards.length === 0) {
         console.warn('❌ Карточки позиций не найдены');
@@ -388,8 +490,6 @@ function initializeStateCards() {
                 this.classList.add('active');
                 currentPosition = this.getAttribute('data-position');
                 
-                // Сохраняем в localStorage
-                localStorage.setItem('selectedPosition', currentPosition);
                 
                 await updateUserState();
                 console.log('📍 Позиция обновлена:', currentPosition);
@@ -406,8 +506,6 @@ function initializeStateCards() {
                 this.classList.add('active');
                 currentMood = this.getAttribute('data-mood');
                 
-                // Сохраняем в localStorage
-                localStorage.setItem('selectedMood', currentMood);
                 
                 await updateUserState();
                 console.log('😊 Настроение обновлено:', currentMood);
@@ -415,36 +513,8 @@ function initializeStateCards() {
         });
     }
 
+   
     console.log('✅ Карточки состояний инициализированы');
-}
-
-// Функция восстановления выбранных состояний
-function restoreSelectedStates() {
-    const savedPosition = localStorage.getItem('selectedPosition');
-    const savedMood = localStorage.getItem('selectedMood');
-    
-    if (savedPosition) {
-        currentPosition = savedPosition;
-        positionCards.forEach(card => {
-            if (card.getAttribute('data-position') === savedPosition) {
-                card.classList.add('active');
-            }
-        });
-    }
-    
-    if (savedMood) {
-        currentMood = savedMood;
-        moodCards.forEach(card => {
-            if (card.getAttribute('data-mood') === savedMood) {
-                card.classList.add('active');
-            }
-        });
-    }
-    
-    // Обновляем состояние пользователя если есть сохраненные данные
-    if (savedPosition || savedMood) {
-        updateUserState();
-    }
 }
 
 // Функция обновления состояния пользователя
@@ -460,6 +530,7 @@ async function updateUserState() {
             });
             
             if (typeof loadGroupMembers === 'function') await loadGroupMembers();
+            if (typeof loadRequests === 'function') await loadRequests();
             
             console.log('✅ Состояние обновлено на сервере:', stateText);
         } catch (error) {
@@ -490,6 +561,8 @@ function restoreSelectedStation() {
         }
     }
 }
+
+
 
 // Вспомогательные функции
 function formatTime(seconds) {
@@ -523,17 +596,12 @@ async function joinStation(station) {
                 users: result.users
             };
             
-            // Обновляем заголовок с названием станции
-            const roomTitle = document.querySelector('#joined-room-screen h2');
-            if (roomTitle) {
-                roomTitle.textContent = `Станция: ${station}`;
-            }
-            
             waitingRoomScreen.classList.remove('active');
             joinedRoomScreen.classList.add('active');
             
             setTimeout(async () => {
                 await loadGroupMembers();
+                await loadRequests();
             }, 100);
             
             console.log(`✅ Успешно присоединились к станции ${station}`);

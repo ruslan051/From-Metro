@@ -1,5 +1,7 @@
 // В начале файла добавьте глобальную переменную для интервала обновления
 let globalRefreshInterval = null;
+let groupMembersContainer = document.getElementById('group-members');
+
 // Сказочные имена для мужчин и женщин
 const maleNames = ['Иван-Царевич', 'Кощей Бессмертный', 'Добрыня Никитич', 'Леший', 'Водяной', 'Бабай', 'Соловей-Разбойник', 'Змей Горыныч'];
 const femaleNames = ['Василиса Премудрая', 'Баба Яга', 'Царевна-Лягушка', 'Снегурочка', 'Марья-Искусница', 'Аленушка', 'Кикимора', 'Русалка'];
@@ -12,6 +14,7 @@ const waitingTimerStatus = document.getElementById('waiting-timer-status');
 const waitingStartTimerBtn = document.getElementById('waiting-start-timer');
 const waitingStopTimerBtn = document.getElementById('waiting-stop-timer');
 const waitingTimerOptions = document.querySelectorAll('#waiting-timer-expanded .timer-option');
+
 // Обработчики для таймера в комнате ожидания
 waitingTimer.addEventListener('click', function() {
     document.getElementById('waiting-timer-expanded').classList.toggle('active');
@@ -203,6 +206,24 @@ let currentGroup = null;
 let currentSelectedStation = null;
 let autoRefreshIntervals = [];
 
+// Добавьте эту функцию для отладки
+function checkDOM() {
+    console.log('🔍 Проверка DOM элементов:');
+    console.log('groupMembersContainer:', document.getElementById('group-members'));
+    console.log('joinedRoomScreen:', document.getElementById('joined-room-screen'));
+    console.log('waitingRoomScreen:', document.getElementById('waiting-room-screen'));
+    
+    // Проверка стилей
+    const metroMap = document.getElementById('metro-map');
+    if (metroMap) {
+        console.log('metroMap styles:', window.getComputedStyle(metroMap));
+    }
+}
+
+// Вызовите эту функцию после загрузки страницы
+window.addEventListener('load', function() {
+    setTimeout(checkDOM, 1000);
+});
 // Инициализация станций метро
 function initializeStations() {
     stationSelect.innerHTML = '<option value="">Выберите станцию</option>';

@@ -547,6 +547,8 @@ select:focus, input:focus {
 }
 
 .station-map-item {
+    width: 100%;
+    max-width: 180px;
     padding: 12px;
     border-radius: 8px;
     cursor: pointer;
@@ -554,6 +556,7 @@ select:focus, input:focus {
     border: 2px solid transparent;
     text-align: center;
     background: white;
+    box-sizing: border-box;
 }
 
 .station-map-item:hover {
@@ -889,7 +892,9 @@ footer {
     border-radius: 12px;
     background: #f8f9fa;
     width: 100%;
+    margin: 0 auto;
     box-sizing: border-box;
+    justify-items: center;
 }
 
 /* Убедитесь, что контейнер правильно центрирован */

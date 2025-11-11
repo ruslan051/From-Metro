@@ -486,6 +486,27 @@ async function getUsers() {
         console.error('Ошибка получения пользователей:', error);
         return [];
     }
+     try {
+        console.log('🔄 Запрос пользователей с сервера...');
+        const response = await fetch(`${API_BASE}/users`);
+        
+        console.log('📡 Статус ответа:', response.status);
+        console.log('📡 URL:', `${API_BASE}/users`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const users = await response.json();
+        console.log('✅ Получены пользователи:', users.length);
+        return users.map((user, index) => ({
+            ...user,
+            id: user.id || index + 1
+        }));
+    } catch (error) {
+        console.error('❌ Ошибка получения пользователей:', error);
+        return [];
+    }
 }
 
 async function updateUser(userId, updates) {

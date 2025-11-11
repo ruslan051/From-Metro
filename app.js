@@ -95,13 +95,15 @@ const stationDetails = document.getElementById('station-details');
 
 // Добавьте эту проверку после объявления всех DOM элементов
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔧 Инициализация обработчиков событий...');
+    console.log('🚇 DOM загружен, инициализация...');
+
     
-    // Инициализируем элементы
+    // Основные кнопки навигации
+    const enterWaitingRoomBtn = document.getElementById('enter-waiting-room');
     const backToSetupBtn = document.getElementById('back-to-setup');
     const backToWaitingBtn = document.getElementById('back-to-waiting');
     const leaveGroupBtn = document.getElementById('leave-group');
-    const enterWaitingRoomBtn = document.getElementById('enter-waiting-room');
+    const confirmStationBtn = document.getElementById('confirm-station');
     
     // Проверяем и добавляем обработчики
     if (backToSetupBtn) {
@@ -163,60 +165,44 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('❌ Элемент leave-group не найден');
     }
 
+   // Проверяем и добавляем обработчики
     if (enterWaitingRoomBtn) {
-        enterWaitingRoomBtn.addEventListener('click', async function() {
-            console.log('🚪 Вход в комнату ожидания');
-            // Генерация сказочного имени
-            const getRandomName = (gender) => {
-                const names = gender === 'male' ? maleNames : femaleNames;
-                return names[Math.floor(Math.random() * names.length)];
-            };
-            
-            const randomName = getRandomName(selectedGender);
-            
-            const userData = {
-                name: randomName,
-                station: '',
-                wagon: '',
-                color: '',
-                colorCode: getRandomColor(),
-                status: 'В режиме ожидания',
-                timer: "00:00",
-                online: true,
-                city: selectedCity,
-                gender: selectedGender,
-                position: '',
-                mood: '',
-                isWaiting: true,
-                isConnected: false
-            };
-            
-            try {
-                const createdUser = await createUser(userData);
-                
-                if (createdUser) {
-                    currentUser = createdUser;
-                    userId = createdUser.id;
-                    
-                    setupScreen.classList.remove('active');
-                    waitingRoomScreen.classList.add('active');
-                    
-                    loadStationsMap();
-                    loadRequests();
-                    startGlobalRefresh();
-                    
-                    console.log('✅ Пользователь создан:', createdUser.name);
-                }
-            } catch (error) {
-                alert(error.message || 'Ошибка создания профиля. Проверьте подключение к серверу.');
-            }
-        });
+        enterWaitingRoomBtn.addEventListener('click', handleEnterWaitingRoom);
+        console.log('✅ Обработчик для enter-waiting-room добавлен');
     } else {
-        console.warn('❌ Элемент enter-waiting-room не найден');
+        console.warn('❌ Кнопка enter-waiting-room не найдена');
     }
     
-    console.log('✅ Обработчики событий инициализированы');
-});
+    if (backToSetupBtn) {
+        backToSetupBtn.addEventListener('click', handleBackToSetup);
+        console.log('✅ Обработчик для back-to-setup добавлен');
+    }
+    
+    if (backToWaitingBtn) {
+        backToWaitingBtn.addEventListener('click', handleBackToWaiting);
+        console.log('✅ Обработчик для back-to-waiting добавлен');
+    }
+    
+    if (leaveGroupBtn) {
+        leaveGroupBtn.addEventListener('click', handleLeaveGroup);
+        console.log('✅ Обработчик для leave-group добавлен');
+    }
+    
+    if (confirmStationBtn) {
+        confirmStationBtn.addEventListener('click', handleConfirmStation);
+        console.log('✅ Обработчик для confirm-station добавлен');
+    }
+    
+    // Инициализация выбора города и пола
+    initializeCityAndGenderSelection();
+    
+    // Инициализация таймера
+    initializeCompactTimer();
+    
+    // Инициализация таймера в комнате ожидания
+    initializeWaitingRoomTimer();
+    
+    console.log('✅ Все обработчики инициализированы'); });
 
 // Элементы выбора города и пола
 const cityOptions = document.querySelectorAll('.city-option');
@@ -347,26 +333,50 @@ genderOptions.forEach(option => {
     });
 });
 
-// Компактный таймер
-compactTimer.addEventListener('click', function() {
-    timerExpanded.classList.toggle('active');
-});
+// Инициализация таймера в комнате ожидания
+function initializeWaitingRoomTimer() {
+    const waitingTimer = document.getElementById('waiting-room-timer');
+    const waitingTimerExpanded = document.getElementById('waiting-timer-expanded');
+    
+    if (waitingTimer && waitingTimerExpanded) {
+        waitingTimer.addEventListener('click', function() {
+            waitingTimerExpanded.classList.toggle('active');
+        });
+        console.log('✅ Таймер комнаты ожидания инициализирован');
+    }
+    
+    // Обработчики для кнопок таймера комнаты ожидания
+    const waitingStartTimerBtn = document.getElementById('waiting-start-timer');
+    const waitingStopTimerBtn = document.getElementById('waiting-stop-timer');
+    const waitingTimerOptions = document.querySelectorAll('#waiting-timer-expanded .timer-option');
+    
+    if (waitingStartTimerBtn) {
+        waitingStartTimerBtn.addEventListener('click', startTimer);
+    }
+    
+    if (waitingStopTimerBtn) {
+        waitingStopTimerBtn.addEventListener('click', stopTimer);
+    }
+    
+    if (waitingTimerOptions.length > 0) {
+        waitingTimerOptions.forEach(btn => {
+            btn.addEventListener('click', function() {
+                waitingTimerOptions.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedMinutes = parseInt(this.getAttribute('data-minutes'));
+                const waitingTimerDisplay = document.getElementById('waiting-timer-display');
+                if (waitingTimerDisplay) {
+                    waitingTimerDisplay.textContent = `Готов к запуску: ${selectedMinutes} мин`;
+                }
+            });
+        });
+    }
+}
 
-// Обновите обработчики состояний для немедленного сохранения
-positionCards.forEach(card => {
-    card.addEventListener('click', async function() {
-        positionCards.forEach(c => c.classList.remove('active'));
-        this.classList.add('active');
-        currentPosition = this.getAttribute('data-position');
-        
-        // Сохраняем выбранную позицию
-        localStorage.setItem('selectedPosition', currentPosition);
-        
-        // Немедленно обновляем состояние
-        await updateUserState();
-    });
-});
-
+// Инициализация всех обработчиков событий
+function initializeEventHandlers() {
+    console.log('🔧 Инициализация обработчиков событий...');
+}
 moodCards.forEach(card => {
     card.addEventListener('click', async function() {
         moodCards.forEach(c => c.classList.remove('active'));

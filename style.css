@@ -59,7 +59,7 @@ h1 {
     opacity: 0.9;
 }
 
-.metro-icon {
+.metro-icon { 
     position: fixed;
      display: flex;
     top: 15px;

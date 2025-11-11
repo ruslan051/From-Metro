@@ -209,7 +209,30 @@ const cityOptions = document.querySelectorAll('.city-option');
 const genderOptions = document.querySelectorAll('.gender-option');
 
 
-
+// Также обновите функцию handleLeaveGroup чтобы не сбрасывать состояния:
+async function handleLeaveGroup() {
+    console.log('🚪 Покидаем группу');
+    
+    if (userId) {
+        try {
+            // Обновляем только статус, но сохраняем позицию и настроение
+            await updateUser(userId, { 
+                status: 'Ожидание',
+                is_waiting: true,
+                is_connected: false,
+                // НЕ очищаем position и mood - они сохраняются
+            });
+        } catch (error) {
+            console.error('Ошибка при обновлении пользователя:', error);
+        }
+    }
+    
+    currentGroup = null;
+    joinedRoomScreen.classList.remove('active');
+    waitingRoomScreen.classList.add('active');
+    
+    console.log('✅ Вышли из группы, состояния сохранены');
+}
 // В начале app.js добавьте безопасные получения элементов
 function getElementSafe(id) {
     const element = document.getElementById(id);
@@ -388,7 +411,15 @@ moodCards.forEach(card => {
         
         // Немедленно обновляем состояние
         await updateUserState();
-    });
+        });   
+
+ // Инициализация карточек состояний
+    initializeStateCards();
+    
+    console.log('✅ Все обработчики инициализированы');
+
+
+
 });
 // Функция для запуска глобального обновления каждые 5 секунд
 function startGlobalRefresh() {
@@ -792,12 +823,15 @@ function restoreSelectedStates() {
     const savedPosition = localStorage.getItem('selectedPosition');
     const savedMood = localStorage.getItem('selectedMood');
     
+    console.log('🔄 Восстановление состояний:', { savedPosition, savedMood });
+    
     if (savedPosition) {
         currentPosition = savedPosition;
         const positionCard = document.querySelector(`[data-position="${savedPosition}"]`);
         if (positionCard) {
-            positionCards.forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('#position-cards .state-card').forEach(c => c.classList.remove('active'));
             positionCard.classList.add('active');
+            console.log('📍 Восстановлена позиция:', savedPosition);
         }
     }
     
@@ -805,11 +839,57 @@ function restoreSelectedStates() {
         currentMood = savedMood;
         const moodCard = document.querySelector(`[data-mood="${savedMood}"]`);
         if (moodCard) {
-            moodCards.forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('#mood-cards .state-card').forEach(c => c.classList.remove('active'));
             moodCard.classList.add('active');
+            console.log('😊 Восстановлено настроение:', savedMood);
         }
     }
 }
+
+
+function initializeStateCards() {
+    console.log('🎯 Инициализация карточек состояний...');
+    
+    // Карточки позиций
+    const positionCards = document.querySelectorAll('#position-cards .state-card');
+    positionCards.forEach(card => {
+        card.addEventListener('click', async function() {
+            positionCards.forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            currentPosition = this.getAttribute('data-position');
+            
+            // Сохраняем выбранную позицию
+            localStorage.setItem('selectedPosition', currentPosition);
+            
+            // Немедленно обновляем состояние
+            await updateUserState();
+            console.log('📍 Позиция обновлена:', currentPosition);
+        });
+    });
+
+    // Карточки настроений
+    const moodCards = document.querySelectorAll('#mood-cards .state-card');
+    moodCards.forEach(card => {
+        card.addEventListener('click', async function() {
+            moodCards.forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            currentMood = this.getAttribute('data-mood');
+            
+            // Сохраняем выбранное настроение
+            localStorage.setItem('selectedMood', currentMood);
+            
+            // Немедленно обновляем состояние
+            await updateUserState();
+            console.log('😊 Настроение обновлено:', currentMood);
+        });
+    });
+
+    // Восстанавливаем сохраненные состояния
+    restoreSelectedStates();
+    
+    console.log('✅ Карточки состояний инициализированы');
+}
+
 // Функции навигации
 function showSetup() {
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
@@ -837,15 +917,22 @@ function showJoinedRoom() {
 async function updateUserState() {
     if (userId && (currentPosition || currentMood)) {
         const stateText = [currentPosition, currentMood].filter(Boolean).join(' | ');
-        await updateUser(userId, { 
-            status: stateText || 'Ожидание',
-            position: currentPosition,
-            mood: currentMood
-        });
         
-        // Немедленно обновляем отображение
-        await loadRequests();
-        await loadGroupMembers();
+        try {
+            await updateUser(userId, { 
+                status: stateText || 'Ожидание',
+                position: currentPosition,
+                mood: currentMood
+            });
+            
+            // Немедленно обновляем отображение
+            await loadRequests();
+            await loadGroupMembers();
+            
+            console.log('✅ Состояние обновлено на сервере:', stateText);
+        } catch (error) {
+            console.error('❌ Ошибка обновления состояния:', error);
+        }
     }
 }
 

@@ -107,7 +107,7 @@ async function handleEnterWaitingRoom() {
                 // Загружаем дополнительные модули по требованию
                 loadOptionalModules().then(() => {
                     if (typeof loadStationsMap === 'function') loadStationsMap();
-                    if (typeof loadRequests === 'function') loadRequests();
+                    // if (typeof loadRequests === 'function') loadRequests();
                     startGlobalRefresh();
                 });
                 
@@ -117,7 +117,7 @@ async function handleEnterWaitingRoom() {
                 initializeCoreDOMElements();
             }
         }
-    } catch (error) { // Изменил error на err чтобы избежать конфликта
+    } catch (err) { // Изменил error на err чтобы избежать конфликта
         console.error('❌ Ошибка создания пользователя:', err);
         
         // Показываем понятное сообщение об ошибке
@@ -404,12 +404,10 @@ function startGlobalRefresh() {
         } else if (waitingRoomScreen && waitingRoomScreen.classList.contains('active')) {
             // На втором экране обновляем карту станций и запросы
             if (typeof loadStationsMap === 'function') await loadStationsMap();
-            if (typeof loadRequests === 'function') await loadRequests();
             if (typeof restoreSelectedStation === 'function') restoreSelectedStation();
         } else if (joinedRoomScreen && joinedRoomScreen.classList.contains('active')) {
             // На третьем экране обновляем участников группы и запросы
-            if (typeof loadGroupMembers === 'function') await loadGroupMembers();
-            if (typeof loadRequests === 'function') await loadRequests();
+             if (typeof loadGroupMembers === 'function') await loadGroupMembers();
             if (typeof restoreSelectedStates === 'function') restoreSelectedStates();
         }
         
@@ -499,9 +497,15 @@ function showJoinedRoom() {
     if (!joinedRoomScreen) initializeCoreDOMElements();
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
     joinedRoomScreen.classList.add('active');
+      // Обновляем заголовок с названием станции
+    const roomTitle = document.querySelector('#joined-room-screen h2');
+    if (roomTitle && currentGroup) {
+        roomTitle.textContent = `Станция: ${currentGroup.station}`;
+    }
      // СБРАСЫВАЕМ СОСТОЯНИЯ ПЕРЕД ПОКАЗОМ СТРАНИЦЫ
     currentPosition = '';
     currentMood = '';
+    
      // СБРАСЫВАЕМ ВЫБРАННЫЕ КАРТОЧКИ
     if (positionCards.length > 0) {
         positionCards.forEach(card => card.classList.remove('active'));

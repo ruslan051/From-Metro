@@ -514,9 +514,7 @@ async function joinStation(station) {
             waitingRoomScreen.classList.remove('active');
             joinedRoomScreen.classList.add('active');
             
-            // Сразу загружаем участников группы
-            loadGroupMembers();
-            
+            // УБРАЛИ loadGroupMembers() - участники группы не обновляются
             console.log(`✅ Успешно присоединились к станции ${station}`);
         }
         
@@ -665,8 +663,9 @@ async function loadRequests() {
                     ${user.wagon && user.wagon !== 'Не указан' ? `<div class="wagon">Вагон ${user.wagon}</div>` : ''}
                 </div>
                 
-                ${user.position ? `<div class="status-info"><strong>Позиция:</strong> ${user.position}</div>` : ''}
-                ${user.mood ? `<div class="status-info"><strong>Настроение:</strong> ${user.mood}</div>` : ''}
+                <!-- НА ТРЕТЬЕЙ СТРАНИЦЕ СОСТОЯНИЯ НЕ ОБНОВЛЯЮТСЯ -->
+                ${user.position && user.id === userId ? `<div class="status-info"><strong>Позиция:</strong> ${user.position}</div>` : ''}
+                ${user.mood && user.id === userId ? `<div class="status-info"><strong>Настроение:</strong> ${user.mood}</div>` : ''}
                 
                 <div class="user-connections">
                     <div class="connections-count">
@@ -686,24 +685,17 @@ function startAutoRefresh() {
     autoRefreshIntervals.forEach(interval => clearInterval(interval));
     autoRefreshIntervals = [];
     
-    // Обновляем карту каждую секунду
+    // Обновляем ТОЛЬКО КОЛИЧЕСТВО ЛЮДЕЙ на второй странице (каждую секунду)
     autoRefreshIntervals.push(setInterval(() => {
         if (waitingRoomScreen.classList.contains('active')) {
-            loadStationsMap();
+            loadStationsMap(); // Эта функция обновляет только количества
         }
     }, 1000));
     
-    // Обновляем список пользователей каждую секунду
-    autoRefreshIntervals.push(setInterval(() => {
-        if (waitingRoomScreen.classList.contains('active') || joinedRoomScreen.classList.contains('active')) {
-            loadRequests();
-        }
-    }, 1000));
-    
-    // Обновляем участников группы каждую секунду
+    // Обновляем ТОЛЬКО АКТИВНЫХ ПОЛЬЗОВАТЕЛЕЙ на третьей странице (каждую секунду)
     autoRefreshIntervals.push(setInterval(() => {
         if (joinedRoomScreen.classList.contains('active')) {
-            loadGroupMembers();
+            loadRequests(); // Эта функция обновляет список пользователей
         }
     }, 1000));
     
@@ -712,9 +704,11 @@ function startAutoRefresh() {
         pingActivity();
     }, 20000));
     
-    console.log('🔄 Автообновление запущено (каждую секунду)');
+    console.log('🔄 Автообновление настроено:');
+    console.log('   - 2 страница: только количество людей (каждую секунду)');
+    console.log('   - 3 страница: только активные пользователи (каждую секунду)');
+    console.log('   - Состояния пользователей не обновляются');
 }
-
 // Удалите старый обработчик формы и добавьте этот:
 document.getElementById('enter-waiting-room').addEventListener('click', async function() {
     // Генерация сказочного имени

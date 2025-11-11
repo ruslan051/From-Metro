@@ -55,8 +55,7 @@ function initializeUsersIndicator() {
 // Функция обновления индикатора пользователей
 async function updateUsersIndicator() {
     if (!usersIndicator || !usersIndicatorCount || !usersIndicatorTooltip) {
-
- setTimeout(() => {
+        setTimeout(() => {
             const indicator = document.getElementById('users-indicator');
             if (indicator) {
                 const countElement = indicator.querySelector('.indicator-count');
@@ -78,32 +77,32 @@ async function updateUsersIndicator() {
             user.city === selectedCity
         );
         
-          // ВКЛЮЧАЕМ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ДАЖЕ ЕСЛИ ОН ЕЩЕ НЕ СОХРАНЕН НА СЕРВЕРЕ
-        let totalUsers = onlineUsers.length;
+        // ВКЛЮЧАЕМ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ДАЖЕ ЕСЛИ ОН ЕЩЕ НЕ СОХРАНЕН НА СЕРВЕРЕ
+        let totalUsersCount = onlineUsers.length;
 
-
-          // Если текущий пользователь еще не в списке, но мы на сайте - добавляем его
+        // Если текущий пользователь еще не в списке, но мы на сайте - добавляем его
         if (userId) {
             // Проверяем, есть ли текущий пользователь в списке
             const currentUserInList = onlineUsers.some(user => user.id === userId);
             if (!currentUserInList) {
-                totalUsers += 1;
-            } } else {
+                totalUsersCount += 1;
+            }
+        } else {
             // Если пользователь еще не создан, но находится на сайте - считаем его
-            totalUsers += 1;
+            totalUsersCount += 1;
         }
-        const totalUsers = onlineUsers.length;
         
         // Обновляем счетчик
-        usersIndicatorCount.textContent = totalUsers;
+        usersIndicatorCount.textContent = totalUsersCount;
         
         // Обновляем подсказку с детальной информацией
-        if (totalUsers === 0) {
+        if (totalUsersCount === 0) {
             usersIndicatorTooltip.textContent = 'Нет активных пользователей';
             usersIndicator.classList.remove('active');
         } else {
             // Группируем по станциям
             const usersByStation = {};
+            
             // Добавляем текущего пользователя если он есть
             if (currentUser && !userId) {
                 if (!usersByStation['Настройка профиля']) {
@@ -115,16 +114,13 @@ async function updateUsersIndicator() {
                 });
             }
 
-
             // Добавляем остальных пользователей
-
             onlineUsers.forEach(user => {
                 const station = user.station || 'Ожидание выбора';
-
-                if (!usersByStation[user.station]) {
-                    usersByStation[user.station] = [];
+                if (!usersByStation[station]) {
+                    usersByStation[station] = [];
                 }
-                usersByStation[user.station].push(user);
+                usersByStation[station].push(user);
             });
             
             // Сортируем станции по количеству пользователей
@@ -133,7 +129,7 @@ async function updateUsersIndicator() {
                 .sort((a, b) => usersByStation[b].length - usersByStation[a].length)
                 .slice(0, 5); // показываем топ-5 станций
             
-            let tooltipText = `Всего: ${totalUsers} пользователей\n`;
+            let tooltipText = `Всего: ${totalUsersCount} пользователей\n`;
             
             if (sortedStations.length > 0) {
                 tooltipText += '\nТоп станций:\n';
@@ -153,7 +149,7 @@ async function updateUsersIndicator() {
             usersIndicator.classList.add('active');
         }
         
-        console.log(`👥 Индикатор обновлен: ${totalUsers} пользователей`);
+        console.log(`👥 Индикатор обновлен: ${totalUsersCount} пользователей`);
         
     } catch (error) {
         console.error('❌ Ошибка обновления индикатора:', error);

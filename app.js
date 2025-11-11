@@ -428,8 +428,14 @@ async function loadStationsMap() {
                 ` : '<div style="font-size: 10px; color: #666;">Пусто</div>'}
             `;
             
-            stationElement.addEventListener('click', () => selectStation(stationName, stationData));
+            stationElement.addEventListener('click', () => selectStation(stationName, stationData|| {
+        waiting: 0,
+        connected: 0,
+        totalUsers: 0
+
+            }));
             metroMap.appendChild(stationElement);
+            
         });
 
         // Обновить легенду с общими цифрами
@@ -467,6 +473,7 @@ function selectStation(stationName, stationData) {
     document.querySelectorAll('.station-map-item').forEach(item => {
         item.style.borderWidth = '2px';
         item.style.borderColor = '';
+        item.style.boxShadow = '';
     });
     
     // Выделить выбранную станцию жирной синей рамкой
@@ -477,30 +484,33 @@ function selectStation(stationName, stationData) {
         selectedElement.style.boxShadow = '0 0 10px rgba(0, 87, 184, 0.5)';
     }
     
-    // Показать детали станции
+    // Показать детали станции (с проверкой существования элементов)
     const stationNameElement = document.getElementById('selected-station-name');
     const statWaiting = document.getElementById('stat-waiting');
     const statConnected = document.getElementById('stat-connected');
     const statTotal = document.getElementById('stat-total');
     
-    stationNameElement.textContent = stationName;
-    
-    if (stationData) {
-        statWaiting.textContent = stationData.waiting;
-        statConnected.textContent = stationData.connected;
-        statTotal.textContent = stationData.totalUsers;
-    } else {
-        statWaiting.textContent = '0';
-        statConnected.textContent = '0';
-        statTotal.textContent = '0';
+    if (stationNameElement) {
+        stationNameElement.textContent = stationName;
     }
     
-    stationDetails.style.display = 'block';
-    stationDetails.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (stationData) {
+        if (statWaiting) statWaiting.textContent = stationData.waiting || '0';
+        if (statConnected) statConnected.textContent = stationData.connected || '0';
+        if (statTotal) statTotal.textContent = stationData.totalUsers || '0';
+    } else {
+        if (statWaiting) statWaiting.textContent = '0';
+        if (statConnected) statConnected.textContent = '0';
+        if (statTotal) statTotal.textContent = '0';
+    }
+    
+    if (stationDetails) {
+        stationDetails.style.display = 'block';
+        stationDetails.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
     
     console.log('📍 Выбрана станция:', stationName);
 }
-
 // Функция присоединения к станции
 async function joinStation(station) {
     try {
@@ -541,7 +551,7 @@ async function joinStation(station) {
 // Функция восстановления выбранной станции
 function restoreSelectedStation() {
     const savedStation = localStorage.getItem('selectedStation');
-    if (savedStation) {
+    if (savedStation && waitingRoomScreen.classList.contains('active')) {
         currentSelectedStation = savedStation;
         // Временно выделяем станцию, полные данные загрузятся при обновлении карты
         setTimeout(() => {
@@ -550,8 +560,14 @@ function restoreSelectedStation() {
                 selectedElement.style.borderWidth = '4px';
                 selectedElement.style.borderColor = '#0057b8';
                 selectedElement.style.boxShadow = '0 0 10px rgba(0, 87, 184, 0.5)';
+                
+                // Также обновляем детали станции если они видны
+                const stationNameElement = document.getElementById('selected-station-name');
+                if (stationNameElement) {
+                    stationNameElement.textContent = savedStation;
+                }
             }
-        }, 100);
+        }, 500); // Увеличиваем задержку для гарантированной загрузки карты
     }
 }
 
@@ -1032,16 +1048,19 @@ function getRandomColor() {
 // Инициализация
 window.addEventListener('load', function() {
     initializeStations();
-    document.querySelector('.timer-option[data-minutes="5"]').classList.add('active');
-    cityFilterSelect.value = selectedCity;
+    
+    // Проверяем существование элемента перед работой с ним
+    const timerOption = document.querySelector('.timer-option[data-minutes="5"]');
+    if (timerOption) {
+        timerOption.classList.add('active');
+    }
+    
+    if (cityFilterSelect) {
+        cityFilterSelect.value = selectedCity;
+    }
     
     // Восстанавливаем выбранную станцию на второй странице
-    restoreSelectedStation();
-    
-    // Восстанавливаем состояния на третьей странице
-    if (joinedRoomScreen.classList.contains('active')) {
-        restoreSelectedStates();
-    }
+    setTimeout(restoreSelectedStation, 1000); // Даем время на загрузку карты
     
     console.log('🚇 Приложение "Из метро" инициализировано');
     console.log('🔄 Автообновление настроено');

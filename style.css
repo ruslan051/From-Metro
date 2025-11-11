@@ -935,7 +935,7 @@ footer {
 }
 
 .users-indicator {
-    position: absolute;
+    position: relative;
     left: 50mm;
     display: flex;
     align-items: center;

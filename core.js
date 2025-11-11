@@ -123,11 +123,21 @@ function handleBackToWaiting() {
 async function handleConfirmStation() {
     console.log('✅ Подтверждаем станцию');
     
-    // Получаем элементы из дополнительных модулей
-    const wagon = window.wagonSelect ? window.wagonSelect.value || '' : '';
-    const color = window.colorSelect ? window.colorSelect.value : '';
+    // ПРОВЕРКА ЦВЕТА - исправленная логика
+    let colorValue = '';
     
-    if (!color) {
+    // Проверяем, есть ли элемент colorSelect на текущей странице
+    if (window.colorSelect && window.colorSelect.value) {
+        colorValue = window.colorSelect.value;
+    } else {
+        // Если на 3 странице, ищем элемент по-другому
+        const colorInput = document.getElementById('color-select');
+        if (colorInput) {
+            colorValue = colorInput.value;
+        }
+    }
+    
+    if (!colorValue) {
         alert('Пожалуйста, укажите цвет верхней одежды');
         return;
     }
@@ -137,12 +147,23 @@ async function handleConfirmStation() {
         return;
     }
     
+    // Проверяем вагон
+    let wagonValue = '';
+    if (window.wagonSelect && window.wagonSelect.value) {
+        wagonValue = window.wagonSelect.value;
+    } else {
+        const wagonSelect = document.getElementById('wagon-select');
+        if (wagonSelect) {
+            wagonValue = wagonSelect.value;
+        }
+    }
+    
     if (userId) {
         try {
             await updateUser(userId, {
                 station: currentSelectedStation,
-                wagon: wagon,
-                color: color,
+                wagon: wagonValue,
+                color: colorValue,
                 is_waiting: false,
                 is_connected: true,
                 status: 'Выбрал станцию: ' + currentSelectedStation

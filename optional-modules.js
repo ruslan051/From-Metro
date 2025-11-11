@@ -71,7 +71,8 @@ function initializeOptionalDOMElements() {
     // Карточки состояний
     positionCards = document.querySelectorAll('#position-cards .state-card');
     moodCards = document.querySelectorAll('#mood-cards .state-card');
-    
+        joinedRequestsContainer = document.getElementById('joined-requests-container');
+
     console.log('✅ Дополнительные DOM элементы инициализированы');
 }
 
@@ -183,13 +184,20 @@ function selectStation(stationName, stationData) {
 
 // Функция загрузки запросов
 async function loadRequests() {
-    if (!requestsContainer) {
-        console.log('ℹ️ Контейнер requests-container не найден, пропускаем загрузку запросов');
+     let container;
+    if (joinedRoomScreen && joinedRoomScreen.classList.contains('active')) {
+        container = document.getElementById('joined-requests-container');
+    } else {
+        container = document.getElementById('requests-container');
+    }
+    
+    if (!container) {
+        console.log('ℹ️ Контейнер запросов не найден для текущей страницы');
         return;
     }
     
     const users = await getUsers();
-    requestsContainer.innerHTML = '';
+    container.innerHTML = '';
     
     // Фильтруем пользователей: только те, кто на той же станции, что и текущий пользователь
     let filteredUsers = users.filter(user => 

@@ -210,7 +210,24 @@ function initializeCityAndGenderSelection() {
         });
     });
 }
+function debugElements() {
+    const elementsToCheck = [
+        'enter-waiting-room',
+        'back-to-setup', 
+        'back-to-waiting',
+        'leave-group',
+        'confirm-station'
+    ];
+    
+    console.log('🔍 Проверка элементов:');
+    elementsToCheck.forEach(id => {
+        const element = document.getElementById(id);
+        console.log(`${id}:`, element ? '✅ Найден' : '❌ НЕ НАЙДЕН');
+    });
+}
 
+// Вызовите после загрузки
+document.addEventListener('DOMContentLoaded', debugElements);
 // Безопасная инициализация компактного таймера
 function initializeCompactTimer() {
     const compactTimer = document.getElementById('compact-timer');

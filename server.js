@@ -373,12 +373,12 @@ async function checkExistingSessions(client, clientIp, userAgent, sessionId) {
       [clientIp, userAgent]
     );
     
-    if (exactMatch.rows.length > 0) {
-      return {
-        allowed: false,
-        reason: 'У вас уже есть активная сессия в этом браузере. Закройте предыдущую вкладку или подождите несколько минут.'
-      };
-    }
+    // if (exactMatch.rows.length > 0) {
+    //   return {
+    //     allowed: false,
+    //     reason: 'У вас уже есть активная сессия в этом браузере. Закройте предыдущую вкладку или подождите несколько минут.'
+    //   };
+    // }
     
     return { allowed: true };
   } catch (error) {

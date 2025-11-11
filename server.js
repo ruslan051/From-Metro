@@ -369,13 +369,13 @@ async function checkExistingSessions(client, clientIp, userAgent, sessionId) {
     const exactMatch = await client.query(
       `SELECT id FROM users 
        WHERE ip_address = $1 AND user_agent = $2 AND online = true 
-       AND last_activity > NOW() - INTERVAL '5 minutes'`,
+       AND last_activity > NOW() - INTERVAL '1 second'`,
       [clientIp, userAgent]
     );
     
     if (exactMatch.rows.length > 0) {
       return {
-        allowed: true,
+        allowed: false,
         reason: 'У вас уже есть активная сессия в этом браузере. Закройте предыдущую вкладку или подождите несколько минут.'
       };
     }

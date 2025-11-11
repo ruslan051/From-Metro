@@ -57,7 +57,13 @@ function initializeUsersIndicator() {
     
     usersIndicatorCount = usersIndicator.querySelector('.indicator-count');
     usersIndicatorTooltip = usersIndicator.querySelector('.indicator-tooltip');
-    
+    // Проверяем что дочерние элементы найдены
+    if (!usersIndicatorCount) {
+        console.warn('❌ Элемент .indicator-count не найден');
+    }
+    if (!usersIndicatorTooltip) {
+        console.warn('❌ Элемент .indicator-tooltip не найден');
+    }
     console.log('✅ Индикатор пользователей инициализирован');
        // ЗАПУСТИТЬ функцию
     tryInitialize();
@@ -691,10 +697,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Инициализируем основные DOM элементы
     initializeCoreDOMElements();
-        // Инициализируем индикатор пользователей
-    setTimeout(() => {
+      // Инициализируем индикатор пользователей с задержкой
+    setTimeout(() => 
+    {
+        console.log('🔄 Инициализация индикатора...');
         initializeUsersIndicator();
-    })
+          // Проверяем что элементы найдены перед использованием
+        if (usersIndicator && usersIndicatorCount && usersIndicatorTooltip) {
+            usersIndicatorCount.textContent = '1';
+            usersIndicatorTooltip.textContent = 'Вы в сети';
+            usersIndicator.classList.add('active');
+        
+    }})
+
+    
     // СРАЗУ показываем, что есть минимум 1 пользователь (текущий)
     setTimeout(() => {
         if (usersIndicatorCount) {
@@ -704,7 +720,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
          // Затем обновляем реальными данными
         updateUsersIndicator();
-    }, 100);
+    }, 500);
 
     
     // Инициализация основных обработчиков

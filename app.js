@@ -286,11 +286,11 @@ positionCards.forEach(card => {
         this.classList.add('active');
         currentPosition = this.getAttribute('data-position');
         
-        // Сохраняем выбранную позицию
+        // Сохраняем выбранную позицию НАВСЕГДА
         localStorage.setItem('selectedPosition', currentPosition);
         
         updateUserState();
-        updateUserDisplay(); // Новая функция для обновления отображения
+        updateUserDisplay();
     });
 });
 
@@ -300,14 +300,13 @@ moodCards.forEach(card => {
         this.classList.add('active');
         currentMood = this.getAttribute('data-mood');
         
-        // Сохраняем выбранное настроение
+        // Сохраняем выбранное настроение НАВСЕГДА
         localStorage.setItem('selectedMood', currentMood);
         
         updateUserState();
-        updateUserDisplay(); // Новая функция для обновления отображения
+        updateUserDisplay();
     });
 });
-
 // Функции API
 async function createUser(userData) {
     try {
@@ -484,31 +483,6 @@ function selectStation(stationName, stationData) {
         selectedElement.style.boxShadow = '0 0 10px rgba(0, 87, 184, 0.5)';
     }
     
-    // Показать детали станции (с проверкой существования элементов)
-    const stationNameElement = document.getElementById('selected-station-name');
-    const statWaiting = document.getElementById('stat-waiting');
-    const statConnected = document.getElementById('stat-connected');
-    const statTotal = document.getElementById('stat-total');
-    
-    if (stationNameElement) {
-        stationNameElement.textContent = stationName;
-    }
-    
-    if (stationData) {
-        if (statWaiting) statWaiting.textContent = stationData.waiting || '0';
-        if (statConnected) statConnected.textContent = stationData.connected || '0';
-        if (statTotal) statTotal.textContent = stationData.totalUsers || '0';
-    } else {
-        if (statWaiting) statWaiting.textContent = '0';
-        if (statConnected) statConnected.textContent = '0';
-        if (statTotal) statTotal.textContent = '0';
-    }
-    
-    if (stationDetails) {
-        stationDetails.style.display = 'block';
-        stationDetails.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-    
     console.log('📍 Выбрана станция:', stationName);
 }
 // Функция присоединения к станции
@@ -553,21 +527,16 @@ function restoreSelectedStation() {
     const savedStation = localStorage.getItem('selectedStation');
     if (savedStation && waitingRoomScreen.classList.contains('active')) {
         currentSelectedStation = savedStation;
-        // Временно выделяем станцию, полные данные загрузятся при обновлении карты
-        setTimeout(() => {
+        // Восстанавливаем выделение станции после загрузки карты
+        const checkStation = setInterval(() => {
             const selectedElement = document.querySelector(`[data-station="${savedStation}"]`);
             if (selectedElement) {
                 selectedElement.style.borderWidth = '4px';
                 selectedElement.style.borderColor = '#0057b8';
                 selectedElement.style.boxShadow = '0 0 10px rgba(0, 87, 184, 0.5)';
-                
-                // Также обновляем детали станции если они видны
-                const stationNameElement = document.getElementById('selected-station-name');
-                if (stationNameElement) {
-                    stationNameElement.textContent = savedStation;
-                }
+                clearInterval(checkStation);
             }
-        }, 500); // Увеличиваем задержку для гарантированной загрузки карты
+        }, 100);
     }
 }
 
@@ -651,7 +620,7 @@ function updateUserDisplay() {
         }
     });
 }
-// Функция восстановления выбранных состояний
+// Функция восстановления выбранных состояний (вызывается всегда)
 function restoreSelectedStates() {
     const savedPosition = localStorage.getItem('selectedPosition');
     const savedMood = localStorage.getItem('selectedMood');
@@ -675,8 +644,11 @@ function restoreSelectedStates() {
     }
     
     // Обновляем отображение если состояния были восстановлены
-    if (savedPosition || savedMood) {
-        setTimeout(updateUserDisplay, 100);
+    if ((savedPosition || savedMood) && userId) {
+        setTimeout(() => {
+            updateUserState();
+            updateUserDisplay();
+        }, 500);
     }
 }
 // Функции навигации
@@ -905,8 +877,8 @@ leaveGroupBtn.addEventListener('click', async function() {
         try {
             await updateUser(userId, { 
                 status: 'Ожидание',
-                position: '',
-                mood: '',
+                position: '', // Очищаем на сервере, но сохраняем локально
+                mood: '', // Очищаем на сервере, но сохраняем локально
                 is_waiting: true,
                 is_connected: false
             });
@@ -915,23 +887,18 @@ leaveGroupBtn.addEventListener('click', async function() {
         }
     }
     
-    // Очищаем сохраненные состояния при выходе
-    localStorage.removeItem('selectedPosition');
-    localStorage.removeItem('selectedMood');
-    localStorage.removeItem('selectedStation');
+    // НЕ очищаем сохраненные состояния - они сохраняются навсегда
+    // localStorage.removeItem('selectedPosition');
+    // localStorage.removeItem('selectedMood');
+    // localStorage.removeItem('selectedStation');
     
     currentGroup = null;
-    currentPosition = '';
-    currentMood = '';
-    
-    // Сбрасываем выделение карточек
-    positionCards.forEach(c => c.classList.remove('active'));
-    moodCards.forEach(c => c.classList.remove('active'));
+    // currentPosition = ''; // Не сбрасываем
+    // currentMood = ''; // Не сбрасываем
     
     joinedRoomScreen.classList.remove('active');
     waitingRoomScreen.classList.add('active');
 });
-
 // Обработчики таймера
 startTimerBtn.addEventListener('click', startTimer);
 stopTimerBtn.addEventListener('click', stopTimer);
@@ -942,8 +909,13 @@ timerOptions.forEach(btn => {
         this.classList.add('active');
         selectedMinutes = parseInt(this.getAttribute('data-minutes'));
         timerDisplay.textContent = `Готов к запуску: ${selectedMinutes} мин`;
+        // Сохраняем выбор таймера
+        localStorage.setItem('selectedTimerMinutes', selectedMinutes);
+        
+        timerDisplay.textContent = `Готов к запуску: ${selectedMinutes} мин`;
     });
 });
+
 
 // Обработчик фильтра по городу
 cityFilterSelect.addEventListener('change', function() {
@@ -1049,21 +1021,27 @@ function getRandomColor() {
 window.addEventListener('load', function() {
     initializeStations();
     
-    // Проверяем существование элемента перед работой с ним
-    const timerOption = document.querySelector('.timer-option[data-minutes="5"]');
-    if (timerOption) {
-        timerOption.classList.add('active');
+    // Восстанавливаем ВСЕ состояния при любой загрузке
+    restoreSelectedStates(); // Состояния позиций и настроений
+    
+    // Таймеры тоже восстанавливаем
+    const savedTimerMinutes = localStorage.getItem('selectedTimerMinutes');
+    if (savedTimerMinutes) {
+        selectedMinutes = parseInt(savedTimerMinutes);
+        const timerOption = document.querySelector(`.timer-option[data-minutes="${savedTimerMinutes}"]`);
+        if (timerOption) {
+            document.querySelectorAll('.timer-option').forEach(b => b.classList.remove('active'));
+            timerOption.classList.add('active');
+        }
     }
     
     if (cityFilterSelect) {
         cityFilterSelect.value = selectedCity;
     }
     
-    // Восстанавливаем выбранную станцию на второй странице
-    setTimeout(restoreSelectedStation, 1000); // Даем время на загрузку карты
-    
     console.log('🚇 Приложение "Из метро" инициализировано');
-    console.log('🔄 Автообновление настроено');
+    console.log('🔄 Автообновление каждые 10 секунд');
+    console.log('💾 Все состояния сохраняются постоянно');
 });
 
 window.addEventListener('beforeunload', async function() {

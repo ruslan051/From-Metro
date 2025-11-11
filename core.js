@@ -661,7 +661,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Инициализируем основные DOM элементы
     initializeCoreDOMElements();
         // Инициализируем индикатор пользователей
-    initializeUsersIndicator();
+    setTimeout(() => {
+        initializeUsersIndicator();
+    })
     // СРАЗУ показываем, что есть минимум 1 пользователь (текущий)
     setTimeout(() => {
         if (usersIndicatorCount) {
@@ -671,7 +673,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
          // Затем обновляем реальными данными
         updateUsersIndicator();
-    }, 500);
+    }, 100);
 
     
     // Инициализация основных обработчиков

@@ -61,7 +61,8 @@ h1 {
 
 .metro-icon { 
     position: relative;
-    
+    bottom: auto;
+    left: auto;
     
     font-size: 30px;
 }

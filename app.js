@@ -492,15 +492,15 @@ setupForm.addEventListener('submit', async function(e) {
     const wagon = document.getElementById('wagon').value || 'Не указан';
     const color = document.getElementById('color').value;
     
-    if (!station) {
-        alert('Пожалуйста, выберите станцию метро');
-        return;
-    }
+    // if (!station) {
+    //     alert('Пожалуйста, выберите станцию метро');
+    //     return;
+    // }
     
-    if (!color) {
-        alert('Пожалуйста, укажите цвет верхней одежды');
-        return;
-    }
+    // if (!color) {
+    //     alert('Пожалуйста, укажите цвет верхней одежды');
+    //     return;
+    // }
     
     // Генерация сказочного имени
     const getRandomName = (gender) => {

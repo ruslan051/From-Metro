@@ -19,7 +19,11 @@ const stations = {
         'Воробьёвы горы', 'Выставочная', 'Выхино', 'Деловой центр', 'Динамо'
     ]
 };
-
+// Удаляем глобальную переменную если она существует
+if (typeof totalUsers !== 'undefined') {
+    console.warn('⚠️ Удаляем глобальную переменную totalUsers');
+    delete window.totalUsers;
+}
 // Глобальные переменные для DOM элементов
 let wagonSelect, colorSelect, waitingTimer, waitingTimerDisplay, waitingTimerStatus;
 let waitingStartTimerBtn, waitingStopTimerBtn, waitingTimerOptions, waitingTimerExpanded;

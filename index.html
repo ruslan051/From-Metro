@@ -13,10 +13,7 @@
         <header>
             <h1>Из метро</h1>
             <div class="subtitle">Москва и Санкт-Петербург</div>
-            <div class="online-indicator">
-                <span class="online-dot"></span>
-                <span id="online-count">0</span> пользователей онлайн
-            </div>
+           
             <div class="metro-icon">🚇</div>
         </header>
         
@@ -58,52 +55,7 @@
                         </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="station">Станция метро</label>
-                        <select id="station" required>
-                            <option value="">Выберите станцию</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="wagon">Номер вагона (необязательно)</label>
-                        <select id="wagon">
-                            <option value="">Не указывать</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="color">Цвет верхней одежды</label>
-                        <input type="text" id="color" placeholder="Например: черный, синий, красный" required>
-                    </div>
-                    
-                    <div class="compact-timer" id="compact-timer">
-                        <div class="timer-header">
-                            <div class="timer-title">⏰ Таймер ожидания</div>
-                            <div class="timer-status" id="timer-status">Не активен</div>
-                        </div>
-                        <div class="timer-expanded" id="timer-expanded">
-                            <p>Выберите время ожидания на станции</p>
-                            <div class="timer-options">
-                                <button type="button" class="btn timer-option active" data-minutes="5">5 минут</button>
-                                <button type="button" class="btn timer-option" data-minutes="10">10 минут</button>
-                                <button type="button" class="btn timer-option" data-minutes="15">15 минут</button>
-                            </div>
-                            <div class="timer-display" id="timer-display">Не запущен</div>
-                            <div class="timer-controls">
-                                <button type="button" class="btn btn-success" id="start-timer">Запустить таймер</button>
-                                <button type="button" class="btn btn-secondary" id="stop-timer" disabled>Остановить</button>
-                            </div>
-                        </div>
-                    </div>
+
                     
                     <button type="submit" class="btn">Войти в комнату ожидания</button>
                 </form>
@@ -126,25 +78,19 @@
                 <!-- Интерактивная карта станций -->
                 <div class="stations-map-container">
                     <h3>🗺️ Карта станций метро</h3>
-                    <div class="refresh-info">
-                        🔄 Данные обновляются каждые 2 секунды
-                    </div>
+                    
                     
                     <div class="map-controls">
                         <div class="map-legend">
-                            <div class="legend-item">
-                                <div class="legend-color connected"></div>
-                                <span>Выбрали станцию: 1+</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color waiting"></div>
-                                <span>Не выбрали станцию: 1+</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color empty"></div>
-                                <span>Пусто</span>
-                            </div>
+                             <div class="legend-item">
+                            <div class="legend-color connected"></div>
+                            <span>Выбрали станцию</span>
                         </div>
+                        <div class="legend-item">
+                            <div class="legend-color waiting"></div>
+                            <span>В режиме ожидания</span>
+                        </div>
+                    </div>
                         <div class="city-filter">
                             <label>Город:</label>
                             <select id="city-filter-select">
@@ -179,6 +125,46 @@
                         </button>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label for="wagon-select">Номер вагона (необязательно)</label>
+                    <select id="wagon-select">
+                        <option value="">Не указывать</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="color-select">Цвет верхней одежды</label>
+                    <input type="text" id="color-select" placeholder="Например: черный, синий, красный" required>
+                </div>
+                
+                <div class="compact-timer" id="waiting-room-timer">
+                    <div class="timer-header">
+                        <div class="timer-title">⏰ Таймер ожидания</div>
+                        <div class="timer-status" id="waiting-timer-status">Не активен</div>
+                    </div>
+                    <div class="timer-expanded" id="waiting-timer-expanded">
+                        <p>Выберите время ожидания на станции</p>
+                        <div class="timer-options">
+                            <button type="button" class="btn timer-option active" data-minutes="5">5 минут</button>
+                            <button type="button" class="btn timer-option" data-minutes="10">10 минут</button>
+                            <button type="button" class="btn timer-option" data-minutes="15">15 минут</button>
+                        </div>
+                        <div class="timer-display" id="waiting-timer-display">Не запущен</div>
+                        <div class="timer-controls">
+                            <button type="button" class="btn btn-success" id="waiting-start-timer">Запустить таймер</button>
+                            <button type="button" class="btn btn-secondary" id="waiting-stop-timer" disabled>Остановить</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
                 
                 
             </div>
@@ -262,12 +248,7 @@
                     </div>
                 </div>
 
-                <div class="state-section">
-                    <h4>👥 Участники</h4>
-                    <div id="group-members">
-                        <div class="loading">Загрузка участников...</div>
-                    </div>
-                </div>
+               
                 
                 <button class="btn btn-danger" id="leave-group">Покинуть группу</button>
             </div>

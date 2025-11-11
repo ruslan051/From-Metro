@@ -429,6 +429,21 @@ app.get('/api/users', async (req, res) => {
 // Получение статистики по станциям для комнаты ожидания
 app.get('/api/stations/waiting-room', async (req, res) => {
   try {
+          // Добавить общую статистику по всему городу
+      const totalStats = await client.query(`
+          SELECT 
+              COUNT(*) as total_users,
+              COUNT(CASE WHEN is_connected = true THEN 1 END) as total_connected,
+              COUNT(CASE WHEN is_waiting = true THEN 1 END) as total_waiting
+          FROM users 
+          WHERE online = true AND city = $1
+      `, [city]);
+          // Вернуть оба набора данных
+      res.json({
+          stationStats: stationStats,
+          totalStats: totalStats.rows[0]
+      });
+    
     const { city } = req.query;
     
     let query = `

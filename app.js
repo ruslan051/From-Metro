@@ -1,7 +1,31 @@
 // Сказочные имена для мужчин и женщин
 const maleNames = ['Иван-Царевич', 'Кощей Бессмертный', 'Добрыня Никитич', 'Леший', 'Водяной', 'Бабай', 'Соловей-Разбойник', 'Змей Горыныч'];
 const femaleNames = ['Василиса Премудрая', 'Баба Яга', 'Царевна-Лягушка', 'Снегурочка', 'Марья-Искусница', 'Аленушка', 'Кикимора', 'Русалка'];
+// Новые элементы для комнаты ожидания
+const wagonSelect = document.getElementById('wagon-select');
+const colorSelect = document.getElementById('color-select');
+const waitingTimer = document.getElementById('waiting-room-timer');
+const waitingTimerDisplay = document.getElementById('waiting-timer-display');
+const waitingTimerStatus = document.getElementById('waiting-timer-status');
+const waitingStartTimerBtn = document.getElementById('waiting-start-timer');
+const waitingStopTimerBtn = document.getElementById('waiting-stop-timer');
+const waitingTimerOptions = document.querySelectorAll('#waiting-timer-expanded .timer-option');
+// Обработчики для таймера в комнате ожидания
+waitingTimer.addEventListener('click', function() {
+    document.getElementById('waiting-timer-expanded').classList.toggle('active');
+});
 
+waitingTimerOptions.forEach(btn => {
+    btn.addEventListener('click', function() {
+        waitingTimerOptions.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        selectedMinutes = parseInt(this.getAttribute('data-minutes'));
+        waitingTimerDisplay.textContent = `Готов к запуску: ${selectedMinutes} мин`;
+    });
+});
+
+waitingStartTimerBtn.addEventListener('click', startTimer);
+waitingStopTimerBtn.addEventListener('click', stopTimer);
 // Станции метро
 const stations = {
     spb: [
@@ -247,6 +271,20 @@ async function loadStationsMap() {
             stationElement.addEventListener('click', () => selectStation(stationName, stationData));
             metroMap.appendChild(stationElement);
         });
+
+
+        // Обновить легенду с общими цифрами
+            const legendItems = document.querySelectorAll('.legend-item');
+            legendItems.forEach(item => {
+                const text = item.textContent;
+                if (text.includes('Выбрали станцию')) {
+                    item.innerHTML = `<div class="legend-color connected"></div>
+                                    <span>Выбрали станцию: ${data.totalStats.total_connected}</span>`;
+                } else if (text.includes('В режиме ожидания')) {
+                    item.innerHTML = `<div class="legend-color waiting"></div>
+                                    <span>В режиме ожидания: ${data.totalStats.total_waiting}</span>`;
+                }
+            });
         
     } catch (error) {
         console.error('Ошибка загрузки карты станций:', error);
@@ -512,9 +550,9 @@ setupForm.addEventListener('submit', async function(e) {
     
     const userData = {
         name: randomName,
-        station: station,
-        wagon: wagon,
-        color: color,
+        station: '',
+        wagon: '',
+        color: '',
         colorCode: getRandomColor(),
         status: 'Ожидание',
         timer: "00:00",

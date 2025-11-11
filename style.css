@@ -60,7 +60,7 @@ h1 {
 }
 
 .metro-icon {
-    position: fixed;
+    position: sticky;
     top: 15px;
     right: 20px;
     font-size: 30px;

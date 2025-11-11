@@ -12,8 +12,6 @@ let currentGroup = null;
 let currentSelectedStation = null;
 let autoRefreshIntervals = [];
 let globalRefreshInterval = null;
-let waitingTimerExpanded; // ДОБАВЬТЕ ЭТУ СТРОЧКУ
-
 
 // Сказочные имена для мужчин и женщин
 const maleNames = ['Иван-Царевич', 'Кощей Бессмертный', 'Добрыня Никитич', 'Леший', 'Водяной', 'Бабай', 'Соловей-Разбойник', 'Змей Горыныч'];
@@ -44,13 +42,15 @@ const stations = {
 // API endpoints
 const API_BASE = 'https://metro-backend-xlkt.onrender.com/api';
 
-// Глобальные переменные для DOM элементов (будут инициализированы позже)
-let setupScreen, waitingRoomScreen, joinedRoomScreen, setupForm, backToSetupBtn, backToWaitingBtn;
-let requestsContainer, timerDisplay, startTimerBtn, stopTimerBtn, timerOptions, compactTimer;
-let timerExpanded, timerStatus, positionCards, moodCards, groupMembersContainer, leaveGroupBtn;
-let stationSelect, metroMap, cityFilterSelect, joinSelectedStationBtn, stationDetails;
+// Глобальные переменные для DOM элементов
+let setupScreen, waitingRoomScreen, joinedRoomScreen;
+let backToSetupBtn, backToWaitingBtn, leaveGroupBtn;
+let groupMembersContainer, metroMap;
 let wagonSelect, colorSelect, waitingTimer, waitingTimerDisplay, waitingTimerStatus;
-let waitingStartTimerBtn, waitingStopTimerBtn, waitingTimerOptions;
+let waitingStartTimerBtn, waitingStopTimerBtn, waitingTimerOptions, waitingTimerExpanded;
+let positionCards, moodCards;
+let enterWaitingRoomBtn, confirmStationBtn;
+let requestsContainer; // ВОССТАНОВИЛ для отображения пользователей
 
 // Безопасное получение элементов
 function getElementSafe(id) {
@@ -69,12 +69,13 @@ function initializeDOMElements() {
     setupScreen = getElementSafe('setup-screen');
     waitingRoomScreen = getElementSafe('waiting-room-screen');
     joinedRoomScreen = getElementSafe('joined-room-screen');
-    setupForm = getElementSafe('setup-form');
     
     // Кнопки навигации
     backToSetupBtn = getElementSafe('back-to-setup');
     backToWaitingBtn = getElementSafe('back-to-waiting');
     leaveGroupBtn = getElementSafe('leave-group');
+    enterWaitingRoomBtn = getElementSafe('enter-waiting-room');
+    confirmStationBtn = getElementSafe('confirm-station');
     
     // Элементы комнаты ожидания
     wagonSelect = getElementSafe('wagon-select');
@@ -84,54 +85,21 @@ function initializeDOMElements() {
     waitingTimerStatus = getElementSafe('waiting-timer-status');
     waitingStartTimerBtn = getElementSafe('waiting-start-timer');
     waitingStopTimerBtn = getElementSafe('waiting-stop-timer');
+    waitingTimerExpanded = getElementSafe('waiting-timer-expanded');
     waitingTimerOptions = document.querySelectorAll('#waiting-timer-expanded .timer-option');
     
-    // Таймеры
+    // Карта и группы
+    metroMap = getElementSafe('metro-map');
+    groupMembersContainer = getElementSafe('group-members');
+    
+    // Контейнер для запросов (ВОССТАНОВИЛ)
     requestsContainer = getElementSafe('requests-container');
-    timerDisplay = getElementSafe('timer-display');
-    startTimerBtn = getElementSafe('start-timer');
-    stopTimerBtn = getElementSafe('stop-timer');
-    timerOptions = document.querySelectorAll('.timer-option');
-    compactTimer = getElementSafe('compact-timer');
-    timerExpanded = getElementSafe('timer-expanded');
-    timerStatus = getElementSafe('timer-status');
     
     // Карточки состояний
     positionCards = document.querySelectorAll('#position-cards .state-card');
     moodCards = document.querySelectorAll('#mood-cards .state-card');
     
-    // Группы и станции
-    groupMembersContainer = getElementSafe('group-members');
-    stationSelect = getElementSafe('station');
-    metroMap = getElementSafe('metro-map');
-    cityFilterSelect = getElementSafe('city-filter-select');
-    joinSelectedStationBtn = getElementSafe('join-selected-station');
-    stationDetails = getElementSafe('station-details');
-      // Таймеры комнаты ожидания
-    waitingTimer = getElementSafe('waiting-room-timer');
-    waitingTimerExpanded = getElementSafe('waiting-timer-expanded'); // ДОБАВЬТЕ ЭТУ СТРОЧКУ
-    waitingTimerDisplay = getElementSafe('waiting-timer-display');
-    waitingTimerStatus = getElementSafe('waiting-timer-status');
-    waitingStartTimerBtn = getElementSafe('waiting-start-timer');
-    waitingStopTimerBtn = getElementSafe('waiting-stop-timer');
-    waitingTimerOptions = document.querySelectorAll('#waiting-timer-expanded .timer-option');
-    
     console.log('✅ DOM элементы инициализированы');
-}
-
-// Проверка существования элементов
-function checkAllElements() {
-    const elements = [
-        'setup-screen', 'waiting-room-screen', 'joined-room-screen',
-        'back-to-setup', 'back-to-waiting', 'leave-group', 'enter-waiting-room',
-        'group-members', 'metro-map', 'wagon-select', 'color-select'
-    ];
-    
-    console.log('🔍 Проверка элементов DOM:');
-    elements.forEach(id => {
-        const element = document.getElementById(id);
-        console.log(`${id}:`, element ? '✅ Найден' : '❌ Не найден');
-    });
 }
 
 async function handleEnterWaitingRoom() {
@@ -172,7 +140,7 @@ async function handleEnterWaitingRoom() {
             waitingRoomScreen.classList.add('active');
             
             loadStationsMap();
-            loadRequests();
+            loadRequests(); // ВОССТАНОВИЛ загрузку запросов
             startGlobalRefresh();
             
             console.log('✅ Пользователь создан:', createdUser.name);
@@ -254,21 +222,11 @@ function initializeCityAndGenderSelection() {
     });
 }
 
-// Безопасная инициализация компактного таймера
-function initializeCompactTimer() {
-    if (compactTimer && timerExpanded) {
-        compactTimer.addEventListener('click', function() {
-            timerExpanded.classList.toggle('active');
-        });
-    }
-}
-
 async function handleLeaveGroup() {
     console.log('🚪 Покидаем группу');
     
     if (userId) {
         try {
-            // Обновляем только статус, но сохраняем позицию и настроение
             await updateUser(userId, { 
                 status: 'Ожидание',
                 is_waiting: true,
@@ -283,7 +241,7 @@ async function handleLeaveGroup() {
     joinedRoomScreen.classList.remove('active');
     waitingRoomScreen.classList.add('active');
     
-    console.log('✅ Вышли из группы, состояния сохранены');
+    console.log('✅ Вышли из группы');
 }
 
 // Инициализация таймера в комнате ожидания
@@ -295,17 +253,12 @@ function initializeWaitingRoomTimer() {
         console.log('✅ Таймер комнаты ожидания инициализирован');
     }
     
-    // Обработчики для кнопок таймера комнаты ожидания
     if (waitingStartTimerBtn) {
         waitingStartTimerBtn.addEventListener('click', startTimer);
-    } else {
-        console.warn('❌ Кнопка waitingStartTimerBtn не найдена');
     }
     
     if (waitingStopTimerBtn) {
         waitingStopTimerBtn.addEventListener('click', stopTimer);
-    } else {
-        console.warn('❌ Кнопка waitingStopTimerBtn не найдена');
     }
     
     if (waitingTimerOptions.length > 0) {
@@ -341,9 +294,7 @@ function initializeStateCards() {
         });
     }
 
-    // Восстанавливаем сохраненные состояния
     restoreSelectedStates();
-    
     console.log('✅ Карточки состояний инициализированы');
 }
 
@@ -366,14 +317,109 @@ function initializeMoodCards() {
     });
 }
 
-function initializeEventHandlers() {
-    console.log('🔧 Инициализация обработчиков событий...');
+// ВОССТАНОВИЛ функцию загрузки запросов
+async function loadRequests() {
+    if (!requestsContainer) {
+        console.log('ℹ️ Контейнер requests-container не найден, пропускаем загрузку запросов');
+        return;
+    }
     
-    // Инициализация карточек состояний
-    initializeStateCards();
-    initializeMoodCards();
+    const users = await getUsers();
+    requestsContainer.innerHTML = '';
     
-    console.log('✅ Все обработчики инициализированы');
+    // Фильтруем пользователей: только те, кто на той же станции, что и текущий пользователь
+    let filteredUsers = users.filter(user => 
+        user.city === selectedCity && 
+        user.online === true
+    );
+    
+    // Если мы на третьей странице (joined room), показываем только пользователей текущей станции
+    if (joinedRoomScreen && joinedRoomScreen.classList.contains('active') && currentGroup) {
+        filteredUsers = filteredUsers.filter(user => 
+            user.station === currentGroup.station
+        );
+    }
+    
+    if (filteredUsers.length === 0) {
+        const message = joinedRoomScreen && joinedRoomScreen.classList.contains('active') && currentGroup 
+            ? `Пока нет других пользователей на станции ${currentGroup.station}`
+            : `Пока нет пользователей на станциях ${selectedCity === 'spb' ? 'Санкт-Петербурга' : 'Москвы'}`;
+            
+        requestsContainer.innerHTML = `
+            <div class="no-requests">
+                <h3>${message}</h3>
+                <p>Будьте первым!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const usersByStation = {};
+    filteredUsers.forEach(user => {
+        if (!usersByStation[user.station]) {
+            usersByStation[user.station] = [];
+        }
+        usersByStation[user.station].push(user);
+    });
+    
+    const sortedStations = Object.keys(usersByStation).sort((a, b) => 
+        usersByStation[b].length - usersByStation[a].length
+    );
+    
+    sortedStations.forEach(station => {
+        const stationUsers = usersByStation[station];
+        
+        const stationHeader = document.createElement('div');
+        stationHeader.className = 'station-header-card';
+        stationHeader.innerHTML = `
+            <div class="station-title">
+                <strong>${station}</strong>
+                <span class="user-count-badge">${stationUsers.length} пользователей</span>
+            </div>
+        `;
+        requestsContainer.appendChild(stationHeader);
+        
+        stationUsers.forEach(user => {
+            const requestCard = document.createElement('div');
+            requestCard.className = 'request-card';
+            const isCurrentUser = userId && user.id === userId;
+            
+            // Формируем информацию о состоянии пользователя
+            const stateInfo = [];
+            if (user.position) stateInfo.push(`Позиция: ${user.position}`);
+            if (user.mood) stateInfo.push(`Настроение: ${user.mood}`);
+            const stateText = stateInfo.join(' • ');
+            
+            requestCard.innerHTML = `
+                <div class="request-header">
+                    <div class="user-info-compact">
+                        <div class="user-avatar-small">${user.name.charAt(0)}</div>
+                        <div class="user-details">
+                            <div class="user-name">${user.name} ${isCurrentUser ? '(Вы)' : ''}</div>
+                            <div class="user-status">
+                                <span class="color-indicator" style="background-color: ${user.color_code || '#007bff'}"></span>
+                                ${user.color} • ${user.status}
+                            </div>
+                        </div>
+                    </div>
+                    ${user.wagon && user.wagon !== 'Не указан' ? `<div class="wagon">Вагон ${user.wagon}</div>` : ''}
+                </div>
+                
+                ${stateText ? `<div class="user-state-info" style="margin: 10px 0; padding: 8px; background: #f8f9fa; border-radius: 5px; font-size: 14px;">
+                    <strong>Состояние:</strong> ${stateText}
+                </div>` : ''}
+                
+                <div class="user-connections">
+                    <div class="connections-count">
+                        ${user.is_waiting ? '⏳ Ожидает присоединения' : '✅ Соединился с другими'}
+                        ${stateText ? ` • ${stateText}` : ''}
+                    </div>
+                </div>
+            `;
+            
+            requestsContainer.appendChild(requestCard);
+        });
+    });
 }
 
 // Основная инициализация при загрузке DOM
@@ -383,144 +429,66 @@ document.addEventListener('DOMContentLoaded', function() {
     // Инициализируем DOM элементы
     initializeDOMElements();
     
-    // Проверяем элементы
-    checkAllElements();
-    
-    // Основные кнопки навигации
-    const enterWaitingRoomBtn = document.getElementById('enter-waiting-room');
-    const backToSetupBtn = document.getElementById('back-to-setup');
-    const backToWaitingBtn = document.getElementById('back-to-waiting');
-    const leaveGroupBtn = document.getElementById('leave-group');
-    const confirmStationBtn = document.getElementById('confirm-station');
-    
-    // Проверяем и добавляем обработчики
+    // Инициализация обработчиков
     if (enterWaitingRoomBtn) {
         enterWaitingRoomBtn.addEventListener('click', handleEnterWaitingRoom);
-        console.log('✅ Обработчик для enter-waiting-room добавлен');
-    } else {
-        console.warn('❌ Кнопка enter-waiting-room не найдена');
     }
     
     if (backToSetupBtn) {
         backToSetupBtn.addEventListener('click', handleBackToSetup);
-        console.log('✅ Обработчик для back-to-setup добавлен');
     }
     
     if (backToWaitingBtn) {
         backToWaitingBtn.addEventListener('click', handleBackToWaiting);
-        console.log('✅ Обработчик для back-to-waiting добавлен');
     }
     
     if (leaveGroupBtn) {
         leaveGroupBtn.addEventListener('click', handleLeaveGroup);
-        console.log('✅ Обработчик для leave-group добавлен');
     }
     
     if (confirmStationBtn) {
         confirmStationBtn.addEventListener('click', handleConfirmStation);
-        console.log('✅ Обработчик для confirm-station добавлен');
-    }
-    
-    // Безопасная инициализация таймеров
-    if (startTimerBtn) {
-        startTimerBtn.addEventListener('click', startTimer);
-    } else {
-        console.warn('❌ Кнопка startTimerBtn не найдена');
-    }
-
-    if (stopTimerBtn) {
-        stopTimerBtn.addEventListener('click', stopTimer);
-    } else {
-        console.warn('❌ Кнопка stopTimerBtn не найдена');
-    }
-
-    if (timerOptions.length > 0) {
-        timerOptions.forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.timer-option').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                selectedMinutes = parseInt(this.getAttribute('data-minutes'));
-                if (timerDisplay) {
-                    timerDisplay.textContent = `Готов к запуску: ${selectedMinutes} мин`;
-                }
-                localStorage.setItem('selectedTimerMinutes', selectedMinutes);
-            });
-        });
     }
     
     // Инициализация выбора города и пола
     initializeCityAndGenderSelection();
     
-    // Инициализация таймера
-    initializeCompactTimer();
-    
     // Инициализация таймера в комнате ожидания
     initializeWaitingRoomTimer();
     
-    initializeEventHandlers();
-
-    // Обработчик присоединения к выбранной станции
-    if (joinSelectedStationBtn) {
-        joinSelectedStationBtn.addEventListener('click', function() {
-            if (currentSelectedStation) {
-                joinStation(currentSelectedStation);
-            } else {
-                alert('Пожалуйста, выберите станцию на карте');
-            }
-        });
-    }
+    // Инициализация карточек состояний
+    initializeStateCards();
+    initializeMoodCards();
 
     console.log('✅ Все обработчики инициализированы');
 });
 
-// Инициализация станций метро
-function initializeStations() {
-    if (!stationSelect) return;
-    
-    stationSelect.innerHTML = '<option value="">Выберите станцию</option>';
-    const cityStations = stations[selectedCity];
-    cityStations.forEach(station => {
-        const option = document.createElement('option');
-        option.value = station;
-        option.textContent = station;
-        stationSelect.appendChild(option);
-    });
-}
-
 // Функция для запуска глобального обновления каждые 5 секунд
 function startGlobalRefresh() {
-    // Останавливаем предыдущий интервал
     if (globalRefreshInterval) {
         clearInterval(globalRefreshInterval);
     }
     
-    // Запускаем новый интервал
     globalRefreshInterval = setInterval(async () => {
         console.log('🔄 Глобальное обновление данных...');
         
-        // Обновляем данные в зависимости от активного экрана
         if (setupScreen && setupScreen.classList.contains('active')) {
             // На первом экране ничего не обновляем
         } else if (waitingRoomScreen && waitingRoomScreen.classList.contains('active')) {
-            // На втором экране обновляем карту станций
+            // На втором экране обновляем карту станций и запросы
             await loadStationsMap();
-            await loadRequests();
-            
-            // Восстанавливаем выделение выбранной станции
+            await loadRequests(); // ВОССТАНОВИЛ
             restoreSelectedStation();
         } else if (joinedRoomScreen && joinedRoomScreen.classList.contains('active')) {
-            // На третьем экране обновляем список пользователей и участников группы
-            await loadRequests();
+            // На третьем экране обновляем участников группы и запросы
             await loadGroupMembers();
-            
-            // Восстанавливаем выделение состояний
+            await loadRequests(); // ВОССТАНОВИЛ
             restoreSelectedStates();
         }
         
-        // Пинг активности
         await pingActivity();
         
-    }, 5000); // 5 секунд
+    }, 5000);
     
     console.log('✅ Глобальное обновление запущено каждые 5 секунд');
 }
@@ -609,7 +577,6 @@ async function loadStationsMap() {
     if (!metroMap) return;
     
     try {
-        // Используем selectedCity из выбора на первой странице
         const response = await fetch(`${API_BASE}/stations/waiting-room?city=${selectedCity}`);
         const data = await response.json();
         
@@ -617,7 +584,6 @@ async function loadStationsMap() {
         const allStations = stations[selectedCity];
         const stationsMap = {};
         
-        // Создаем маппинг станций
         data.stationStats.forEach(station => {
             stationsMap[station.station] = station;
         });
@@ -692,10 +658,8 @@ async function loadStationsMap() {
 function selectStation(stationName, stationData) {
     currentSelectedStation = stationName;
     
-    // Сохраняем выбранную станцию в localStorage
     localStorage.setItem('selectedStation', stationName);
     
-    // Сбрасываем выделение у всех станций
     document.querySelectorAll('.station-map-item').forEach(item => {
         item.style.borderWidth = '2px';
         item.style.borderColor = '';
@@ -703,7 +667,6 @@ function selectStation(stationName, stationData) {
         item.classList.remove('selected');
     });
     
-    // Выделяем выбранную станцию жирной синей рамкой и добавляем класс
     const selectedElement = document.querySelector(`[data-station="${stationName}"]`);
     if (selectedElement) {
         selectedElement.style.borderWidth = '4px';
@@ -715,7 +678,6 @@ function selectStation(stationName, stationData) {
     console.log('📍 Выбрана станция:', stationName);
 }
 
-// Обновите функцию присоединения к станции
 async function joinStation(station) {
     try {
         const response = await fetch(`${API_BASE}/rooms/join-station`, {
@@ -743,10 +705,9 @@ async function joinStation(station) {
             waitingRoomScreen.classList.remove('active');
             joinedRoomScreen.classList.add('active');
             
-            // Даем время DOM обновиться перед загрузкой участников
             setTimeout(async () => {
                 await loadGroupMembers();
-                await loadRequests();
+                await loadRequests(); // ВОССТАНОВИЛ
             }, 100);
             
             console.log(`✅ Успешно присоединились к станции ${station}`);
@@ -764,10 +725,8 @@ function restoreSelectedStation() {
     if (savedStation) {
         currentSelectedStation = savedStation;
         
-        // Восстанавливаем выделение станции
         const selectedElement = document.querySelector(`[data-station="${savedStation}"]`);
         if (selectedElement) {
-            // Сбрасываем все выделения
             document.querySelectorAll('.station-map-item').forEach(item => {
                 item.style.borderWidth = '2px';
                 item.style.borderColor = '';
@@ -775,7 +734,6 @@ function restoreSelectedStation() {
                 item.classList.remove('selected');
             });
             
-            // Применяем выделение к выбранной станции
             selectedElement.style.borderWidth = '4px';
             selectedElement.style.borderColor = '#0057b8';
             selectedElement.style.boxShadow = '0 0 10px rgba(0, 87, 184, 0.5)';
@@ -903,117 +861,14 @@ async function updateUserState() {
                 mood: currentMood
             });
             
-            // Немедленно обновляем отображение
-            await loadRequests();
             await loadGroupMembers();
+            await loadRequests(); // ВОССТАНОВИЛ
             
             console.log('✅ Состояние обновлено на сервере:', stateText);
         } catch (error) {
             console.error('❌ Ошибка обновления состояния:', error);
         }
     }
-}
-
-// Обновите функцию loadRequests для фильтрации по станции
-async function loadRequests() {
-    if (!requestsContainer) return;
-    
-    const users = await getUsers();
-    requestsContainer.innerHTML = '';
-    
-    // Фильтруем пользователей: только те, кто на той же станции, что и текущий пользователь
-    let filteredUsers = users.filter(user => 
-        user.city === selectedCity && 
-        user.online === true
-    );
-    
-    // Если мы на третьей странице (joined room), показываем только пользователей текущей станции
-    if (joinedRoomScreen && joinedRoomScreen.classList.contains('active') && currentGroup) {
-        filteredUsers = filteredUsers.filter(user => 
-            user.station === currentGroup.station
-        );
-    }
-    
-    if (filteredUsers.length === 0) {
-        const message = joinedRoomScreen && joinedRoomScreen.classList.contains('active') && currentGroup 
-            ? `Пока нет других пользователей на станции ${currentGroup.station}`
-            : `Пока нет пользователей на станциях ${selectedCity === 'spb' ? 'Санкт-Петербурга' : 'Москвы'}`;
-            
-        requestsContainer.innerHTML = `
-            <div class="no-requests">
-                <h3>${message}</h3>
-                <p>Будьте первым!</p>
-            </div>
-        `;
-        return;
-    }
-    
-    const usersByStation = {};
-    filteredUsers.forEach(user => {
-        if (!usersByStation[user.station]) {
-            usersByStation[user.station] = [];
-        }
-        usersByStation[user.station].push(user);
-    });
-    
-    const sortedStations = Object.keys(usersByStation).sort((a, b) => 
-        usersByStation[b].length - usersByStation[a].length
-    );
-    
-    sortedStations.forEach(station => {
-        const stationUsers = usersByStation[station];
-        
-        const stationHeader = document.createElement('div');
-        stationHeader.className = 'station-header-card';
-        stationHeader.innerHTML = `
-            <div class="station-title">
-                <strong>${station}</strong>
-                <span class="user-count-badge">${stationUsers.length} пользователей</span>
-            </div>
-        `;
-        requestsContainer.appendChild(stationHeader);
-        
-        stationUsers.forEach(user => {
-            const requestCard = document.createElement('div');
-            requestCard.className = 'request-card';
-            const isCurrentUser = userId && user.id === userId;
-            
-            // Формируем информацию о состоянии пользователя
-            const stateInfo = [];
-            if (user.position) stateInfo.push(`Позиция: ${user.position}`);
-            if (user.mood) stateInfo.push(`Настроение: ${user.mood}`);
-            const stateText = stateInfo.join(' • ');
-            
-            requestCard.innerHTML = `
-                <div class="request-header">
-                    <div class="user-info-compact">
-                        <div class="user-avatar-small">${user.name.charAt(0)}</div>
-                        <div class="user-details">
-                            <div class="user-name">${user.name} ${isCurrentUser ? '(Вы)' : ''}</div>
-                            <div class="user-status">
-                                <span class="color-indicator" style="background-color: ${user.color_code || '#007bff'}"></span>
-                                ${user.color} • ${user.status}
-                            </div>
-                        </div>
-                    </div>
-                    ${user.wagon && user.wagon !== 'Не указан' ? `<div class="wagon">Вагон ${user.wagon}</div>` : ''}
-                </div>
-                
-                ${stateText ? `<div class="user-state-info" style="margin: 10px 0; padding: 8px; background: #f8f9fa; border-radius: 5px; font-size: 14px;">
-                    <strong>Состояние:</strong> ${stateText}
-                </div>` : ''}
-                
-                <div class="user-connections">
-                    <div class="connections-count">
-                        ${user.is_waiting ? '⏳ Ожидает присоединения' : '✅ Соединился с другими'}
-                        ${stateText ? ` • ${stateText}` : ''}
-                    </div>
-                </div>
-            `;
-            
-            requestsContainer.appendChild(requestCard);
-        });
-    });
 }
 
 // Функции таймера
@@ -1044,8 +899,8 @@ function startTimer() {
         }
     }, 1000);
     
-    if (startTimerBtn) startTimerBtn.disabled = true;
-    if (stopTimerBtn) stopTimerBtn.disabled = false;
+    if (waitingStartTimerBtn) waitingStartTimerBtn.disabled = true;
+    if (waitingStopTimerBtn) waitingStopTimerBtn.disabled = false;
 }
 
 function stopTimer() {
@@ -1055,14 +910,14 @@ function stopTimer() {
     }
     
     timerSeconds = 0;
-    if (timerDisplay) timerDisplay.textContent = 'Не запущен';
-    if (timerStatus) {
-        timerStatus.textContent = 'Не активен';
-        timerStatus.style.color = '#666';
+    if (waitingTimerDisplay) waitingTimerDisplay.textContent = 'Не запущен';
+    if (waitingTimerStatus) {
+        waitingTimerStatus.textContent = 'Не активен';
+        waitingTimerStatus.style.color = '#666';
     }
     
-    if (startTimerBtn) startTimerBtn.disabled = false;
-    if (stopTimerBtn) stopTimerBtn.disabled = true;
+    if (waitingStartTimerBtn) waitingStartTimerBtn.disabled = false;
+    if (waitingStopTimerBtn) waitingStopTimerBtn.disabled = true;
     
     if (userId) {
         try {
@@ -1078,19 +933,19 @@ function stopTimer() {
 
 function updateTimerDisplay() {
     if (timerSeconds <= 0) {
-        if (timerDisplay) timerDisplay.textContent = 'Время истекло';
-        if (timerStatus) {
-            timerStatus.textContent = 'Истекло';
-            timerStatus.style.color = '#dc3545';
+        if (waitingTimerDisplay) waitingTimerDisplay.textContent = 'Время истекло';
+        if (waitingTimerStatus) {
+            waitingTimerStatus.textContent = 'Истекло';
+            waitingTimerStatus.style.color = '#dc3545';
         }
     } else {
         const minutes = Math.floor(timerSeconds / 60);
         const seconds = timerSeconds % 60;
         const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        if (timerDisplay) timerDisplay.textContent = timeString;
-        if (timerStatus) {
-            timerStatus.textContent = timeString;
-            timerStatus.style.color = '#28a745';
+        if (waitingTimerDisplay) waitingTimerDisplay.textContent = timeString;
+        if (waitingTimerStatus) {
+            waitingTimerStatus.textContent = timeString;
+            waitingTimerStatus.style.color = '#28a745';
         }
     }
 }
@@ -1109,8 +964,6 @@ function getRandomColor() {
 
 // Запуск при полной загрузке страницы
 window.addEventListener('load', function() {
-    initializeStations();
-    
     // Восстанавливаем ВСЕ состояния при любой загрузке
     restoreSelectedStates();
     restoreSelectedStation();
@@ -1126,22 +979,17 @@ window.addEventListener('load', function() {
         }
     }
     
-    if (cityFilterSelect) {
-        cityFilterSelect.value = selectedCity;
-    }
-    
     // Если пользователь уже авторизован, запускаем обновление
     if (userId) {
         startGlobalRefresh();
     }
     
     console.log('🚇 Приложение "Из метро" инициализировано');
-    console.log('🔄 Глобальное обновление каждые 5 секунд');
 });
 
 // Остановка при закрытии страницы
 window.addEventListener('beforeunload', async function() {
-    stopGlobalRefresh(); // Останавливаем обновление
+    stopGlobalRefresh();
     
     if (userId) {
         try {

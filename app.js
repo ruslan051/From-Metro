@@ -213,8 +213,136 @@ function initializeCompactTimer() {
         });
     }
 }
+// Также обновите функцию handleLeaveGroup чтобы не сбрасывать состояния:
+async function handleLeaveGroup() {
+    console.log('🚪 Покидаем группу');
+    
+    if (userId) {
+        try {
+            // Обновляем только статус, но сохраняем позицию и настроение
+            await updateUser(userId, { 
+                status: 'Ожидание',
+                is_waiting: true,
+                is_connected: false,
+                // НЕ очищаем position и mood - они сохраняются
+            });
+        } catch (error) {
+            console.error('Ошибка при обновлении пользователя:', error);
+        }
+    }
+    
+    currentGroup = null;
+    joinedRoomScreen.classList.remove('active');
+    waitingRoomScreen.classList.add('active');
+    
+    console.log('✅ Вышли из группы, состояния сохранены');
+}
+// Инициализация таймера в комнате ожидания
+function initializeWaitingRoomTimer() {
+    const waitingTimer = document.getElementById('waiting-room-timer');
+    const waitingTimerExpanded = document.getElementById('waiting-timer-expanded');
+    
+    if (waitingTimer && waitingTimerExpanded) {
+        waitingTimer.addEventListener('click', function() {
+            waitingTimerExpanded.classList.toggle('active');
+        });
+        console.log('✅ Таймер комнаты ожидания инициализирован');
+    }
+    
+    // Обработчики для кнопок таймера комнаты ожидания
+    const waitingStartTimerBtn = document.getElementById('waiting-start-timer');
+    const waitingStopTimerBtn = document.getElementById('waiting-stop-timer');
+    const waitingTimerOptions = document.querySelectorAll('#waiting-timer-expanded .timer-option');
+    
+    if (waitingStartTimerBtn) {
+        waitingStartTimerBtn.addEventListener('click', startTimer);
+    }
+    
+    if (waitingStopTimerBtn) {
+        waitingStopTimerBtn.addEventListener('click', stopTimer);
+    }
+    
+    if (waitingTimerOptions.length > 0) {
+        waitingTimerOptions.forEach(btn => {
+            btn.addEventListener('click', function() {
+                waitingTimerOptions.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedMinutes = parseInt(this.getAttribute('data-minutes'));
+                const waitingTimerDisplay = document.getElementById('waiting-timer-display');
+                if (waitingTimerDisplay) {
+                    waitingTimerDisplay.textContent = `Готов к запуску: ${selectedMinutes} мин`;
+                }
+            });
+        });
+    }
+}
+function initializeStateCards() {
+    console.log('🎯 Инициализация карточек состояний...');
+    // Исправленная инициализация карточек настроений
 
 
+
+    // Карточки позиций
+    const positionCards = document.querySelectorAll('#position-cards .state-card');
+    positionCards.forEach(card => {
+        card.addEventListener('click', async function() {
+            positionCards.forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            currentPosition = this.getAttribute('data-position');
+            
+            // Сохраняем выбранную позицию
+            localStorage.setItem('selectedPosition', currentPosition);
+            
+            // Немедленно обновляем состояние
+            await updateUserState();
+            console.log('📍 Позиция обновлена:', currentPosition);
+        });
+    if (moodCards.length === 0) {
+    console.warn('❌ Карточки настроений не найдены');
+}
+if (positionCards.length === 0) {
+    console.warn('❌ Карточки позиций не найдены');
+}
+});
+
+
+
+
+
+    // Восстанавливаем сохраненные состояния
+    restoreSelectedStates();
+    
+    console.log('✅ Карточки состояний инициализированы');
+}
+function initializeMoodCards() {
+    const moodCards = document.querySelectorAll('#mood-cards .state-card');
+    if (moodCards.length === 0) {
+        console.warn('❌ Карточки настроений не найдены');
+        return;
+    }
+    
+    moodCards.forEach(card => {
+        card.addEventListener('click', async function() {
+            moodCards.forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            currentMood = this.getAttribute('data-mood');
+            
+            localStorage.setItem('selectedMood', currentMood);
+            await updateUserState();
+            console.log('😊 Настроение обновлено:', currentMood);
+        });
+    });
+}
+// Обновите initializeEventHandlers
+function initializeEventHandlers() {
+    console.log('🔧 Инициализация обработчиков событий...');
+    
+    // Инициализация карточек состояний
+    initializeStateCards();
+    initializeMoodCards();
+    
+    console.log('✅ Все обработчики инициализированы');
+}
 
 // Добавьте эту проверку после объявления всех DOM элементов
 document.addEventListener('DOMContentLoaded', function() {
@@ -334,30 +462,7 @@ const cityOptions = document.querySelectorAll('.city-option');
 const genderOptions = document.querySelectorAll('.gender-option');
 
 
-// Также обновите функцию handleLeaveGroup чтобы не сбрасывать состояния:
-async function handleLeaveGroup() {
-    console.log('🚪 Покидаем группу');
-    
-    if (userId) {
-        try {
-            // Обновляем только статус, но сохраняем позицию и настроение
-            await updateUser(userId, { 
-                status: 'Ожидание',
-                is_waiting: true,
-                is_connected: false,
-                // НЕ очищаем position и mood - они сохраняются
-            });
-        } catch (error) {
-            console.error('Ошибка при обновлении пользователя:', error);
-        }
-    }
-    
-    currentGroup = null;
-    joinedRoomScreen.classList.remove('active');
-    waitingRoomScreen.classList.add('active');
-    
-    console.log('✅ Вышли из группы, состояния сохранены');
-}
+
 // В начале app.js добавьте безопасные получения элементов
 function getElementSafe(id) {
     const element = document.getElementById(id);
@@ -441,45 +546,7 @@ genderOptions.forEach(option => {
     });
 });
 
-// Инициализация таймера в комнате ожидания
-function initializeWaitingRoomTimer() {
-    const waitingTimer = document.getElementById('waiting-room-timer');
-    const waitingTimerExpanded = document.getElementById('waiting-timer-expanded');
-    
-    if (waitingTimer && waitingTimerExpanded) {
-        waitingTimer.addEventListener('click', function() {
-            waitingTimerExpanded.classList.toggle('active');
-        });
-        console.log('✅ Таймер комнаты ожидания инициализирован');
-    }
-    
-    // Обработчики для кнопок таймера комнаты ожидания
-    const waitingStartTimerBtn = document.getElementById('waiting-start-timer');
-    const waitingStopTimerBtn = document.getElementById('waiting-stop-timer');
-    const waitingTimerOptions = document.querySelectorAll('#waiting-timer-expanded .timer-option');
-    
-    if (waitingStartTimerBtn) {
-        waitingStartTimerBtn.addEventListener('click', startTimer);
-    }
-    
-    if (waitingStopTimerBtn) {
-        waitingStopTimerBtn.addEventListener('click', stopTimer);
-    }
-    
-    if (waitingTimerOptions.length > 0) {
-        waitingTimerOptions.forEach(btn => {
-            btn.addEventListener('click', function() {
-                waitingTimerOptions.forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                selectedMinutes = parseInt(this.getAttribute('data-minutes'));
-                const waitingTimerDisplay = document.getElementById('waiting-timer-display');
-                if (waitingTimerDisplay) {
-                    waitingTimerDisplay.textContent = `Готов к запуску: ${selectedMinutes} мин`;
-                }
-            });
-        });
-    }
-}
+
 
 
 // Функция для запуска глобального обновления каждые 5 секунд
@@ -908,95 +975,7 @@ function restoreSelectedStates() {
 }
 
 
-function initializeStateCards() {
-    console.log('🎯 Инициализация карточек состояний...');
-    // Исправленная инициализация карточек настроений
-function initializeMoodCards() {
-    const moodCards = document.querySelectorAll('#mood-cards .state-card');
-    if (moodCards.length === 0) {
-        console.warn('❌ Карточки настроений не найдены');
-        return;
-    }
-    
-    moodCards.forEach(card => {
-        card.addEventListener('click', async function() {
-            moodCards.forEach(c => c.classList.remove('active'));
-            this.classList.add('active');
-            currentMood = this.getAttribute('data-mood');
-            
-            localStorage.setItem('selectedMood', currentMood);
-            await updateUserState();
-            console.log('😊 Настроение обновлено:', currentMood);
-        });
-    });
-}
 
-// Обновите initializeEventHandlers
-function initializeEventHandlers() {
-    console.log('🔧 Инициализация обработчиков событий...');
-    
-    // Инициализация карточек состояний
-    initializeStateCards();
-    initializeMoodCards();
-    
-    console.log('✅ Все обработчики инициализированы');
-}
-    // Карточки позиций
-    const positionCards = document.querySelectorAll('#position-cards .state-card');
-    positionCards.forEach(card => {
-        card.addEventListener('click', async function() {
-            positionCards.forEach(c => c.classList.remove('active'));
-            this.classList.add('active');
-            currentPosition = this.getAttribute('data-position');
-            
-            // Сохраняем выбранную позицию
-            localStorage.setItem('selectedPosition', currentPosition);
-            
-            // Немедленно обновляем состояние
-            await updateUserState();
-            console.log('📍 Позиция обновлена:', currentPosition);
-        });
-    if (moodCards.length === 0) {
-    console.warn('❌ Карточки настроений не найдены');
-}
-if (positionCards.length === 0) {
-    console.warn('❌ Карточки позиций не найдены');
-}
-});
-
-    // Исправленная инициализация карточек настроений
-function initializeMoodCards() {
-    const moodCards = document.querySelectorAll('#mood-cards .state-card');
-    moodCards.forEach(card => {
-        card.addEventListener('click', async function() {
-            moodCards.forEach(c => c.classList.remove('active'));
-            this.classList.add('active');
-            currentMood = this.getAttribute('data-mood');
-            
-            localStorage.setItem('selectedMood', currentMood);
-            await updateUserState();
-        });
-    });
-}
-
-// И добавьте вызов в initializeEventHandlers:
-function initializeEventHandlers() {
-    console.log('🔧 Инициализация обработчиков событий...');
-    
-    // ... существующий код ...
-    
-    // Инициализация карточек состояний
-    initializeStateCards();
-    initializeMoodCards();
-    
-    console.log('✅ Все обработчики инициализированы');
-}
-
-    // Восстанавливаем сохраненные состояния
-    restoreSelectedStates();
-    
-    console.log('✅ Карточки состояний инициализированы');
-}
 
 // Функции навигации
 function showSetup() {

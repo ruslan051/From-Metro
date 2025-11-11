@@ -347,45 +347,45 @@ function generateSessionId(req) {
 }
 
 // Функция для проверки дублирующих сессий
-// async function checkExistingSessions(client, clientIp, userAgent, sessionId) {
-//   try {
-//     const existingSessions = await client.query(
-//       `SELECT COUNT(*) as count FROM users 
-//        WHERE ip_address = $1 AND online = true 
-//        AND last_activity > NOW() - INTERVAL '10 minutes'
-//        AND station IS NOT NULL`,
-//       [clientIp]
-//     );
+async function checkExistingSessions(client, clientIp, userAgent, sessionId) {
+  try {
+    const existingSessions = await client.query(
+      `SELECT COUNT(*) as count FROM users 
+       WHERE ip_address = $1 AND online = true 
+       AND last_activity > NOW() - INTERVAL '10 minutes'
+       AND station IS NOT NULL`,
+      [clientIp]
+    );
     
-//     const sessionCount = parseInt(existingSessions.rows[0].count);
+    const sessionCount = parseInt(existingSessions.rows[0].count);
     
-    // if (sessionCount >= 20) {
-    //   return {
-    //     allowed: false,
-    //     reason: 'С одного IP-адреса разрешено не более 20 активных сессий одновременно.'
-    //   };
-    // }
+    if (sessionCount >= 1000) {
+      return {
+        allowed: false,
+        reason: 'С одного IP-адреса разрешено не более 20 активных сессий одновременно.'
+      };
+    }
     
-    // const exactMatch = await client.query(
-    //   `SELECT id FROM users 
-    //    WHERE ip_address = $1 AND user_agent = $2 AND online = true 
-    //    AND last_activity > NOW() - INTERVAL '5 minutes'`,
-    //   [clientIp, userAgent]
-    // );
+    const exactMatch = await client.query(
+      `SELECT id FROM users 
+       WHERE ip_address = $1 AND user_agent = $2 AND online = true 
+       AND last_activity > NOW() - INTERVAL '5 minutes'`,
+      [clientIp, userAgent]
+    );
     
-    // if (exactMatch.rows.length > 0) {
-    //   return {
-    //     allowed: false,
-    //     reason: 'У вас уже есть активная сессия в этом браузере. Закройте предыдущую вкладку или подождите несколько минут.'
-    //   };
-    // }
+    if (exactMatch.rows.length > 0) {
+      return {
+        allowed: false,
+        reason: 'У вас уже есть активная сессия в этом браузере. Закройте предыдущую вкладку или подождите несколько минут.'
+      };
+    }
     
-//     return { allowed: true };
-//   } catch (error) {
-//     console.error('❌ Ошибка проверки сессий:', error);
-//     return { allowed: true };
-//   }
-// }
+    return { allowed: true };
+  } catch (error) {
+    console.error('❌ Ошибка проверки сессий:', error);
+    return { allowed: true };
+  }
+}
 
 // API Routes
 

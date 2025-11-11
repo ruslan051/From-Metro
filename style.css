@@ -483,7 +483,7 @@ select:focus, input:focus {
 
 .map-controls {
     display: flex;
-    justify-content: space-between;
+    justify-content: center; /* Центрируем легенду */
     align-items: center;
     margin-bottom: 20px;
     flex-wrap: wrap;
@@ -494,6 +494,7 @@ select:focus, input:focus {
     display: flex;
     gap: 15px;
     flex-wrap: wrap;
+    justify-content: center;
 }
 
 .legend-item {

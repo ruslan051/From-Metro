@@ -428,6 +428,7 @@ async function pingActivity() {
 // Функция загрузки карты станций
 async function loadStationsMap() {
     try {
+        // Используем selectedCity из выбора на первой странице
         const response = await fetch(`${API_BASE}/stations/waiting-room?city=${selectedCity}`);
         const data = await response.json();
         
@@ -475,14 +476,12 @@ async function loadStationsMap() {
                 ` : '<div style="font-size: 10px; color: #666;">Пусто</div>'}
             `;
             
-            stationElement.addEventListener('click', () => selectStation(stationName, stationData|| {
-        waiting: 0,
-        connected: 0,
-        totalUsers: 0
-
+            stationElement.addEventListener('click', () => selectStation(stationName, stationData || {
+                waiting: 0,
+                connected: 0,
+                totalUsers: 0
             }));
             metroMap.appendChild(stationElement);
-            
         });
 
         // Обновить легенду с общими цифрами
@@ -994,12 +993,12 @@ timerOptions.forEach(btn => {
 });
 
 
-// Обработчик фильтра по городу
-cityFilterSelect.addEventListener('change', function() {
-    selectedCity = this.value;
-    loadStationsMap();
-    loadRequests();
-});
+// // Обработчик фильтра по городу
+// cityFilterSelect.addEventListener('change', function() {
+//     selectedCity = this.value;
+//     loadStationsMap();
+//     loadRequests();
+// });
 
 // Обработчик присоединения к выбранной станции
 joinSelectedStationBtn.addEventListener('click', function() {

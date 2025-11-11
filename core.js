@@ -182,7 +182,9 @@ async function handleConfirmStation() {
 
 async function handleLeaveGroup() {
     console.log('🚪 Покидаем группу');
-    
+      // СБРАСЫВАЕМ СОСТОЯНИЯ ПРИ ВЫХОДЕ ИЗ ГРУППЫ
+    currentPosition = '';
+    currentMood = '';
     if (userId) {
         try {
             await updateUser(userId, { 
@@ -400,9 +402,25 @@ function showJoinedRoom() {
     if (!joinedRoomScreen) initializeCoreDOMElements();
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
     joinedRoomScreen.classList.add('active');
+     // СБРАСЫВАЕМ СОСТОЯНИЯ ПЕРЕД ПОКАЗОМ СТРАНИЦЫ
+    currentPosition = '';
+    currentMood = '';
+     // СБРАСЫВАЕМ ВЫБРАННЫЕ КАРТОЧКИ
+    if (positionCards.length > 0) {
+        positionCards.forEach(card => card.classList.remove('active'));
+    }
+    if (moodCards.length > 0) {
+        moodCards.forEach(card => card.classList.remove('active'));
+    }
     
     // Загружаем модули если нужно
     loadOptionalModules().then(() => {
+          // ИНИЦИАЛИЗИРУЕМ КАРТОЧКИ СОСТОЯНИЙ (СБРОШЕННЫЕ)
+        setTimeout(() => {
+            if (typeof initializeStateCards === 'function') {
+                initializeStateCards();
+            }
+        }, 100);
         startGlobalRefresh();
     });
 }
@@ -449,14 +467,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Запуск при полной загрузке страницы
 window.addEventListener('load', function() {
-    // Восстанавливаем только основные состояния
-    const savedPosition = localStorage.getItem('selectedPosition');
-    const savedMood = localStorage.getItem('selectedMood');
-    const savedStation = localStorage.getItem('selectedStation');
     
-    if (savedPosition) currentPosition = savedPosition;
-    if (savedMood) currentMood = savedMood;
-    if (savedStation) currentSelectedStation = savedStation;
     
     console.log('🚇 Ядро приложения "Из метро" полностью загружено');
 });

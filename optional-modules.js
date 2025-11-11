@@ -474,7 +474,7 @@ function initializeStateCards() {
                 this.classList.add('active');
                 currentPosition = this.getAttribute('data-position');
                 
-                localStorage.setItem('selectedPosition', currentPosition);
+                
                 await updateUserState();
                 console.log('📍 Позиция обновлена:', currentPosition);
             });
@@ -490,14 +490,14 @@ function initializeStateCards() {
                 this.classList.add('active');
                 currentMood = this.getAttribute('data-mood');
                 
-                localStorage.setItem('selectedMood', currentMood);
+                
                 await updateUserState();
                 console.log('😊 Настроение обновлено:', currentMood);
             });
         });
     }
 
-    restoreSelectedStates();
+   
     console.log('✅ Карточки состояний инициализированы');
 }
 
@@ -546,33 +546,33 @@ function restoreSelectedStation() {
     }
 }
 
-// Улучшенная функция восстановления состояний
-function restoreSelectedStates() {
-    const savedPosition = localStorage.getItem('selectedPosition');
-    const savedMood = localStorage.getItem('selectedMood');
+// // Улучшенная функция восстановления состояний
+// function restoreSelectedStates() {
+//     const savedPosition = localStorage.getItem('selectedPosition');
+//     const savedMood = localStorage.getItem('selectedMood');
     
-    console.log('🔄 Восстановление состояний:', { savedPosition, savedMood });
+//     console.log('🔄 Восстановление состояний:', { savedPosition, savedMood });
     
-    if (savedPosition) {
-        currentPosition = savedPosition;
-        const positionCard = document.querySelector(`[data-position="${savedPosition}"]`);
-        if (positionCard) {
-            document.querySelectorAll('#position-cards .state-card').forEach(c => c.classList.remove('active'));
-            positionCard.classList.add('active');
-            console.log('📍 Восстановлена позиция:', savedPosition);
-        }
-    }
+//     if (savedPosition) {
+//         currentPosition = savedPosition;
+//         const positionCard = document.querySelector(`[data-position="${savedPosition}"]`);
+//         if (positionCard) {
+//             document.querySelectorAll('#position-cards .state-card').forEach(c => c.classList.remove('active'));
+//             positionCard.classList.add('active');
+//             console.log('📍 Восстановлена позиция:', savedPosition);
+//         }
+//     }
     
-    if (savedMood) {
-        currentMood = savedMood;
-        const moodCard = document.querySelector(`[data-mood="${savedMood}"]`);
-        if (moodCard) {
-            document.querySelectorAll('#mood-cards .state-card').forEach(c => c.classList.remove('active'));
-            moodCard.classList.add('active');
-            console.log('😊 Восстановлено настроение:', savedMood);
-        }
-    }
-}
+//     if (savedMood) {
+//         currentMood = savedMood;
+//         const moodCard = document.querySelector(`[data-mood="${savedMood}"]`);
+//         if (moodCard) {
+//             document.querySelectorAll('#mood-cards .state-card').forEach(c => c.classList.remove('active'));
+//             moodCard.classList.add('active');
+//             console.log('😊 Восстановлено настроение:', savedMood);
+//         }
+//     }
+// }
 
 // Вспомогательные функции
 function formatTime(seconds) {

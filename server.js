@@ -347,17 +347,17 @@ function generateSessionId(req) {
 }
 
 // Функция для проверки дублирующих сессий
-async function checkExistingSessions(client, clientIp, userAgent, sessionId) {
-  try {
-    const existingSessions = await client.query(
-      `SELECT COUNT(*) as count FROM users 
-       WHERE ip_address = $1 AND online = true 
-       AND last_activity > NOW() - INTERVAL '10 minutes'
-       AND station IS NOT NULL`,
-      [clientIp]
-    );
+// async function checkExistingSessions(client, clientIp, userAgent, sessionId) {
+//   try {
+//     const existingSessions = await client.query(
+//       `SELECT COUNT(*) as count FROM users 
+//        WHERE ip_address = $1 AND online = true 
+//        AND last_activity > NOW() - INTERVAL '10 minutes'
+//        AND station IS NOT NULL`,
+//       [clientIp]
+//     );
     
-    const sessionCount = parseInt(existingSessions.rows[0].count);
+//     const sessionCount = parseInt(existingSessions.rows[0].count);
     
     // if (sessionCount >= 20) {
     //   return {
@@ -380,12 +380,12 @@ async function checkExistingSessions(client, clientIp, userAgent, sessionId) {
     //   };
     // }
     
-    return { allowed: true };
-  } catch (error) {
-    console.error('❌ Ошибка проверки сессий:', error);
-    return { allowed: true };
-  }
-}
+//     return { allowed: true };
+//   } catch (error) {
+//     console.error('❌ Ошибка проверки сессий:', error);
+//     return { allowed: true };
+//   }
+// }
 
 // API Routes
 

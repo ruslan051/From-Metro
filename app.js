@@ -325,6 +325,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Инициализация таймера в комнате ожидания
     initializeWaitingRoomTimer();
     
+    initializeEventHandlers();
+
     console.log('✅ Все обработчики инициализированы'); });
 
 // Элементы выбора города и пола
@@ -479,31 +481,7 @@ function initializeWaitingRoomTimer() {
     }
 }
 
-// Инициализация всех обработчиков событий
-function initializeEventHandlers() {
-    console.log('🔧 Инициализация обработчиков событий...');
-}
-moodCards.forEach(card => {
-    card.addEventListener('click', async function() {
-        moodCards.forEach(c => c.classList.remove('active'));
-        this.classList.add('active');
-        currentMood = this.getAttribute('data-mood');
-        
-        // Сохраняем выбранное настроение
-        localStorage.setItem('selectedMood', currentMood);
-        
-        // Немедленно обновляем состояние
-        await updateUserState();
-        });   
 
- // Инициализация карточек состояний
-    initializeStateCards();
-    
-    console.log('✅ Все обработчики инициализированы');
-
-
-
-});
 // Функция для запуска глобального обновления каждые 5 секунд
 function startGlobalRefresh() {
     // Останавливаем предыдущий интервал
@@ -932,7 +910,37 @@ function restoreSelectedStates() {
 
 function initializeStateCards() {
     console.log('🎯 Инициализация карточек состояний...');
+    // Исправленная инициализация карточек настроений
+function initializeMoodCards() {
+    const moodCards = document.querySelectorAll('#mood-cards .state-card');
+    if (moodCards.length === 0) {
+        console.warn('❌ Карточки настроений не найдены');
+        return;
+    }
     
+    moodCards.forEach(card => {
+        card.addEventListener('click', async function() {
+            moodCards.forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            currentMood = this.getAttribute('data-mood');
+            
+            localStorage.setItem('selectedMood', currentMood);
+            await updateUserState();
+            console.log('😊 Настроение обновлено:', currentMood);
+        });
+    });
+}
+
+// Обновите initializeEventHandlers
+function initializeEventHandlers() {
+    console.log('🔧 Инициализация обработчиков событий...');
+    
+    // Инициализация карточек состояний
+    initializeStateCards();
+    initializeMoodCards();
+    
+    console.log('✅ Все обработчики инициализированы');
+}
     // Карточки позиций
     const positionCards = document.querySelectorAll('#position-cards .state-card');
     positionCards.forEach(card => {
@@ -948,7 +956,13 @@ function initializeStateCards() {
             await updateUserState();
             console.log('📍 Позиция обновлена:', currentPosition);
         });
-    });
+    if (moodCards.length === 0) {
+    console.warn('❌ Карточки настроений не найдены');
+}
+if (positionCards.length === 0) {
+    console.warn('❌ Карточки позиций не найдены');
+}
+});
 
     // Исправленная инициализация карточек настроений
 function initializeMoodCards() {
@@ -1163,58 +1177,11 @@ function startAutoRefresh() {
 
 
 
-// Обновите обработчики навигации для управления обновлением
-backToSetupBtn.addEventListener('click', async function() {
-    // Останавливаем глобальное обновление
-    stopGlobalRefresh();
-    
-    if (userId) {
-        try {
-            await deleteUser(userId);
-        } catch (error) {
-            console.error('Ошибка при удалении пользователя:', error);
-        }
-    }
-    
-    waitingRoomScreen.classList.remove('active');
-    setupScreen.classList.add('active');
-    stopTimer();
-    currentUser = null;
-    userId = null;
-});
 
-backToWaitingBtn.addEventListener('click', function() {
-    joinedRoomScreen.classList.remove('active');
-    waitingRoomScreen.classList.add('active');
-});
 
-leaveGroupBtn.addEventListener('click', async function() {
-    if (userId) {
-        try {
-            await updateUser(userId, { 
-                status: 'Ожидание',
-                position: '', // Очищаем на сервере, но сохраняем локально
-                mood: '', // Очищаем на сервере, но сохраняем локально
-                is_waiting: true,
-                is_connected: false
-            });
-        } catch (error) {
-            console.error('Ошибка при обновлении пользователя:', error);
-        }
-    }
-    
-    // НЕ очищаем сохраненные состояния - они сохраняются навсегда
-    // localStorage.removeItem('selectedPosition');
-    // localStorage.removeItem('selectedMood');
-    // localStorage.removeItem('selectedStation');
-    
-    currentGroup = null;
-    // currentPosition = ''; // Не сбрасываем
-    // currentMood = ''; // Не сбрасываем
-    
-    joinedRoomScreen.classList.remove('active');
-    waitingRoomScreen.classList.add('active');
-});
+
+
+
 // Обработчики таймера
 startTimerBtn.addEventListener('click', startTimer);
 stopTimerBtn.addEventListener('click', stopTimer);

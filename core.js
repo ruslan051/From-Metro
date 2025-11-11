@@ -55,6 +55,17 @@ function initializeUsersIndicator() {
 // Функция обновления индикатора пользователей
 async function updateUsersIndicator() {
     if (!usersIndicator || !usersIndicatorCount || !usersIndicatorTooltip) {
+
+ setTimeout(() => {
+            const indicator = document.getElementById('users-indicator');
+            if (indicator) {
+                const countElement = indicator.querySelector('.indicator-count');
+                const tooltipElement = indicator.querySelector('.indicator-tooltip');
+                if (countElement) countElement.textContent = '1';
+                if (tooltipElement) tooltipElement.textContent = 'Вы в сети';
+                indicator.classList.add('active');
+            }
+        }, 1000);
         return;
     }
     
@@ -67,6 +78,20 @@ async function updateUsersIndicator() {
             user.city === selectedCity
         );
         
+          // ВКЛЮЧАЕМ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ДАЖЕ ЕСЛИ ОН ЕЩЕ НЕ СОХРАНЕН НА СЕРВЕРЕ
+        let totalUsers = onlineUsers.length;
+
+
+          // Если текущий пользователь еще не в списке, но мы на сайте - добавляем его
+        if (userId) {
+            // Проверяем, есть ли текущий пользователь в списке
+            const currentUserInList = onlineUsers.some(user => user.id === userId);
+            if (!currentUserInList) {
+                totalUsers += 1;
+            } } else {
+            // Если пользователь еще не создан, но находится на сайте - считаем его
+            totalUsers += 1;
+        }
         const totalUsers = onlineUsers.length;
         
         // Обновляем счетчик
@@ -79,7 +104,23 @@ async function updateUsersIndicator() {
         } else {
             // Группируем по станциям
             const usersByStation = {};
+            // Добавляем текущего пользователя если он есть
+            if (currentUser && !userId) {
+                if (!usersByStation['Настройка профиля']) {
+                    usersByStation['Настройка профиля'] = [];
+                }
+                usersByStation['Настройка профиля'].push({
+                    name: 'Вы',
+                    status: 'Настройка профиля'
+                });
+            }
+
+
+            // Добавляем остальных пользователей
+
             onlineUsers.forEach(user => {
+                const station = user.station || 'Ожидание выбора';
+
                 if (!usersByStation[user.station]) {
                     usersByStation[user.station] = [];
                 }
@@ -116,9 +157,9 @@ async function updateUsersIndicator() {
         
     } catch (error) {
         console.error('❌ Ошибка обновления индикатора:', error);
-        usersIndicatorCount.textContent = '?';
-        usersIndicatorTooltip.textContent = 'Ошибка загрузки данных';
-        usersIndicator.classList.remove('active');
+        usersIndicatorCount.textContent = '1'; // Минимум 1 - текущий пользователь
+        usersIndicatorTooltip.textContent = 'Вы в сети';
+        usersIndicator.classList.add('active');
     }
 }
 // Инициализация основных DOM элементов
@@ -624,6 +665,16 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeCoreDOMElements();
         // Инициализируем индикатор пользователей
     initializeUsersIndicator();
+    // СРАЗУ показываем, что есть минимум 1 пользователь (текущий)
+    setTimeout(() => {
+        if (usersIndicatorCount) {
+            usersIndicatorCount.textContent = '1';
+            usersIndicatorTooltip.textContent = 'Вы в сети';
+            usersIndicator.classList.add('active');
+        }
+         // Затем обновляем реальными данными
+        updateUsersIndicator();
+    }, 500);
  // Первоначальное обновление индикатора
     setTimeout(() => {
         updateUsersIndicator();

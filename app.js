@@ -81,6 +81,15 @@ const cityFilterSelect = document.getElementById('city-filter-select');
 const joinSelectedStationBtn = document.getElementById('join-selected-station');
 const stationDetails = document.getElementById('station-details');
 
+// Проверка существования элементов таймера
+console.log('🔍 Проверка элементов таймера:');
+console.log('startTimerBtn:', startTimerBtn);
+console.log('stopTimerBtn:', stopTimerBtn);
+console.log('timerDisplay:', timerDisplay);
+console.log('compactTimer:', compactTimer);
+if (!startTimerBtn || !stopTimerBtn) {
+    console.warn('❌ Элементы таймера не найдены. Возможно, они на другой странице.');
+}
 
 async function handleEnterWaitingRoom() {
     console.log('🚪 Вход в комнату ожидания');
@@ -254,6 +263,18 @@ function initializeWaitingRoomTimer() {
     const waitingStopTimerBtn = document.getElementById('waiting-stop-timer');
     const waitingTimerOptions = document.querySelectorAll('#waiting-timer-expanded .timer-option');
     
+     // ДОБАВЬТЕ ПРОВЕРКИ:
+    if (waitingStartTimerBtn) {
+        waitingStartTimerBtn.addEventListener('click', startTimer);
+    } else {
+        console.warn('❌ Кнопка waitingStartTimerBtn не найдена');
+    }
+    
+    if (waitingStopTimerBtn) {
+        waitingStopTimerBtn.addEventListener('click', stopTimer);
+    } else {
+        console.warn('❌ Кнопка waitingStopTimerBtn не найдена');
+    }
     if (waitingStartTimerBtn) {
         waitingStartTimerBtn.addEventListener('click', startTimer);
     }
@@ -278,36 +299,26 @@ function initializeWaitingRoomTimer() {
 }
 function initializeStateCards() {
     console.log('🎯 Инициализация карточек состояний...');
-    // Исправленная инициализация карточек настроений
-
-
-
+    
     // Карточки позиций
     const positionCards = document.querySelectorAll('#position-cards .state-card');
-    positionCards.forEach(card => {
-        card.addEventListener('click', async function() {
-            positionCards.forEach(c => c.classList.remove('active'));
-            this.classList.add('active');
-            currentPosition = this.getAttribute('data-position');
-            
-            // Сохраняем выбранную позицию
-            localStorage.setItem('selectedPosition', currentPosition);
-            
-            // Немедленно обновляем состояние
-            await updateUserState();
-            console.log('📍 Позиция обновлена:', currentPosition);
+    
+    // ПРОВЕРКА СУЩЕСТВОВАНИЯ
+    if (positionCards.length === 0) {
+        console.warn('❌ Карточки позиций не найдены');
+    } else {
+        positionCards.forEach(card => {
+            card.addEventListener('click', async function() {
+                positionCards.forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                currentPosition = this.getAttribute('data-position');
+                
+                localStorage.setItem('selectedPosition', currentPosition);
+                await updateUserState();
+                console.log('📍 Позиция обновлена:', currentPosition);
+            });
         });
-    if (moodCards.length === 0) {
-    console.warn('❌ Карточки настроений не найдены');
-}
-if (positionCards.length === 0) {
-    console.warn('❌ Карточки позиций не найдены');
-}
-});
-
-
-
-
+    }
 
     // Восстанавливаем сохраненные состояния
     restoreSelectedStates();
@@ -1161,9 +1172,18 @@ function startAutoRefresh() {
 
 
 
-// Обработчики таймера
-startTimerBtn.addEventListener('click', startTimer);
-stopTimerBtn.addEventListener('click', stopTimer);
+// Безопасные обработчики таймера
+if (startTimerBtn) {
+    startTimerBtn.addEventListener('click', startTimer);
+} else {
+    console.warn('❌ Кнопка startTimerBtn не найдена');
+}
+
+if (stopTimerBtn) {
+    stopTimerBtn.addEventListener('click', stopTimer);
+} else {
+    console.warn('❌ Кнопка stopTimerBtn не найдена');
+}
 
 timerOptions.forEach(btn => {
     btn.addEventListener('click', function() {

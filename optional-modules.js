@@ -71,7 +71,7 @@ function initializeOptionalDOMElements() {
     // Карточки состояний
     positionCards = document.querySelectorAll('#position-cards .state-card');
     moodCards = document.querySelectorAll('#mood-cards .state-card');
-        joinedRequestsContainer = document.getElementById('joined-requests-container');
+       
 
     console.log('✅ Дополнительные DOM элементы инициализированы');
 }
@@ -186,7 +186,9 @@ function selectStation(stationName, stationData) {
 async function loadRequests() {
      let container;
     if (joinedRoomScreen && joinedRoomScreen.classList.contains('active')) {
-        container = document.getElementById('joined-requests-container');
+
+        return; 
+        
     } else {
         container = document.getElementById('requests-container');
     }

@@ -376,7 +376,13 @@ async function loadRequests() {
                     const stateInfo = [];
                     if (user.position) stateInfo.push(`📍 ${user.position}`);
                     if (user.mood) stateInfo.push(`😊 ${user.mood}`);
-                    
+                    // ДОБАВЛЯЕМ ИНФОРМАЦИЮ О ТАЙМЕРЕ
+                    if (user.timer_minutes && user.timer_minutes > 0) {
+                        if (user.timer_started) {
+                            stateInfo.push(`⏰ Таймер: ${user.timer_minutes} мин`);
+                        } else {
+                            stateInfo.push(`⏰ Ожидание: ${user.timer_minutes} мин`);
+                        }}
                     // Формируем дополнительную информацию
                     const additionalInfo = [];
                     if (user.color) additionalInfo.push(`🎨 ${user.color}`);
@@ -416,7 +422,7 @@ async function loadRequests() {
                 });
     });
 }
-// Обновленная функция загрузки участников группы с подсветкой состояний
+// Обновленная функция загрузки участников группы
 async function loadGroupMembers() {
     if (!groupMembersContainer) {
         console.error('Контейнер group-members не найден');
@@ -460,6 +466,17 @@ async function loadGroupMembers() {
             } else {
                 stateDetails = 'Позиция не указана • Настроение не указано';
             }
+            
+            // ДОБАВЛЯЕМ ИНФОРМАЦИЮ О ТАЙМЕРЕ ЕСЛИ ЕСТЬ
+            let timerInfo = '';
+            if (user.timer_minutes && user.timer_minutes > 0) {
+                if (user.timer_started) {
+                    timerInfo = ` • <span class="timer-highlight">⏰ Таймер: ${user.timer_minutes} мин</span>`;
+                } else {
+                    timerInfo = ` • <span class="timer-waiting">⏰ Ожидание: ${user.timer_minutes} мин</span>`;
+                }
+            }
+            
             // ДОБАВЛЯЕМ ИНФОРМАЦИЮ О ЦВЕТЕ ОДЕЖДЫ И ВАГОНЕ
             let additionalInfo = '';
             if (user.color) {
@@ -469,6 +486,7 @@ async function loadGroupMembers() {
                 if (additionalInfo) additionalInfo += ' • ';
                 additionalInfo += `🚇 Вагон ${user.wagon}`;
             }
+            
             memberElement.innerHTML = `
                 <div style="width: 50px; height: 50px; border-radius: 50%; background: ${user.color_code || '#007bff'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: bold;">
                     ${user.name.charAt(0)}
@@ -476,10 +494,9 @@ async function loadGroupMembers() {
                 <div class="user-state-info">
                     <div class="user-state-name">${user.name} ${isCurrentUser ? '(Вы)' : ''}</div>
                     <div class="user-state-details">
-                        ${stateDetails}
-                        ${user.wagon ? `• Вагон ${user.wagon}` : ''}
+                        ${stateDetails}${timerInfo}
+                        ${additionalInfo ? `<div style="margin-top: 5px; font-size: 12px; color: #666;">${additionalInfo}</div>` : ''}
                     </div>
-                   
                 </div>
             `;
             groupMembersContainer.appendChild(memberElement);
@@ -492,6 +509,8 @@ async function loadGroupMembers() {
         }
     }
 }
+
+
 // Функция обновления индикаторов текущего состояния
 function updateStatusIndicators() {
     const positionIndicator = document.getElementById('position-indicator');
@@ -577,10 +596,36 @@ function selectTimerOption(minutes, element, event) {
         display.textContent = `Готов к запуску: ${minutes} мин`;
     }
     
-    console.log('✅ Установлено время:', minutes, 'минут');
+    // ОБНОВЛЯЕМ ИНФОРМАЦИЮ ПОЛЬЗОВАТЕЛЯ С ВЫБРАННЫМ ВРЕМЕНЕМ
+    updateUserTimerInfo(minutes);
     
-    // НЕ закрываем таймер после выбора опции
-    // Таймер остается открытым для запуска
+    console.log('✅ Установлено время:', minutes, 'минут');
+}
+// Функция обновления информации о таймере пользователя
+function updateUserTimerInfo(minutes) {
+    if (!userId) return;
+    
+    // Сохраняем выбранное время в localStorage
+    localStorage.setItem('selectedTimerMinutes', minutes);
+    
+    // Обновляем статус пользователя
+    const timerText = `⏰ Ожидание ${minutes} мин`;
+    
+    // Если пользователь уже на станции, обновляем его статус
+    if (currentUser && currentUser.is_connected) {
+        updateUser(userId, {
+            status: timerText,
+            timer_minutes: minutes
+        }).then(() => {
+            console.log('✅ Статус с таймером обновлен');
+            // Обновляем отображение
+            if (typeof loadRequests === 'function') loadRequests();
+            if (typeof loadGroupMembers === 'function') loadGroupMembers();
+        });
+    } else {
+        // Если пользователь еще в режиме ожидания, сохраняем для будущего использования
+        console.log('✅ Время таймера сохранено:', minutes, 'минут');
+    }
 }
 // Инициализация таймера в комнате ожидания
 function initializeWaitingRoomTimer() {
@@ -667,6 +712,19 @@ function startTimer(event) {
     timerSeconds = selectedMinutes * 60;
     updateTimerDisplay();
     
+    // ОБНОВЛЯЕМ СТАТУС ПОЛЬЗОВАТЕЛЯ ПРИ ЗАПУСКЕ ТАЙМЕРА
+    if (userId) {
+        const timerText = `⏰ Таймер запущен: ${selectedMinutes} мин`;
+        updateUser(userId, {
+            status: timerText,
+            timer_minutes: selectedMinutes,
+            timer_started: true
+        }).then(() => {
+            if (typeof loadRequests === 'function') loadRequests();
+            if (typeof loadGroupMembers === 'function') loadGroupMembers();
+        });
+    }
+    
     timerInterval = setInterval(async function() {
         timerSeconds--;
         updateTimerDisplay();
@@ -674,6 +732,17 @@ function startTimer(event) {
         if (timerSeconds <= 0) {
             stopTimer();
             alert('Время ожидания истекло!');
+            
+            // ОБНОВЛЯЕМ СТАТУС ПОЛЬЗОВАТЕЛЯ ПРИ ЗАВЕРШЕНИИ ТАЙМЕРА
+            if (userId) {
+                updateUser(userId, {
+                    status: '⏰ Время истекло',
+                    timer_started: false
+                }).then(() => {
+                    if (typeof loadRequests === 'function') loadRequests();
+                    if (typeof loadGroupMembers === 'function') loadGroupMembers();
+                });
+            }
         }
         
         if (userId) {
@@ -691,7 +760,6 @@ function startTimer(event) {
     if (waitingStartTimerBtn) waitingStartTimerBtn.disabled = true;
     if (waitingStopTimerBtn) waitingStopTimerBtn.disabled = false;
     
-    // Таймер остается открытым после запуска
     console.log('✅ Таймер запущен, остается открытым');
 }
 
@@ -719,18 +787,23 @@ function stopTimer(event) {
     if (waitingStartTimerBtn) waitingStartTimerBtn.disabled = false;
     if (waitingStopTimerBtn) waitingStopTimerBtn.disabled = true;
     
+    // ОБНОВЛЯЕМ СТАТУС ПОЛЬЗОВАТЕЛЯ ПРИ ОСТАНОВКЕ ТАЙМЕРА
     if (userId) {
         try {
             updateUser(userId, { 
                 timer: "Не запущен",
-                timerTotal: 0
+                timerTotal: 0,
+                timer_started: false,
+                status: '⏰ Таймер остановлен'
+            }).then(() => {
+                if (typeof loadRequests === 'function') loadRequests();
+                if (typeof loadGroupMembers === 'function') loadGroupMembers();
             });
         } catch (error) {
             console.error('Ошибка при остановке таймера:', error);
         }
     }
     
-    // Таймер остается открытым после остановки
     console.log('✅ Таймер остановлен, остается открытым');
 }
 
@@ -815,6 +888,26 @@ function restoreSelectedStates() {
             console.log('✅ Восстановлено настроение:', savedMood);
         }
     }
+
+    // В функцию restoreSelectedStates добавьте:
+const savedTimerMinutes = localStorage.getItem('selectedTimerMinutes');
+if (savedTimerMinutes) {
+    selectedMinutes = parseInt(savedTimerMinutes);
+    // Обновляем отображение таймера если он есть на странице
+    const timerDisplay = document.getElementById('waiting-timer-display');
+    if (timerDisplay) {
+        timerDisplay.textContent = `Готов к запуску: ${selectedMinutes} мин`;
+    }
+    
+    // Выделяем соответствующую кнопку
+    const timerOption = document.querySelector(`[data-minutes="${selectedMinutes}"]`);
+    if (timerOption) {
+        document.querySelectorAll('#waiting-timer-expanded .timer-option').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        timerOption.classList.add('active');
+    }
+}
     
     updateUserStateDisplay();
 }

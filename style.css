@@ -326,7 +326,7 @@ select:focus, input:focus {
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 14px;
+    font-size: 18px;
 }
 
 .legend-color {
@@ -625,7 +625,112 @@ select:focus, input:focus {
 .metro-map.scrollable::after {
     opacity: 1;
 }
+/* ===== КОМПАКТНЫЕ КВАДРАТНЫЕ ПЛИТКИ ===== */
+@media (max-width: 768px) {
+    .stations-map-container {
+        padding: 10px;
+        margin: 10px 0;
+    }
+    
+    .metro-map {
+        grid-template-columns: repeat(3, 44px); /* Фиксированные 3 колонки по 44px */
+        gap: 4px;
+        max-height: 300px;
+        padding: 8px;
+        justify-content: center;
+        overflow-x: hidden;
+    }
+    
+    .station-map-item {
+        width: 44px;
+        height: 36px;
+        padding: 2px;
+        min-height: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        text-align: center;
+    }
+    
+    .station-name {
+        font-size: 8px !important;
+        margin-bottom: 1px;
+        line-height: 1;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        width: 100%;
+    }
+    
+    .station-counts {
+        display: none; /* Скрываем счетчики для экономии места */
+    }
+    
+    /* Компактная легенда */
+    .map-legend {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        width: 100%;
+        margin-bottom: 10px;
+        max-width: 200px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .legend-item {
+        font-size: 9px;
+        justify-content: center;
+        text-align: center;
+        padding: 2px;
+    }
+    
+    .legend-color {
+        width: 8px;
+        height: 8px;
+    }
+}
 
+/* Для очень маленьких экранов */
+@media (max-width: 360px) {
+    .metro-map {
+        grid-template-columns: repeat(3, 42px);
+        gap: 3px;
+    }
+    
+    .station-map-item {
+        width: 42px;
+        height: 34px;
+    }
+    
+    .station-name {
+        font-size: 7px !important;
+    }
+}
+
+/* Улучшение внешнего вида маленьких плиток */
+.station-map-item.connected {
+    border: 1px solid #28a745;
+    background: #d4edda;
+}
+
+.station-map-item.waiting {
+    border: 1px solid #ffc107;
+    background: #fff3cd;
+}
+
+.station-map-item.empty {
+    border: 1px solid #6c757d;
+    background: #f8f9fa;
+}
+
+.station-map-item.selected {
+    border: 2px solid #0057b8 !important;
+    box-shadow: 0 0 5px rgba(0, 87, 184, 0.7);
+}
 /* ===== СПИСКИ ПОЛЬЗОВАТЕЛЕЙ ===== */
 .users-list-section {
     margin-top: 30px;

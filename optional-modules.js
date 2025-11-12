@@ -87,7 +87,27 @@ function initializeOptionalDOMElements() {
         console.error('❌ Ошибка инициализации DOM элементов:', error);
     }
 }
+// Функция для отладки - проверяет наличие всех необходимых элементов
+function debugStateElements() {
+    console.log('🔍 Отладка элементов состояний:');
+    
+    const elements = {
+        'position-cards': document.querySelectorAll('#position-cards .state-card').length,
+        'mood-cards': document.querySelectorAll('#mood-cards .state-card').length,
+        'position-indicator': document.getElementById('position-indicator') ? 'найден' : 'не найден',
+        'mood-indicator': document.getElementById('mood-indicator') ? 'найден' : 'не найден',
+        'current-position': document.getElementById('current-position') ? 'найден' : 'не найден',
+        'current-mood': document.getElementById('current-mood') ? 'найден' : 'не найден',
+        'group-members': document.getElementById('group-members') ? 'найден' : 'не найден'
+    };
+    
+    console.table(elements);
+    console.log('📍 Текущая позиция:', currentPosition);
+    console.log('😊 Текущее настроение:', currentMood);
+}
 
+// Вызовите эту функцию в консоли браузера для отладки
+window.debugStateElements = debugStateElements;
 // Функция загрузки карты станций
 async function loadStationsMap() {
   // Проверяем инициализацию
@@ -520,19 +540,37 @@ function updateTimerDisplay() {
 // Инициализация карточек состояний
 function initializeStateCards() {
     console.log('🎯 Инициализация карточек состояний...');
-        // Восстанавливаем выбранные состояния если они есть
+    
+    // Перезагружаем элементы
+    positionCards = document.querySelectorAll('#position-cards .state-card');
+    moodCards = document.querySelectorAll('#mood-cards .state-card');
+    
+    console.log('📍 Найдено карточек позиций:', positionCards.length);
+    console.log('😊 Найдено карточек настроений:', moodCards.length);
+    
+    // Восстанавливаем выбранные состояния если они есть
     restoreSelectedStates();
 
     if (positionCards.length === 0) {
         console.warn('❌ Карточки позиций не найдены');
     } else {
         positionCards.forEach(card => {
+            // Удаляем старые обработчики
+            card.replaceWith(card.cloneNode(true));
+        });
+        
+        // Перезагружаем элементы после клонирования
+        positionCards = document.querySelectorAll('#position-cards .state-card');
+        
+        positionCards.forEach(card => {
             card.addEventListener('click', async function() {
+                console.log('📍 Клик по карточке позиции:', this.getAttribute('data-position'));
+                
                 positionCards.forEach(c => c.classList.remove('active'));
                 this.classList.add('active');
                 currentPosition = this.getAttribute('data-position');
                 
-                  // Сохраняем выбор
+                // Сохраняем выбор
                 localStorage.setItem('selectedPosition', currentPosition);
 
                 await updateUserState();
@@ -547,24 +585,32 @@ function initializeStateCards() {
         console.warn('❌ Карточки настроений не найдены');
     } else {
         moodCards.forEach(card => {
+            // Удаляем старые обработчики
+            card.replaceWith(card.cloneNode(true));
+        });
+        
+        // Перезагружаем элементы после клонирования
+        moodCards = document.querySelectorAll('#mood-cards .state-card');
+        
+        moodCards.forEach(card => {
             card.addEventListener('click', async function() {
+                console.log('😊 Клик по карточке настроения:', this.getAttribute('data-mood'));
+                
                 moodCards.forEach(c => c.classList.remove('active'));
                 this.classList.add('active');
                 currentMood = this.getAttribute('data-mood');
+                
                 // Сохраняем выбор
                 localStorage.setItem('selectedMood', currentMood);
 
-                
                 await updateUserState();
                 updateUserStateDisplay();
 
                 console.log('😊 Настроение обновлено:', currentMood);
             });
         });
-        
     }
 
-   
     console.log('✅ Карточки состояний инициализированы');
 }
 // Функция восстановления выбранных состояний

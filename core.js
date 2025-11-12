@@ -471,7 +471,27 @@ function stopGlobalRefresh() {
         console.log('⏹️ Глобальное обновление остановлено');
     }
 }
-
+// Функция для принудительной инициализации при переходе на страницу
+function forceInitializeJoinedRoom() {
+    console.log('🔄 Принудительная инициализация joined room...');
+    
+    // Переинициализируем элементы
+    initializeOptionalDOMElements();
+    
+    // Восстанавливаем состояния
+    restoreSelectedStates();
+    
+    // Обновляем индикаторы
+    updateStatusIndicators();
+    updateUserStateDisplay();
+    
+    // Загружаем участников
+    if (typeof loadGroupMembers === 'function') {
+        loadGroupMembers();
+    }
+    
+    console.log('✅ Joined room инициализирован');
+}
 // Функция загрузки дополнительных модулей
 async function loadOptionalModules() {
     if (window.optionalModulesLoaded || window.optionalModulesLoading) return;
@@ -534,6 +554,7 @@ function showWaitingRoom() {
     });
 }
 
+// Обновите функцию showJoinedRoom
 function showJoinedRoom() {
     if (!currentGroup) {
         alert('Сначала выберите станцию');
@@ -543,17 +564,13 @@ function showJoinedRoom() {
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
     joinedRoomScreen.classList.add('active');
     
-    // Обновляем индикаторы при переходе
+    // Принудительная инициализация
     setTimeout(() => {
-        updateStatusIndicators();
-        updateUserStateDisplay();
+        forceInitializeJoinedRoom();
     }, 100);
     
     // Загружаем модули если нужно
     loadOptionalModules().then(() => {
-        if (typeof initializeStateCards === 'function') {
-            initializeStateCards();
-        }
         startGlobalRefresh();
     });
 }

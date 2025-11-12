@@ -1,4 +1,25 @@
+/* Проверка загрузки стилей состояний */
+.state-card.active {
+    border-color: #28a745 !important;
+    background-color: #f8fff9 !important;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3) !important;
+}
 
+.status-indicator.highlighted {
+    background: #e8f5e8 !important;
+    border-color: #28a745 !important;
+    color: #155724 !important;
+    font-weight: 500 !important;
+}
+
+.state-highlight {
+    color: #28a745 !important;
+    font-weight: 600 !important;
+    background: rgba(40, 167, 69, 0.1) !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    margin: 0 2px !important;
+}
 .disclaimer {
     font-size: 16px;
     color: #ff6b6b;

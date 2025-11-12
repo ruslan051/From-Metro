@@ -436,41 +436,41 @@ async function pingActivity() {
     }
 }
 
-// Функция для запуска глобального обновления каждые 5 секунд
-function startGlobalRefresh() {
-    if (globalRefreshInterval) {
-        clearInterval(globalRefreshInterval);
-    }
+// // Функция для запуска глобального обновления каждые 5 секунд
+// function startGlobalRefresh() {
+//     if (globalRefreshInterval) {
+//         clearInterval(globalRefreshInterval);
+//     }
     
-    globalRefreshInterval = setInterval(async () => {
-        console.log('🔄 Глобальное обновление данных...');
+//     globalRefreshInterval = setInterval(async () => {
+//         console.log('🔄 Глобальное обновление данных...');
       
-        if (setupScreen && setupScreen.classList.contains('active')) {
-            // На первом экране ничего не обновляем
-        } else if (waitingRoomScreen && waitingRoomScreen.classList.contains('active')) {
-            // На втором экране обновляем карту станций и запросы
-            if (typeof loadStationsMap === 'function') await loadStationsMap();
-            if (typeof loadRequests === 'function') await loadRequests();
-            if (typeof restoreSelectedStation === 'function') restoreSelectedStation();
-        } else if (joinedRoomScreen && joinedRoomScreen.classList.contains('active')) {
-                // На третьем экране обновляем участников группы и запросы, но не перезаписываем статус
-                if (typeof loadGroupMembers === 'function') {
-                    console.log('🔄 Автообновление участников группы');
-                    await loadGroupMembers();
-                }
-                if (typeof loadRequests === 'function') {
-                    console.log('🔄 Автообновление запросов');
-                    await loadRequests();
-                }
+//         if (setupScreen && setupScreen.classList.contains('active')) {
+//             // На первом экране ничего не обновляем
+//         } else if (waitingRoomScreen && waitingRoomScreen.classList.contains('active')) {
+//             // На втором экране обновляем карту станций и запросы
+//             if (typeof loadStationsMap === 'function') await loadStationsMap();
+//             if (typeof loadRequests === 'function') await loadRequests();
+//             if (typeof restoreSelectedStation === 'function') restoreSelectedStation();
+//         } else if (joinedRoomScreen && joinedRoomScreen.classList.contains('active')) {
+//                 // На третьем экране обновляем участников группы и запросы, но не перезаписываем статус
+//                 if (typeof loadGroupMembers === 'function') {
+//                     console.log('🔄 Автообновление участников группы');
+//                     await loadGroupMembers();
+//                 }
+//                 if (typeof loadRequests === 'function') {
+//                     console.log('🔄 Автообновление запросов');
+//                     await loadRequests();
+//                 }
             
-        }
+//         }
         
-        await pingActivity();
+//         await pingActivity();
         
-    }, 10000); // Уменьшим интервал до 10 секунд для быстрого обновления
+//     }, 10000); // Уменьшим интервал до 10 секунд для быстрого обновления
     
-    console.log('✅ Глобальное обновление запущено каждые 10 секунды');
-}
+//     console.log('✅ Глобальное обновление запущено каждые 10 секунды');
+// }
 
 // Функция остановки глобального обновления
 function stopGlobalRefresh() {

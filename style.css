@@ -453,29 +453,26 @@ select:focus, input:focus {
 }
 
 .state-card {
-    background: white;
-    border: 2px solid #ddd;
+    border: 2px solid #e0e0e0;
     border-radius: 10px;
     padding: 15px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.3s;
-    min-height: 100px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    transition: all 0.3s ease;
+    background: white;
 }
 
 .state-card:hover {
-    border-color: #0057b8;
+    border-color: #007bff;
     transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
 }
 
 .state-card.active {
-    border-color: #0057b8;
-    background: #e7f1ff;
-    box-shadow: 0 4px 8px rgba(0, 87, 184, 0.2);
+    border-color: #28a745;
+    background-color: #f8fff9;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    transform: translateY(-2px);
 }
 
 .state-icon {
@@ -485,8 +482,10 @@ select:focus, input:focus {
 
 .state-name {
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
+    color: #333;
 }
+
 
 .state-section {
     margin: 20px 0;
@@ -819,6 +818,7 @@ footer {
 .user-settings-panel .btn {
     margin-top: 20px;
 }
+/* Стили для отображения состояния пользователя */
 
 .user-state-display {
     display: flex;
@@ -830,6 +830,10 @@ footer {
     margin-bottom: 10px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     border-left: 4px solid #0057b8;
+}
+.user-state-display.current-user {
+    border-color: #007bff;
+    background-color: #f8f9ff;
 }
 
 .user-state-info {
@@ -848,11 +852,59 @@ footer {
     color: #666;
     margin-bottom: 5px;
 }
+.state-highlight {
+    color: #28a745;
+    font-weight: 600;
+    background: rgba(40, 167, 69, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin: 0 2px;
+}
 
 .user-state-status {
     font-size: 12px;
     color: #888;
     font-style: italic;
+}
+
+/* Индикаторы состояния */
+.status-indicators {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+    flex-wrap: wrap;
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    background: #f8f9fa;
+    border-radius: 15px;
+    font-size: 12px;
+    border: 1px solid #dee2e6;
+}
+
+.status-indicator.highlighted {
+    background: #e8f5e8;
+    border-color: #28a745;
+    color: #155724;
+    font-weight: 500;
+}
+/* Анимации */
+@keyframes highlightPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.state-card.active .state-icon {
+    animation: highlightPulse 0.6s ease;
+}
+
+.user-state-display.updating {
+    animation: highlightPulse 0.8s ease;
 }
 
 /* Стили для постоянного выделения */

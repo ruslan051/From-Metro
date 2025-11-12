@@ -310,7 +310,7 @@ async function loadRequests() {
         });
     });
 }
-// Функция загрузки участников группы
+// Обновленная функция загрузки участников группы с подсветкой состояний
 async function loadGroupMembers() {
     if (!groupMembersContainer) {
         console.error('Контейнер group-members не найден');
@@ -337,16 +337,32 @@ async function loadGroupMembers() {
         }
         
         groupUsers.forEach(user => {
+            const isCurrentUser = userId && user.id === userId;
             const memberElement = document.createElement('div');
-            memberElement.className = 'user-state-display';
+            memberElement.className = `user-state-display ${isCurrentUser ? 'current-user' : ''}`;
+            
+            // Форматируем информацию о состоянии с подсветкой
+            let stateDetails = '';
+            if (user.position || user.mood) {
+                if (user.position) {
+                    stateDetails += `<span class="state-highlight">${user.position}</span>`;
+                }
+                if (user.mood) {
+                    if (user.position) stateDetails += ' • ';
+                    stateDetails += `<span class="state-highlight">${user.mood}</span>`;
+                }
+            } else {
+                stateDetails = 'Позиция не указана • Настроение не указано';
+            }
+            
             memberElement.innerHTML = `
                 <div style="width: 50px; height: 50px; border-radius: 50%; background: ${user.color_code || '#007bff'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: bold;">
                     ${user.name.charAt(0)}
                 </div>
                 <div class="user-state-info">
-                    <div class="user-state-name">${user.name} ${user.id === userId ? '(Вы)' : ''}</div>
+                    <div class="user-state-name">${user.name} ${isCurrentUser ? '(Вы)' : ''}</div>
                     <div class="user-state-details">
-                        ${user.position || 'Позиция не указана'} • ${user.mood || 'Настроение не указано'}
+                        ${stateDetails}
                         ${user.wagon ? `• Вагон ${user.wagon}` : ''}
                     </div>
                     <div class="user-state-status">
@@ -364,7 +380,27 @@ async function loadGroupMembers() {
         }
     }
 }
-
+// Функция обновления индикаторов текущего состояния
+function updateStatusIndicators() {
+    const positionIndicator = document.getElementById('position-indicator');
+    const moodIndicator = document.getElementById('mood-indicator');
+    const currentPositionSpan = document.getElementById('current-position');
+    const currentMoodSpan = document.getElementById('current-mood');
+    
+    if (currentPositionSpan) {
+        currentPositionSpan.textContent = currentPosition || 'не выбрана';
+        if (positionIndicator) {
+            positionIndicator.classList.toggle('highlighted', !!currentPosition);
+        }
+    }
+    
+    if (currentMoodSpan) {
+        currentMoodSpan.textContent = currentMood || 'не выбрано';
+        if (moodIndicator) {
+            moodIndicator.classList.toggle('highlighted', !!currentMood);
+        }
+    }
+}
 // Инициализация таймера в комнате ожидания
 function initializeWaitingRoomTimer() {
       if (!waitingTimer) {
@@ -484,7 +520,9 @@ function updateTimerDisplay() {
 // Инициализация карточек состояний
 function initializeStateCards() {
     console.log('🎯 Инициализация карточек состояний...');
-    
+        // Восстанавливаем выбранные состояния если они есть
+    restoreSelectedStates();
+
     if (positionCards.length === 0) {
         console.warn('❌ Карточки позиций не найдены');
     } else {
@@ -494,8 +532,12 @@ function initializeStateCards() {
                 this.classList.add('active');
                 currentPosition = this.getAttribute('data-position');
                 
-                
+                  // Сохраняем выбор
+                localStorage.setItem('selectedPosition', currentPosition);
+
                 await updateUserState();
+                updateUserStateDisplay();
+
                 console.log('📍 Позиция обновлена:', currentPosition);
             });
         });
@@ -509,17 +551,86 @@ function initializeStateCards() {
                 moodCards.forEach(c => c.classList.remove('active'));
                 this.classList.add('active');
                 currentMood = this.getAttribute('data-mood');
-                
+                // Сохраняем выбор
+                localStorage.setItem('selectedMood', currentMood);
+
                 
                 await updateUserState();
+                updateUserStateDisplay();
+
                 console.log('😊 Настроение обновлено:', currentMood);
             });
         });
+        
     }
 
    
     console.log('✅ Карточки состояний инициализированы');
 }
+// Функция восстановления выбранных состояний
+function restoreSelectedStates() {
+    const savedPosition = localStorage.getItem('selectedPosition');
+    const savedMood = localStorage.getItem('selectedMood');
+    
+    if (savedPosition) {
+        currentPosition = savedPosition;
+        const positionCard = document.querySelector(`[data-position="${savedPosition}"]`);
+        if (positionCard) {
+            positionCard.classList.add('active');
+        }
+    }
+    
+    if (savedMood) {
+        currentMood = savedMood;
+        const moodCard = document.querySelector(`[data-mood="${savedMood}"]`);
+        if (moodCard) {
+            moodCard.classList.add('active');
+        }
+    }
+    
+    updateUserStateDisplay();
+}
+
+// Функция обновления отображения состояния пользователя
+function updateUserStateDisplay() {
+    updateStatusIndicators();
+    
+    const userStateDetails = document.querySelector('.user-state-details');
+    if (!userStateDetails) return;
+    
+    let detailsHTML = '';
+    
+    if (currentPosition || currentMood) {
+        if (currentPosition) {
+            detailsHTML += `<span class="state-highlight">${currentPosition}</span>`;
+        }
+        if (currentMood) {
+            if (currentPosition) detailsHTML += ' • ';
+            detailsHTML += `<span class="state-highlight">${currentMood}</span>`;
+        }
+    } else {
+        detailsHTML = 'Позиция не указана • Настроение не указано';
+    }
+    
+    userStateDetails.innerHTML = detailsHTML;
+    
+    // Добавляем анимацию обновления
+    const userStateDisplay = document.querySelector('.user-state-display.current-user');
+    if (userStateDisplay) {
+        userStateDisplay.classList.add('updating');
+        setTimeout(() => {
+            userStateDisplay.classList.remove('updating');
+        }, 800);
+    }
+}
+ // Добавляем анимацию обновления
+    const userStateDisplay = document.querySelector('.user-state-display.current-user');
+    if (userStateDisplay) {
+        userStateDisplay.classList.add('updating');
+        setTimeout(() => {
+            userStateDisplay.classList.remove('updating');
+        }, 800);
+    }
 
 // Функция обновления состояния пользователя
 async function updateUserState() {

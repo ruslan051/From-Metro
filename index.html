@@ -232,6 +232,16 @@
                 <!-- ТОЛЬКО участники на вашей станции -->
                 <div class="users-list-section">
                     <h3>👥 Участники на вашей станции</h3>
+                      <!-- Индикаторы текущего состояния пользователя -->
+                        <div class="status-indicators" id="current-user-status">
+                            <div class="status-indicator" id="position-indicator">
+                                📍 Позиция: <span id="current-position">не выбрана</span>
+                            </div>
+                            <div class="status-indicator" id="mood-indicator">
+                                😊 Настроение: <span id="current-mood">не выбрано</span>
+                            </div>
+                        </div>
+                        
                     <div id="group-members">
                         <div class="loading">Загрузка участников...</div>
                     </div>

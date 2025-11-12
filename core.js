@@ -542,25 +542,18 @@ function showJoinedRoom() {
     if (!joinedRoomScreen) initializeCoreDOMElements();
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
     joinedRoomScreen.classList.add('active');
-     // СБРАСЫВАЕМ СОСТОЯНИЯ ПЕРЕД ПОКАЗОМ СТРАНИЦЫ
-    currentPosition = '';
-    currentMood = '';
-     // СБРАСЫВАЕМ ВЫБРАННЫЕ КАРТОЧКИ
-    if (positionCards.length > 0) {
-        positionCards.forEach(card => card.classList.remove('active'));
-    }
-    if (moodCards.length > 0) {
-        moodCards.forEach(card => card.classList.remove('active'));
-    }
+    
+    // Обновляем индикаторы при переходе
+    setTimeout(() => {
+        updateStatusIndicators();
+        updateUserStateDisplay();
+    }, 100);
     
     // Загружаем модули если нужно
     loadOptionalModules().then(() => {
-          // ИНИЦИАЛИЗИРУЕМ КАРТОЧКИ СОСТОЯНИЙ (СБРОШЕННЫЕ)
-        setTimeout(() => {
-            if (typeof initializeStateCards === 'function') {
-                initializeStateCards();
-            }
-        }, 100);
+        if (typeof initializeStateCards === 'function') {
+            initializeStateCards();
+        }
         startGlobalRefresh();
     });
 }

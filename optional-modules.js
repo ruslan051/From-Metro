@@ -637,13 +637,13 @@ function toggleTimer(event) {
     const expanded = document.getElementById('waiting-timer-expanded');
     if (expanded) {
         expanded.classList.toggle('active');
-        console.log('✅ Состояние таймера:', expanded.classList.contains('active') ? 'развернут' : 'свернут');
+        
     }
 }
 
 // Функция для выбора опции таймера
 function selectTimerOption(minutes, element, event) {
-    console.log('🎯 Выбрана опция таймера:', minutes);
+    
     
     // Останавливаем всплытие события
     if (event) {
@@ -668,7 +668,7 @@ function selectTimerOption(minutes, element, event) {
     // ОБНОВЛЯЕМ ИНФОРМАЦИЮ ПОЛЬЗОВАТЕЛЯ С ВЫБРАННЫМ ВРЕМЕНЕМ
     updateUserTimerInfo(minutes);
     
-    console.log('✅ Установлено время:', minutes, 'минут');
+    
     
     // Добавьте в конец updateUserTimerInfo:
                 setTimeout(() => {
@@ -686,7 +686,7 @@ function updateUserTimerInfo(minutes) {
         return;
     }
     
-    console.log('🔄 Обновление таймера пользователя:', minutes, 'минут');
+    
     
     localStorage.setItem('selectedTimerMinutes', minutes);
     
@@ -810,20 +810,7 @@ function initializeWaitingRoomTimer() {
         console.log('✅ Класс active:', waitingTimerExpanded.classList.contains('active'));
     });
     
-    // Обработчики кнопок таймера
-    if (waitingStartTimerBtn) {
-        waitingStartTimerBtn.addEventListener('click', function() {
-            console.log('🎯 Клик по кнопке запуска таймера');
-            startTimer();
-        });
-    }
     
-    if (waitingStopTimerBtn) {
-        waitingStopTimerBtn.addEventListener('click', function() {
-            console.log('🎯 Клик по кнопке остановки таймера');
-            stopTimer();
-        });
-    }
     
     // Обработчики опций таймера
     const timerOptions = document.querySelectorAll('#waiting-timer-expanded .timer-option');

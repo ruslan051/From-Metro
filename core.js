@@ -37,34 +37,6 @@ function getElementSafe(id) {
     }
     return element;
 }
-mpts = 0;function initializeUsersIndicator() {
-
-// Несколько попыток найти элемент
-    let atte
-    const maxAttempts = 10;
-
-     const tryInitialize = () => {
-    
-
-    usersIndicator = document.getElementById('users-indicator');
-    if (!usersIndicator) {
-        console.warn('❌ Индикатор пользователей не найден');
-        return;
-    }}
-    
-    usersIndicatorCount = usersIndicator.querySelector('.indicator-count');
-    usersIndicatorTooltip = usersIndicator.querySelector('.indicator-tooltip');
-    // Проверяем что дочерние элементы найдены
-    if (!usersIndicatorCount) {
-        console.warn('❌ Элемент .indicator-count не найден');
-    }
-    if (!usersIndicatorTooltip) {
-        console.warn('❌ Элемент .indicator-tooltip не найден');
-    }
-    console.log('✅ Индикатор пользователей инициализирован');
-       // ЗАПУСТИТЬ функцию
-    tryInitialize();
-}
 
 // Инициализация основных DOM элементов
 function initializeCoreDOMElements() {

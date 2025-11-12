@@ -477,9 +477,7 @@ async function loadGroupMembers() {
                         ${stateDetails}
                         ${user.wagon ? `• Вагон ${user.wagon}` : ''}
                     </div>
-                    <div class="user-state-status">
-                        ${user.status || 'Ожидание'}
-                    </div>
+                   
                 </div>
             `;
             groupMembersContainer.appendChild(memberElement);

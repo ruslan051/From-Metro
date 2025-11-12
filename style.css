@@ -436,152 +436,194 @@ select:focus, input:focus {
     }
     
     .metro-map {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 8px;
+        grid-template-columns: repeat(3, 1fr); /* Три колонки */
+        gap: 6px;
         max-height: 350px;
         padding: 8px;
     }
     
     .station-map-item {
         max-width: 100%;
-        padding: 10px 8px;
-        min-height: 70px;
+        padding: 8px 6px;
+        min-height: 60px; /* Уменьшаем высоту */
         display: flex;
         flex-direction: column;
         justify-content: center;
+        border-radius: 6px; /* Меньшие скругления */
     }
     
     .station-name {
-        font-size: 12px;
-        margin-bottom: 4px;
+        font-size: 11px; /* Уменьшаем шрифт */
+        margin-bottom: 3px;
         line-height: 1.2;
+        font-weight: 500;
     }
     
     .station-counts {
-        gap: 5px;
+        gap: 4px;
         flex-wrap: wrap;
         justify-content: center;
     }
     
     .station-count {
-        font-size: 10px;
-        padding: 1px 4px;
+        font-size: 9px; /* Уменьшаем счетчики */
+        padding: 1px 3px;
+        border-radius: 8px;
     }
     
-    .map-controls {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
+    /* Компактная легенда в три колонки */
     .map-legend {
-        gap: 10px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        width: 100%;
+        margin-bottom: 15px;
     }
     
     .legend-item {
-        font-size: 11px;
+        font-size: 10px;
+        justify-content: center;
+        text-align: center;
+        padding: 4px;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 6px;
+    }
+    
+    .legend-color {
+        width: 10px;
+        height: 10px;
+        flex-shrink: 0;
     }
 }
 
 @media (max-width: 480px) {
     .stations-map-container {
-        padding: 12px;
+        padding: 10px;
         margin: 10px 0;
     }
     
     .metro-map {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 6px;
+        grid-template-columns: repeat(3, 1fr); /* Сохраняем три колонки */
+        gap: 4px;
         max-height: 300px;
         padding: 6px;
     }
     
     .station-map-item {
-        padding: 8px 6px;
-        min-height: 65px;
+        padding: 6px 4px;
+        min-height: 55px; /* Еще более компактные */
     }
     
     .station-name {
-        font-size: 11px;
+        font-size: 10px; /* Минимальный читаемый размер */
         font-weight: 500;
     }
     
     .station-counts {
-        gap: 3px;
+        gap: 2px;
     }
     
     .station-count {
-        font-size: 9px;
-        padding: 1px 3px;
+        font-size: 8px;
+        padding: 1px 2px;
     }
     
+    /* Легенда для очень маленьких экранов */
     .map-legend {
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
     }
     
     .legend-item {
-        font-size: 10px;
+        font-size: 9px;
+        padding: 3px;
+    }
+    
+    .legend-color {
+        width: 8px;
+        height: 8px;
     }
     
     /* Улучшение для очень маленьких экранов */
     @media (max-width: 360px) {
         .metro-map {
-            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-            gap: 4px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 3px;
         }
         
         .station-map-item {
-            padding: 6px 4px;
-            min-height: 60px;
+            padding: 5px 3px;
+            min-height: 50px;
         }
         
         .station-name {
-            font-size: 10px;
+            font-size: 9px;
+        }
+        
+        .map-legend {
+            gap: 4px;
+        }
+        
+        .legend-item {
+            font-size: 8px;
         }
     }
 }
 
+/* Дополнительные улучшения для квадратных плиток */
+.station-map-item {
+    aspect-ratio: 1; /* Делаем квадратными */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
 /* Улучшение скролла на мобильных */
 .metro-map::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
 }
 
 .metro-map::-webkit-scrollbar-track {
     background: #f1f1f1;
-    border-radius: 3px;
+    border-radius: 2px;
 }
 
 .metro-map::-webkit-scrollbar-thumb {
     background: #c1c1c1;
-    border-radius: 3px;
+    border-radius: 2px;
 }
 
 .metro-map::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
 
-/* Анимация загрузки для карты */
-.metro-map.loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 200px;
+/* Анимация для быстрого скролла */
+.metro-map {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch; /* Для iOS */
 }
 
-.loading-spinner {
-    width: 30px;
-    height: 30px;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #0057b8;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+/* Индикатор скролла для мобильных */
+.metro-map::after {
+    content: "";
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background: rgba(0, 87, 184, 0.5);
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 0.3s;
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+.metro-map.scrollable::after {
+    opacity: 1;
 }
 
 /* ===== СПИСКИ ПОЛЬЗОВАТЕЛЕЙ ===== */

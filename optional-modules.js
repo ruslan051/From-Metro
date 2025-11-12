@@ -937,7 +937,55 @@ function generateUserStatus() {
     }
 }
 
+// CSS. Стили, Для отображения мрбильной вернсии сайта. 
+function initMobileOptimizations() {
+    const metroMap = document.querySelector('.metro-map');
+    
+    // Добавляем индикатор скролла если есть много станций
+    if (metroMap && metroMap.scrollHeight > metroMap.clientHeight) {
+        metroMap.classList.add('scrollable');
+    }
+    
+    // Оптимизация касаний для мобильных
+    if ('ontouchstart' in window) {
+        document.addEventListener('touchstart', function(e) {
+            // Предотвращаем залипание hover-эффектов на мобильных
+            if (e.target.closest('.station-map-item')) {
+                e.target.closest('.station-map-item').classList.add('touch-active');
+            }
+        }, { passive: true });
+        
+        document.addEventListener('touchend', function(e) {
+            const touched = document.querySelector('.station-map-item.touch-active');
+            if (touched) {
+                setTimeout(() => touched.classList.remove('touch-active'), 150);
+            }
+        }, { passive: true });
+    }
+}
 
+// Добавьте этот стиль для touch-улучшений
+const mobileTouchStyles = `
+.station-map-item.touch-active {
+    transform: scale(0.95);
+    opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+    .station-map-item:active {
+        transform: scale(0.98);
+        transition: transform 0.1s;
+    }
+}
+`;
+
+// Вставка стилей в документ
+const styleSheet = document.createElement('style');
+styleSheet.textContent = mobileTouchStyles;
+document.head.appendChild(styleSheet);
+
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', initMobileOptimizations);
 // Временно уменьшите интервал обновления для отладки
 function startDebugRefresh() {
     setInterval(async () => {
@@ -1001,6 +1049,8 @@ function stopTimer(event) {
     
     console.log('✅ Таймер остановлен');
 }
+
+
 // Добавьте эту функцию для объединения позиции, настроения и таймера
 function combineUserStatus(position, mood, timerStatus = '') {
     const parts = [];

@@ -182,62 +182,62 @@
                         </div>
                         
                         <!-- Карточки позиций -->
-                        <div class="state-section">
-                            <h4>🎯 Ваша позиция в вагоне</h4>
-                            <div class="state-cards" id="position-cards">
-                                <div class="state-card" data-position="Сижу читаю">
-                                    <div class="state-icon">📖</div>
-                                    <div class="state-name">Сижу читаю</div>
+                                <div class="state-section">
+                                    <h4>🎯 Ваша позиция в вагоне</h4>
+                                    <div class="state-cards" id="position-cards">
+                                        <div class="state-card" data-position="Сижу читаю" onclick="selectPosition('Сижу читаю', this)">
+                                            <div class="state-icon">📖</div>
+                                            <div class="state-name">Сижу читаю</div>
+                                        </div>
+                                        <div class="state-card" data-position="Стою по центру" onclick="selectPosition('Стою по центру', this)">
+                                            <div class="state-icon">🧍</div>
+                                            <div class="state-name">Стою по центру</div>
+                                        </div>
+                                        <div class="state-card" data-position="Стою у двери" onclick="selectPosition('Стою у двери', this)">
+                                            <div class="state-icon">🚪</div>
+                                            <div class="state-name">Стою у двери</div>
+                                        </div>
+                                        <div class="state-card" data-position="Сижу по центру" onclick="selectPosition('Сижу по центру', this)">
+                                            <div class="state-icon">💺</div>
+                                            <div class="state-name">Сижу по центру</div>
+                                        </div>
+                                        <div class="state-card" data-position="Сижу у двери" onclick="selectPosition('Сижу у двери', this)">
+                                            <div class="state-icon">🪑</div>
+                                            <div class="state-name">Сижу у двери</div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="state-card" data-position="Стою по центру">
-                                    <div class="state-icon">🧍</div>
-                                    <div class="state-name">Стою по центру</div>
+
+                                <!-- Карточки настроений -->
+                                <div class="state-section">
+                                    <h4>😊 Ваше текущее состояние</h4>
+                                    <div class="state-cards" id="mood-cards">
+                                        <div class="state-card" data-mood="Просто наблюдаю" onclick="selectMood('Просто наблюдаю', this)">
+                                            <div class="state-icon">👀</div>
+                                            <div class="state-name">Просто наблюдаю</div>
+                                        </div>
+                                        <div class="state-card" data-mood="Сплю" onclick="selectMood('Сплю', this)">
+                                            <div class="state-icon">😴</div>
+                                            <div class="state-name">Сплю</div>
+                                        </div>
+                                        <div class="state-card" data-mood="Хорошее настроение, улыбаюсь" onclick="selectMood('Хорошее настроение, улыбаюсь', this)">
+                                            <div class="state-icon">😊</div>
+                                            <div class="state-name">Хорошее настроение</div>
+                                        </div>
+                                        <div class="state-card" data-mood="Плохое настроение, грустно" onclick="selectMood('Плохое настроение, грустно', this)">
+                                            <div class="state-icon">😔</div>
+                                            <div class="state-name">Плохое настроение</div>
+                                        </div>
+                                        <div class="state-card" data-mood="Жду когда ко мне подойдут" onclick="selectMood('Жду когда ко мне подойдут', this)">
+                                            <div class="state-icon">⏳</div>
+                                            <div class="state-name">Жду когда ко мне подойдут</div>
+                                        </div>
+                                        <div class="state-card" data-mood="Собираюсь подойти" onclick="selectMood('Собираюсь подойти', this)">
+                                            <div class="state-icon">🚶</div>
+                                            <div class="state-name">Собираюсь подойти</div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="state-card" data-position="Стою у двери">
-                                    <div class="state-icon">🚪</div>
-                                    <div class="state-name">Стою у двери</div>
-                                </div>
-                                <div class="state-card" data-position="Сижу по центру">
-                                    <div class="state-icon">💺</div>
-                                    <div class="state-name">Сижу по центру</div>
-                                </div>
-                                <div class="state-card" data-position="Сижу у двери">
-                                    <div class="state-icon">🪑</div>
-                                    <div class="state-name">Сижу у двери</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Карточки настроений -->
-                        <div class="state-section">
-                            <h4>😊 Ваше текущее состояние</h4>
-                            <div class="state-cards" id="mood-cards">
-                                <div class="state-card" data-mood="Просто наблюдаю">
-                                    <div class="state-icon">👀</div>
-                                    <div class="state-name">Просто наблюдаю</div>
-                                </div>
-                                <div class="state-card" data-mood="Сплю">
-                                    <div class="state-icon">😴</div>
-                                    <div class="state-name">Сплю</div>
-                                </div>
-                                <div class="state-card" data-mood="Хорошее настроение, улыбаюсь">
-                                    <div class="state-icon">😊</div>
-                                    <div class="state-name">Хорошее настроение</div>
-                                </div>
-                                <div class="state-card" data-mood="Плохое настроение, грустно">
-                                    <div class="state-icon">😔</div>
-                                    <div class="state-name">Плохое настроение</div>
-                                </div>
-                                <div class="state-card" data-mood="Жду когда ко мне подойдут">
-                                    <div class="state-icon">⏳</div>
-                                    <div class="state-name">Жду когда ко мне подойдут</div>
-                                </div>
-                                <div class="state-card" data-mood="Собираюсь подойти">
-                                    <div class="state-icon">🚶</div>
-                                    <div class="state-name">Собираюсь подойти</div>
-                                </div>
-                            </div>
-                        </div>
 
                         <!-- ТОЛЬКО участники на вашей станции -->
                         <div class="users-list-section">

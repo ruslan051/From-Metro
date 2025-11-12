@@ -1,3 +1,79 @@
+// Функции для inline обработчиков карточек состояний
+function selectPosition(position, element) {
+    console.log('📍 Выбрана позиция:', position, element);
+    
+    // Снимаем выделение со всех карточек позиций
+    const allPositionCards = document.querySelectorAll('#position-cards .state-card');
+    allPositionCards.forEach(card => {
+        card.classList.remove('active');
+        card.style.borderColor = '';
+        card.style.backgroundColor = '';
+        card.style.boxShadow = '';
+    });
+    
+    // Выделяем текущую карточку
+    element.classList.add('active');
+    element.style.borderColor = '#28a745';
+    element.style.backgroundColor = '#f8fff9';
+    element.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
+    
+    currentPosition = position;
+    localStorage.setItem('selectedPosition', position);
+    
+    updateUserState();
+    updateUserStateDisplay();
+    
+    console.log('✅ Позиция установлена:', position);
+}
+// Тестовая функция для проверки работы
+function testSelection() {
+    console.log('🧪 Тестирование выбора...');
+    
+    // Находим и кликаем первую карточку позиции
+    const firstPos = document.querySelector('#position-cards .state-card');
+    if (firstPos) {
+        console.log('📍 Тестируем:', firstPos.getAttribute('data-position'));
+        selectPosition(firstPos.getAttribute('data-position'), firstPos);
+    }
+    
+    // Находим и кликаем первую карточку настроения
+    const firstMood = document.querySelector('#mood-cards .state-card');
+    if (firstMood) {
+        console.log('😊 Тестируем:', firstMood.getAttribute('data-mood'));
+        selectMood(firstMood.getAttribute('data-mood'), firstMood);
+    }
+}
+
+// Добавьте в глобальную область
+window.testSelection = testSelection;
+window.selectPosition = selectPosition;
+window.selectMood = selectMood;
+function selectMood(mood, element) {
+    console.log('😊 Выбрано настроение:', mood, element);
+    
+    // Снимаем выделение со всех карточек настроений
+    const allMoodCards = document.querySelectorAll('#mood-cards .state-card');
+    allMoodCards.forEach(card => {
+        card.classList.remove('active');
+        card.style.borderColor = '';
+        card.style.backgroundColor = '';
+        card.style.boxShadow = '';
+    });
+    
+    // Выделяем текущую карточку
+    element.classList.add('active');
+    element.style.borderColor = '#28a745';
+    element.style.backgroundColor = '#f8fff9';
+    element.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
+    
+    currentMood = mood;
+    localStorage.setItem('selectedMood', mood);
+    
+    updateUserState();
+    updateUserStateDisplay();
+    
+    console.log('✅ Настроение установлено:', mood);
+}
 // Станции метро (редко используемые данные)
 const stations = {
     spb: [
@@ -407,17 +483,39 @@ function updateStatusIndicators() {
     const currentPositionSpan = document.getElementById('current-position');
     const currentMoodSpan = document.getElementById('current-mood');
     
+    console.log('🔄 Обновление индикаторов:', { currentPosition, currentMood });
+    
     if (currentPositionSpan) {
         currentPositionSpan.textContent = currentPosition || 'не выбрана';
         if (positionIndicator) {
-            positionIndicator.classList.toggle('highlighted', !!currentPosition);
+            if (currentPosition) {
+                positionIndicator.classList.add('highlighted');
+                positionIndicator.style.background = '#e8f5e8';
+                positionIndicator.style.borderColor = '#28a745';
+                positionIndicator.style.color = '#155724';
+            } else {
+                positionIndicator.classList.remove('highlighted');
+                positionIndicator.style.background = '';
+                positionIndicator.style.borderColor = '';
+                positionIndicator.style.color = '';
+            }
         }
     }
     
     if (currentMoodSpan) {
         currentMoodSpan.textContent = currentMood || 'не выбрано';
         if (moodIndicator) {
-            moodIndicator.classList.toggle('highlighted', !!currentMood);
+            if (currentMood) {
+                moodIndicator.classList.add('highlighted');
+                moodIndicator.style.background = '#e8f5e8';
+                moodIndicator.style.borderColor = '#28a745';
+                moodIndicator.style.color = '#155724';
+            } else {
+                moodIndicator.classList.remove('highlighted');
+                moodIndicator.style.background = '';
+                moodIndicator.style.borderColor = '';
+                moodIndicator.style.color = '';
+            }
         }
     }
 }
@@ -537,97 +635,14 @@ function updateTimerDisplay() {
     }
 }
 
-// Инициализация карточек состояний
+// Инициализация карточек состояний (только восстановление)
 function initializeStateCards() {
-    console.log('🎯 Инициализация карточек состояний...');
+    console.log('🎯 Восстановление состояний карточек...');
     
-    // Перезагружаем элементы
-    positionCards = document.querySelectorAll('#position-cards .state-card');
-    moodCards = document.querySelectorAll('#mood-cards .state-card');
-    
-    console.log('📍 Найдено карточек позиций:', positionCards.length);
-    console.log('😊 Найдено карточек настроений:', moodCards.length);
-    
-    // Восстанавливаем выбранные состояния если они есть
+    // Просто восстанавливаем выбранные состояния
     restoreSelectedStates();
-
-    // Обработчики для позиций
-    positionCards.forEach(card => {
-        // Удаляем все существующие обработчики
-        const newCard = card.cloneNode(true);
-        card.parentNode.replaceChild(newCard, card);
-    });
-
-    // Перезагружаем элементы после клонирования
-    positionCards = document.querySelectorAll('#position-cards .state-card');
     
-    positionCards.forEach(card => {
-        card.addEventListener('click', function() {
-            console.log('📍 Клик по карточке позиции:', this.getAttribute('data-position'));
-            
-            // Снимаем выделение со всех карточек позиций
-            positionCards.forEach(c => {
-                c.classList.remove('active');
-                c.style.borderColor = '';
-                c.style.backgroundColor = '';
-            });
-            
-            // Выделяем текущую карточку
-            this.classList.add('active');
-            this.style.borderColor = '#28a745';
-            this.style.backgroundColor = '#f8fff9';
-            
-            currentPosition = this.getAttribute('data-position');
-            
-            // Сохраняем выбор
-            localStorage.setItem('selectedPosition', currentPosition);
-
-            updateUserState();
-            updateUserStateDisplay();
-
-            console.log('📍 Позиция обновлена:', currentPosition);
-        });
-    });
-
-    // Обработчики для настроений
-    moodCards.forEach(card => {
-        // Удаляем все существующие обработчики
-        const newCard = card.cloneNode(true);
-        card.parentNode.replaceChild(newCard, card);
-    });
-
-    // Перезагружаем элементы после клонирования
-    moodCards = document.querySelectorAll('#mood-cards .state-card');
-    
-    moodCards.forEach(card => {
-        card.addEventListener('click', function() {
-            console.log('😊 Клик по карточке настроения:', this.getAttribute('data-mood'));
-            
-            // Снимаем выделение со всех карточек настроений
-            moodCards.forEach(c => {
-                c.classList.remove('active');
-                c.style.borderColor = '';
-                c.style.backgroundColor = '';
-            });
-            
-            // Выделяем текущую карточку
-            this.classList.add('active');
-            this.style.borderColor = '#28a745';
-            this.style.backgroundColor = '#f8fff9';
-            
-            currentMood = this.getAttribute('data-mood');
-            
-            // Сохраняем выбор
-            localStorage.setItem('selectedMood', currentMood);
-
-            updateUserState();
-            updateUserStateDisplay();
-
-            console.log('😊 Настроение обновлено:', currentMood);
-        });
-    });
-
-    console.log('✅ Карточки состояний инициализированы');
+    console.log('✅ Состояния карточек восстановлены');
 }
 // Функция восстановления выбранных состояний
 function restoreSelectedStates() {
@@ -643,6 +658,7 @@ function restoreSelectedStates() {
             positionCard.classList.add('active');
             positionCard.style.borderColor = '#28a745';
             positionCard.style.backgroundColor = '#f8fff9';
+            positionCard.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
             console.log('✅ Восстановлена позиция:', savedPosition);
         }
     }
@@ -654,13 +670,13 @@ function restoreSelectedStates() {
             moodCard.classList.add('active');
             moodCard.style.borderColor = '#28a745';
             moodCard.style.backgroundColor = '#f8fff9';
+            moodCard.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
             console.log('✅ Восстановлено настроение:', savedMood);
         }
     }
     
     updateUserStateDisplay();
 }
-
 // Функция обновления отображения состояния пользователя
 function updateUserStateDisplay() {
     console.log('🔄 Обновление отображения состояния:', { currentPosition, currentMood });

@@ -320,7 +320,7 @@ async function createUser(userData) {
     
     // Fallback: сохраняем данные локально
     const fallbackUser = {
-      id: Date.now(),
+      id: Math.floor(Math.random() * 10000) + 1, // Используем случайное число вместо Date.now()
       name: userData.name || 'Аноним',
       station: userData.station || '',
       wagon: userData.wagon || '',

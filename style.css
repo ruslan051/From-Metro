@@ -1,4 +1,79 @@
-/* ===== СБРОС И БАЗОВЫЕ СТИЛИ ===== */
+/* Стили для выделения названия станции в заголовке */
+.station-name-highlight {
+    color: #0057b8;
+    font-weight: bold;
+    background: linear-gradient(135deg, #0057b8, #003d82);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background-color: #e7f1ff;
+    border: 2px solid #0057b8;
+    display: inline-block;
+    margin: 0 5px;
+    animation: stationPulse 2s infinite;
+}
+
+@keyframes stationPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Адаптивность для заголовка */
+@media (max-width: 768px) {
+    #joined-room-screen h2 {
+        font-size: 22px;
+        text-align: center;
+        line-height: 1.4;
+    }
+    
+    .station-name-highlight {
+        display: block;
+        margin: 10px auto;
+        max-width: 90%;
+        text-align: center;
+    }
+}
+/* Проверка загрузки стилей состояний */
+.state-card.active {
+    border-color: #28a745 !important;
+    background-color: #f8fff9 !important;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3) !important;
+}
+
+.status-indicator.highlighted {
+    background: #e8f5e8 !important;
+    border-color: #28a745 !important;
+    color: #155724 !important;
+    font-weight: 500 !important;
+}
+
+.state-highlight {
+    color: #28a745 !important;
+    font-weight: 600 !important;
+    background: rgba(40, 167, 69, 0.1) !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    margin: 0 2px !important;
+}
+.disclaimer {
+    font-size: 16px;
+    color: #ff6b6b;
+    font-style: italic;
+    margin-bottom: 20px;
+    text-align: center;
+    padding: 12px;
+    background-color: #fff3f3;
+    border: 1px solid #ff6b6b;
+    border-radius: 8px;
+    font-weight: 500;
+    max-width: 600px;
+    margin: 0 auto 20px auto;
+    box-shadow: 0 2px 5px rgba(255, 107, 107, 0.2);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -26,36 +101,26 @@ body {
     margin-top: 20px;
 }
 
-.content {
-    padding: 25px;
-}
-
-.screen {
-    display: none;
-}
-
-.active {
-    display: block;
-}
-
-/* ===== ШАПКА ===== */
+/* ИСПРАВЛЕННАЯ ШАПКА */
 header {
     background: linear-gradient(to right, #0057b8, #003d82);
     color: white;
     padding: 20px;
+    position: relative;
 }
 
 .header-main {
     display: flex;
-    justify-content: center;
-    align-items: center;
+    justify-content: center; /* Горизонтальное центрирование */
+    align-items: center;     /* Вертикальное центрирование */
     gap: 20px;
     width: 100%;
-    position: relative;
+    position: relative; /* Для позиционирования значков */
 }
 
 .header-title {
     text-align: center;
+    /* flex: 1 убираем, т.к. не нужно растягивать */
 }
 
 .header-icons {
@@ -86,9 +151,21 @@ h1 {
     align-items: center;
     justify-content: center;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    flex-shrink: 0;
 }
 
-/* ===== ФОРМЫ И КНОПКИ ===== */
+.content {
+    padding: 25px;
+}
+
+.screen {
+    display: none;
+}
+
+.active {
+    display: block;
+}
+
 .form-group {
     margin-bottom: 20px;
 }
@@ -115,6 +192,69 @@ select:focus, input:focus {
     box-shadow: 0 0 0 3px rgba(0, 87, 184, 0.2);
 }
 
+.gender-options {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.gender-option {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    background-color: #f8f9fa;
+}
+
+.gender-option:hover {
+    background-color: #e9ecef;
+}
+
+.gender-option.active {
+    border-color: #0057b8;
+    background-color: #e7f1ff;
+}
+
+.city-options {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.city-option {
+    flex: 1;
+    text-align: center;
+    padding: 15px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    background-color: #f8f9fa;
+}
+
+.city-option:hover {
+    background-color: #e9ecef;
+}
+
+.city-option.active {
+    border-color: #0057b8;
+    background-color: #e7f1ff;
+}
+
+.city-name {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+.city-description {
+    font-size: 12px;
+    color: #666;
+}
+
 .btn {
     background: linear-gradient(to right, #0057b8, #003d82);
     color: white;
@@ -134,6 +274,22 @@ select:focus, input:focus {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
+.btn-secondary {
+    background: linear-gradient(to right, #6c757d, #5a6268);
+}
+
+.btn-success {
+    background: linear-gradient(to right, #28a745, #20c997);
+}
+
+.btn-warning {
+    background: linear-gradient(to right, #ffc107, #fd7e14);
+}
+
+.btn-danger {
+    background: linear-gradient(to right, #dc3545, #c82333);
+}
+
 .back-btn {
     background: none;
     border: none;
@@ -150,47 +306,204 @@ select:focus, input:focus {
     margin-right: 5px;
 }
 
-/* ===== ВАРИАНТЫ ВЫБОРА ===== */
-.gender-options, .city-options {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
+.requests-container {
+    margin-top: 20px;
 }
 
-.gender-option, .city-option {
-    flex: 1;
-    text-align: center;
-    padding: 12px 15px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s;
-    background-color: #f8f9fa;
-}
-
-.gender-option:hover, .city-option:hover {
-    background-color: #e9ecef;
-}
-
-.gender-option.active, .city-option.active {
-    border-color: #0057b8;
-    background-color: #e7f1ff;
-}
-
-/* ===== КАРТОЧКИ СОСТОЯНИЙ ===== */
-.state-section {
-    margin: 20px 0;
-    padding: 15px;
-    background: #f8f9fa;
+.request-card {
+    background-color: white;
     border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid #0057b8;
+    transition: all 0.3s;
 }
 
-.state-section h4 {
-    margin-bottom: 15px;
+.request-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.request-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.station {
+    font-weight: 600;
     color: #0057b8;
     font-size: 18px;
 }
 
+.wagon {
+    background-color: #0057b8;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 14px;
+}
+
+.color-indicator {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.user-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #0057b8;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-right: 15px;
+}
+
+.user-details {
+    flex: 1;
+}
+
+.user-name {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.user-clothing {
+    color: #666;
+    font-size: 14px;
+}
+
+.no-requests {
+    text-align: center;
+    padding: 30px;
+    color: #666;
+}
+
+.status {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+.status-dropdown {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    margin-top: 10px;
+}
+
+.status-online {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-offline {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Стили для компактного таймера */
+.compact-timer {
+    background: #f8f9fa;
+    border: 2px solid #0057b8;
+    border-radius: 10px;
+    padding: 15px;
+    margin: 15px 0;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.compact-timer:hover {
+    background: #e7f1ff;
+    transform: translateY(-2px);
+}
+
+.timer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.timer-title {
+    font-weight: 600;
+    color: #0057b8;
+    font-size: 16px;
+}
+
+.timer-status {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.timer-expanded {
+    display: none;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #ddd;
+}
+
+.timer-expanded.active {
+    display: block;
+}
+
+.timer-options {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.timer-options .btn {
+    flex: 1;
+    margin-top: 0;
+    padding: 10px;
+    font-size: 14px;
+}
+
+.timer-option.active {
+    background: linear-gradient(to right, #28a745, #20c997);
+}
+
+.timer-display {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    margin: 10px 0;
+    color: #0057b8;
+}
+
+.timer-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.timer-controls .btn {
+    flex: 1;
+    margin-top: 0;
+}
+
+/* Стили для карточек состояний */
 .state-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -217,6 +530,7 @@ select:focus, input:focus {
 .state-card.active {
     border-color: #28a745;
     background-color: #f8fff9;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
     transform: translateY(-2px);
 }
 
@@ -231,7 +545,21 @@ select:focus, input:focus {
     color: #333;
 }
 
-/* ===== КАРТА СТАНЦИЙ ===== */
+
+.state-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.state-section h4 {
+    margin-bottom: 15px;
+    color: #0057b8;
+    font-size: 18px;
+}
+
+/* Стили для интерактивной карты */
 .stations-map-container {
     margin: 20px 0;
     padding: 20px;
@@ -260,7 +588,7 @@ select:focus, input:focus {
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 18px;
+    font-size: 12px;
 }
 
 .legend-color {
@@ -269,19 +597,30 @@ select:focus, input:focus {
     border-radius: 50%;
 }
 
-.legend-color.connected {
+.legend-item .legend-color.connected {
     background: #28a745;
 }
 
-.legend-color.waiting {
+.legend-item .legend-color.waiting {
     background: #ffc107;
 }
 
-.legend-color.empty {
+.legend-item .legend-color.empty {
     background: #6c757d;
 }
 
-/* ===== ОСНОВНАЯ СЕТКА СТАНЦИЙ ===== */
+.city-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.city-filter select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
 .metro-map {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -295,6 +634,8 @@ select:focus, input:focus {
 }
 
 .station-map-item {
+    width: 100%;
+    max-width: 180px;
     padding: 12px;
     border-radius: 8px;
     cursor: pointer;
@@ -302,6 +643,12 @@ select:focus, input:focus {
     border: 2px solid transparent;
     text-align: center;
     background: white;
+    box-sizing: border-box;
+}
+
+.station-map-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 .station-map-item.connected {
@@ -318,12 +665,6 @@ select:focus, input:focus {
     border-color: #6c757d;
     background: #f8f9fa;
     opacity: 0.7;
-}
-
-.station-map-item.selected {
-    border-width: 4px !important;
-    border-color: #0057b8 !important;
-    transform: scale(1.02);
 }
 
 .station-name {
@@ -354,88 +695,40 @@ select:focus, input:focus {
     background: #28a745;
 }
 
-/* ===== КОМПАКТНЫЕ ПЛИТКИ 44x36 ДЛЯ МОБИЛЬНЫХ ===== */
-@media (max-width: 768px) {
-    .stations-map-container {
-        padding: 10px;
-        margin: 10px 0;
-    }
-    
-    .metro-map {
-        grid-template-columns: repeat(3, 44px);
-        gap: 4px;
-        max-height: 300px;
-        padding: 8px;
-        justify-content: center;
-    }
-    
-    .station-map-item {
-        width: 44px;
-        height: 36px;
-        padding: 2px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-    }
-    
-    .station-name {
-        font-size: 8px !important;
-        margin-bottom: 1px;
-        line-height: 1;
-        font-weight: 600;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        width: 100%;
-    }
-    
-    .station-counts {
-        display: none;
-    }
-    
-    .map-legend {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 6px;
-        width: 100%;
-        margin-bottom: 10px;
-        max-width: 200px;
-        margin-left: auto;
-        margin-right: auto;
-    }
-    
-    .legend-item {
-        font-size: 9px;
-        justify-content: center;
-        text-align: center;
-        padding: 2px;
-    }
-    
-    .legend-color {
-        width: 8px;
-        height: 8px;
-    }
+.station-details {
+    margin-top: 20px;
+    padding: 15px;
+    background: #e7f3ff;
+    border-radius: 10px;
+    border-left: 4px solid #007bff;
 }
 
-@media (max-width: 360px) {
-    .metro-map {
-        grid-template-columns: repeat(3, 42px);
-        gap: 3px;
-    }
-    
-    .station-map-item {
-        width: 42px;
-        height: 34px;
-    }
-    
-    .station-name {
-        font-size: 7px !important;
-    }
+.station-stats-compact {
+    display: flex;
+    gap: 15px;
+    margin: 15px 0;
+    justify-content: center;
 }
 
-/* ===== СПИСКИ ПОЛЬЗОВАТЕЛЕЙ ===== */
+.stat-compact {
+    text-align: center;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+    min-width: 80px;
+}
+
+.stat-compact .stat-number {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stat-compact .stat-label {
+    font-size: 11px;
+    color: #666;
+}
+
 .users-list-section {
     margin-top: 30px;
     padding: 20px;
@@ -444,12 +737,280 @@ select:focus, input:focus {
     box-shadow: 0 3px 10px rgba(0,0,0,0.1);
 }
 
+.refresh-info {
+    background: #e7f1ff;
+    color: #0057b8;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    text-align: center;
+    margin: 10px 0;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.station-header-card {
+    background: linear-gradient(135deg, #0057b8, #003d82);
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    margin: 15px 0 10px 0;
+}
+
+.station-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.user-count-badge {
+    background: rgba(255,255,255,0.2);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.user-info-compact {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar-small {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: #0057b8;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.user-status {
+    font-size: 12px;
+    color: #666;
+}
+
+footer {
+    margin-top: 30px;
+    text-align: center;
+    color: white;
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+/* Навигация между страницами */
+.navigation-buttons {
+    display: flex;
+    gap: 5px;
+    margin: 15px 0;
+    justify-content: center;
+}
+
+.nav-btn {
+    padding: 8px 12px;
+    border: 2px solid #0057b8;
+    background: white;
+    color: #0057b8;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s;
+}
+
+.nav-btn.active {
+    background: #0057b8;
+    color: white;
+}
+
+.nav-btn:not(.active):hover {
+    background: #e7f1ff;
+}
+
+.online-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #0057b8;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+    margin: 10px 0;
+}
+
+.online-dot {
+    width: 8px;
+    height: 8px;
+    background: #28a745;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+.user-settings-panel {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.user-settings-panel h4 {
+    margin-bottom: 15px;
+    color: #0057b8;
+}
+
+.user-settings-panel .btn {
+    margin-top: 20px;
+}
+
+
+.user-state-info {
+    flex: 1;
+}
+
+.user-state-name {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 5px;
+    color: #0057b8;
+}
+
+.user-state-details {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 5px;
+}
+.state-highlight {
+    color: #28a745;
+    font-weight: 600;
+    background: rgba(40, 167, 69, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin: 0 2px;
+}
+
+/* Стили для выделения таймера */
+.timer-highlight {
+    color: #dc3545;
+    font-weight: 600;
+    background: rgba(220, 53, 69, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin: 0 2px;
+}
+
+.timer-waiting {
+    color: #fd7e14;
+    font-weight: 600;
+    background: rgba(253, 126, 20, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin: 0 2px;
+}
+
+/* Индикаторы состояния */
+.status-indicators {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+    flex-wrap: wrap;
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    background: #f8f9fa;
+    border-radius: 15px;
+    font-size: 12px;
+    border: 1px solid #dee2e6;
+}
+
+.status-indicator.highlighted {
+    background: #e8f5e8;
+    border-color: #28a745;
+    color: #155724;
+    font-weight: 500;
+}
+/* Анимации */
+@keyframes highlightPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.state-card.active .state-icon {
+    animation: highlightPulse 0.6s ease;
+}
+
+.user-state-display.updating {
+    animation: highlightPulse 0.8s ease;
+}
+
+/* Стили для постоянного выделения */
+.station-map-item.selected {
+    border-width: 4px !important;
+    border-color: #0057b8 !important;
+    box-shadow: 0 0 10px rgba(0, 87, 184, 0.5) !important;
+    transform: scale(1.02);
+}
+
+.state-card.active {
+    border-color: #0057b8 !important;
+    background: #e7f1ff !important;
+    box-shadow: 0 4px 12px rgba(0, 87, 184, 0.3) !important;
+    transform: translateY(-2px);
+}
+
+/* Убедитесь, что выделение сохраняется при обновлениях */
+.station-map-item[style*="border-color: #0057b8"] {
+    border-width: 4px !important;
+    box-shadow: 0 0 10px rgba(0, 87, 184, 0.5) !important;
+}
+
+/* Стили для информации о состоянии пользователя */
+.user-state-info {
+    margin: 10px 0;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    font-size: 14px;
+    
+}
+
+.connections-count {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #495057;
+}
+
+
+
+
+/* Стили для контейнера пользователей */
 .users-list-container {
     max-height: 400px;
     overflow-y: auto;
     margin-bottom: 20px;
 }
 
+/* Стили для отображения пользователя с таймером */
 .user-state-display {
     display: flex;
     align-items: center;
@@ -460,14 +1021,21 @@ select:focus, input:focus {
     margin-bottom: 10px;
     background: white;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .user-state-display.current-user {
     border-color: #007bff;
     background: #f8f9ff;
-    border-left: 4px solid #007bff;
+    border-left: 4px solid #007bff; /* Сохраняем акцент для текущего пользователя */
 }
 
+.user-state-display:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+/* Аватар пользователя */
 .user-avatar {
     width: 50px;
     height: 50px;
@@ -478,10 +1046,13 @@ select:focus, input:focus {
     color: white;
     font-size: 18px;
     font-weight: bold;
+    flex-shrink: 0;
 }
 
+/* Информация о пользователе */
 .user-state-info {
     flex: 1;
+    min-width: 0;
 }
 
 .user-state-name {
@@ -493,50 +1064,18 @@ select:focus, input:focus {
 .user-state-details {
     font-size: 14px;
     color: #666;
+    line-height: 1.4;
 }
 
-/* ===== ТАЙМЕРЫ ===== */
-.compact-timer {
-    background: #f8f9fa;
-    border: 2px solid #0057b8;
-    border-radius: 10px;
-    padding: 15px;
-    margin: 15px 0;
-    cursor: pointer;
-    transition: all 0.3s;
+.state-highlight {
+    color: #155724;
+    background: #e8f5e8;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
 }
 
-.timer-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.timer-title {
-    font-weight: 600;
-    color: #0057b8;
-    font-size: 16px;
-}
-
-.timer-display {
-    font-size: 24px;
-    font-weight: bold;
-    text-align: center;
-    margin: 10px 0;
-    color: #0057b8;
-}
-
-.timer-controls {
-    display: flex;
-    gap: 10px;
-}
-
-.timer-controls .btn {
-    flex: 1;
-    margin-top: 0;
-}
-
+/* Блок таймера */
 .user-timer-display {
     margin-left: auto;
     text-align: right;
@@ -545,6 +1084,8 @@ select:focus, input:focus {
     border-radius: 10px;
     color: white;
     min-width: 100px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    flex-shrink: 0;
 }
 
 .timer-label {
@@ -559,7 +1100,36 @@ select:focus, input:focus {
     font-family: 'Courier New', monospace;
 }
 
-/* ===== АДАПТИВНОСТЬ ===== */
+/* Анимация обновления */
+.user-state-display.updating {
+    animation: pulseUpdate 0.8s ease-in-out;
+}
+
+@keyframes pulseUpdate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .user-state-display {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .user-timer-display {
+        margin-left: 0;
+        align-self: stretch;
+        text-align: center;
+    }
+    
+    .user-state-info {
+        width: 100%;
+    }
+}
+/* Адаптивность для мобильных */
 @media (max-width: 768px) {
     .header-main {
         flex-direction: column;
@@ -568,15 +1138,30 @@ select:focus, input:focus {
     }
     
     .header-icons {
-        position: static;
         justify-content: center;
         width: 100%;
     }
     
-    .metro-icon {
-        width: 35px;
-        height: 35px;
-        font-size: 20px;
+    .metro-map {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        max-height: 300px;
+    }
+    
+    .map-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .map-legend {
+        justify-content: center;
+    }
+    
+    .station-stats-compact {
+        flex-wrap: wrap;
+    }
+    
+    .container {
+        border-radius: 10px;
     }
     
     h1 {
@@ -591,28 +1176,49 @@ select:focus, input:focus {
         grid-template-columns: 1fr;
     }
     
-    .gender-options, .city-options {
+    .gender-options, .city-options, .timer-options {
         flex-direction: column;
     }
     
-    .user-state-display {
-        flex-direction: column;
-        align-items: flex-start;
+    .state-card {
+        min-height: 80px;
+        padding: 10px;
+    }
+    
+    .state-icon {
+        font-size: 20px;
+    }
+    
+    .metro-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 20px;
+    }
+    
+  
+    
+    
+}
+
+@media (max-width: 480px) {
+    .header-icons {
+        flex-wrap: wrap;
         gap: 8px;
     }
     
-    .user-timer-display {
-        margin-left: 0;
-        align-self: stretch;
-        text-align: center;
+    .header-title h1 {
+        font-size: 22px;
     }
-}
-
-/* ===== ФУТЕР ===== */
-footer {
-    margin-top: 30px;
-    text-align: center;
-    color: rgb(5, 5, 5);
-    font-size: 14px;
-    opacity: 0.8;
+    
+    .header-title .subtitle {
+        font-size: 14px;
+    }
+    
+    .station-map-item {
+        padding: 10px;
+    }
+    
+    .station-name {
+        font-size: 13px;
+    }
 }

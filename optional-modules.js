@@ -889,7 +889,46 @@ function startTimer(event) {
     
     console.log('✅ Таймер запущен, остается открытым');
 }
+function debugTimerIssue() {
+    console.log('🔍 Отладка проблемы с таймером:');
+    
+    if (userId) {
+        getUsers().then(users => {
+            const currentUser = users.find(u => u.id === userId);
+            console.log('📊 Данные пользователя:', {
+                status: currentUser?.status,
+                position: currentUser?.position,
+                mood: currentUser?.mood,
+                timer: currentUser?.timer,
+                hasTimerEmoji: currentUser?.status?.includes('⏰')
+            });
+            
+            // Проверяем всех пользователей на станции
+            if (currentGroup) {
+                const stationUsers = users.filter(u => u.station === currentGroup.station);
+                console.log('👥 Пользователи на станции с таймерами:');
+                stationUsers.forEach(user => {
+                    if (user.status?.includes('⏰')) {
+                        console.log(`- ${user.name}: ${user.status}`);
+                    }
+                });
+            }
+        });
+    }
+}
 
+window.debugTimerIssue = debugTimerIssue;
+// Временно уменьшите интервал обновления для отладки
+function startDebugRefresh() {
+    setInterval(async () => {
+        console.log('🐛 Дебаг обновление:', new Date().toLocaleTimeString());
+        if (typeof loadGroupMembers === 'function') {
+            await loadGroupMembers();
+        }
+    }, 2000); // Обновляем каждые 2 секунды
+}
+
+// Вызовите в консоли: startDebugRefresh()
 // Функция остановки таймера
 function stopTimer(event) {
     console.log('🎯 Остановка таймера');
@@ -949,56 +988,56 @@ async function updateUserState() {
     if (!userId) return;
     
     try {
-        // Сначала получаем актуальные данные пользователя
+        // Получаем актуальные данные пользователя
         const users = await getUsers();
         const currentUserData = users.find(u => u.id === userId);
         
         if (!currentUserData) return;
-        
+
         // Сохраняем информацию о таймере из текущего статуса
         let timerInfo = '';
         if (currentUserData.status && currentUserData.status.includes('⏰')) {
-            const timerParts = currentUserData.status.split('⏰');
-            if (timerParts.length > 1) {
-                timerInfo = `⏰ ${timerParts[1].trim()}`;
+            const timerMatch = currentUserData.status.match(/⏰\s*(.+)/);
+            if (timerMatch) {
+                timerInfo = `⏰ ${timerMatch[1].trim()}`;
             }
         }
-        
+
         // Формируем новый статус
-        let newStatus = '';
         const stateParts = [];
-        
         if (currentPosition) stateParts.push(currentPosition);
         if (currentMood) stateParts.push(currentMood);
         
-        if (stateParts.length > 0) {
-            newStatus = stateParts.join(' • ');
-        }
+        let stateText = stateParts.join(' • ');
         
         // Добавляем таймер если он есть
         if (timerInfo) {
-            if (newStatus) {
-                newStatus += ' • ' + timerInfo;
+            if (stateText) {
+                stateText += ' • ' + timerInfo;
             } else {
-                newStatus = timerInfo;
+                stateText = timerInfo;
             }
         }
-        
-        // Если ничего не выбрано, ставим стандартный статус
-        if (!newStatus) {
-            newStatus = 'Ожидание';
+
+        // Если ничего нет, ставим стандартный статус
+        if (!stateText) {
+            stateText = 'Ожидание';
         }
+
+        // Обновляем пользователя
+        await updateUser(userId, { 
+            status: stateText,
+            position: currentPosition,
+            mood: currentMood
+        });
+
+        console.log('✅ Состояние обновлено с таймером:', stateText);
         
-        // Обновляем пользователя только если статус изменился
-        if (newStatus !== currentUserData.status) {
-            await updateUser(userId, { 
-                status: newStatus,
-                position: currentPosition,
-                mood: currentMood
-            });
-            
-            console.log('✅ Состояние обновлено:', newStatus);
-        }
+        // Принудительно обновляем отображение
+        setTimeout(() => {
+            if (typeof loadGroupMembers === 'function') loadGroupMembers();
+            if (typeof loadRequests === 'function') loadRequests();
+        }, 300);
         
     } catch (error) {
         console.error('❌ Ошибка обновления состояния:', error);

@@ -580,7 +580,7 @@ async function loadGroupMembers() {
             // Информация о цвете одежды и вагоне
             let additionalInfo = '';
             if (user.color) {
-                additionalInfo += `🎨 ${user.color}`;
+                additionalInfo += `🎨Цвет одежды ${user.color}`;
             }
             if (user.wagon && user.wagon !== '' && user.wagon !== 'Не указан') {
                 if (additionalInfo) additionalInfo += ' • ';

@@ -364,56 +364,54 @@ async function loadRequests() {
         `;
         requestsContainer.appendChild(stationHeader);
         
-        stationUsers.forEach(user => {
-            const requestCard = document.createElement('div');
-            requestCard.className = 'request-card';
-            const isCurrentUser = userId && user.id === userId;
-            
-            // Формируем информацию о состоянии пользователя
-            const stateInfo = [];
-            if (user.position) stateInfo.push(`Позиция: ${user.position}`);
-            if (user.mood) stateInfo.push(`Настроение: ${user.mood}`);
-            const stateText = stateInfo.join(' • ');
-            
-             // Формируем дополнительную информацию
-            const additionalInfo = [];
-            if (user.color) additionalInfo.push(`🎨 ${user.color}`);
-            if (user.wagon && user.wagon !== '' && user.wagon !== 'Не указан') {
-                additionalInfo.push(`🚇 Вагон ${user.wagon}`);
-            }
-            
-            const stateText = stateInfo.join(' • ');
-            const additionalText = additionalInfo.join(' • ');
-
-            requestCard.innerHTML = `
-                <div class="request-header">
-                    <div class="user-info-compact">
-                        <div class="user-avatar-small">${user.name.charAt(0)}</div>
-                        <div class="user-details">
-                            <div class="user-name">${user.name} ${isCurrentUser ? '(Вы)' : ''}</div>
-                            <div class="user-status">
-                                <span class="color-indicator" style="background-color: ${user.color_code || '#007bff'}"></span>
-                                ${user.color} • ${user.status}
+        // Исправленная часть функции loadRequests
+                stationUsers.forEach(user => {
+                    const requestCard = document.createElement('div');
+                    requestCard.className = 'request-card';
+                    const isCurrentUser = userId && user.id === userId;
+                    
+                    // Формируем информацию о состоянии пользователя
+                    const stateInfo = [];
+                    if (user.position) stateInfo.push(`📍 ${user.position}`);
+                    if (user.mood) stateInfo.push(`😊 ${user.mood}`);
+                    
+                    // Формируем дополнительную информацию
+                    const additionalInfo = [];
+                    if (user.color) additionalInfo.push(`🎨 ${user.color}`);
+                    if (user.wagon && user.wagon !== '' && user.wagon !== 'Не указан') {
+                        additionalInfo.push(`🚇 Вагон ${user.wagon}`);
+                    }
+                    
+                    // ИСПРАВЛЕНО: используем const вместо повторного объявления
+                    const stateText = stateInfo.join(' • ');
+                    const additionalText = additionalInfo.join(' • ');
+                    
+                    requestCard.innerHTML = `
+                        <div class="request-header">
+                            <div class="user-info-compact">
+                                <div class="user-avatar-small">${user.name.charAt(0)}</div>
+                                <div class="user-details">
+                                    <div class="user-name">${user.name} ${isCurrentUser ? '(Вы)' : ''}</div>
+                                    <div class="user-status">
+                                        <span class="color-indicator" style="background-color: ${user.color_code || '#007bff'}"></span>
+                                        ${user.is_waiting ? '⏳ Ожидает присоединения' : '✅ На станции'}
+                                    </div>
+                                </div>
                             </div>
+                            ${user.wagon && user.wagon !== 'Не указан' ? `<div class="wagon">Вагон ${user.wagon}</div>` : ''}
                         </div>
-                    </div>
-                    ${user.wagon && user.wagon !== 'Не указан' ? `<div class="wagon">Вагон ${user.wagon}</div>` : ''}
-                </div>
-                
-                ${stateText ? `<div class="user-state-info" style="margin: 10px 0; padding: 8px; background: #f8f9fa; border-radius: 5px; font-size: 14px;">
-                    <strong>Состояние:</strong> ${stateText}
-                </div>` : ''}
-                
-                <div class="user-connections">
-                    <div class="connections-count">
-                        ${user.is_waiting ? '⏳ Ожидает присоединения' : '✅ Соединился с другими'}
-                        ${stateText ? ` • ${stateText}` : ''}
-                    </div>
-                </div>
-            `;
-            
-            requestsContainer.appendChild(requestCard);
-        });
+                        
+                        ${stateText ? `<div class="user-state-info" style="margin: 10px 0; padding: 8px; background: #f8f9fa; border-radius: 5px; font-size: 14px;">
+                            <strong>Состояние:</strong> ${stateText}
+                        </div>` : ''}
+                        
+                        ${additionalText ? `<div style="font-size: 13px; color: #666; margin-top: 5px;">
+                            ${additionalText}
+                        </div>` : ''}
+                    `;
+                    
+                    requestsContainer.appendChild(requestCard);
+                });
     });
 }
 // Обновленная функция загрузки участников группы с подсветкой состояний

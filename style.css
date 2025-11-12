@@ -16,7 +16,6 @@ body {
     padding: 20px;
 }
 
-/* ===== ОСНОВНАЯ СТРУКТУРА ===== */
 .container {
     width: 100%;
     max-width: 900px;
@@ -44,7 +43,6 @@ header {
     background: linear-gradient(to right, #0057b8, #003d82);
     color: white;
     padding: 20px;
-    position: relative;
 }
 
 .header-main {
@@ -88,7 +86,6 @@ h1 {
     align-items: center;
     justify-content: center;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    flex-shrink: 0;
 }
 
 /* ===== ФОРМЫ И КНОПКИ ===== */
@@ -137,22 +134,6 @@ select:focus, input:focus {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
-.btn-secondary {
-    background: linear-gradient(to right, #6c757d, #5a6268);
-}
-
-.btn-success {
-    background: linear-gradient(to right, #28a745, #20c997);
-}
-
-.btn-warning {
-    background: linear-gradient(to right, #ffc107, #fd7e14);
-}
-
-.btn-danger {
-    background: linear-gradient(to right, #dc3545, #c82333);
-}
-
 .back-btn {
     background: none;
     border: none;
@@ -196,17 +177,6 @@ select:focus, input:focus {
     background-color: #e7f1ff;
 }
 
-.city-name {
-    font-weight: 600;
-    font-size: 16px;
-    margin-bottom: 5px;
-}
-
-.city-description {
-    font-size: 12px;
-    color: #666;
-}
-
 /* ===== КАРТОЧКИ СОСТОЯНИЙ ===== */
 .state-section {
     margin: 20px 0;
@@ -247,7 +217,6 @@ select:focus, input:focus {
 .state-card.active {
     border-color: #28a745;
     background-color: #f8fff9;
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
     transform: translateY(-2px);
 }
 
@@ -260,41 +229,6 @@ select:focus, input:focus {
     font-size: 14px;
     font-weight: 500;
     color: #333;
-}
-
-/* ===== ИНДИКАТОРЫ СОСТОЯНИЯ ===== */
-.status-indicators {
-    display: flex;
-    gap: 10px;
-    margin: 10px 0;
-    flex-wrap: wrap;
-}
-
-.status-indicator {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 8px;
-    background: #f8f9fa;
-    border-radius: 15px;
-    font-size: 12px;
-    border: 1px solid #dee2e6;
-}
-
-.status-indicator.highlighted {
-    background: #e8f5e8;
-    border-color: #28a745;
-    color: #155724;
-    font-weight: 500;
-}
-
-.state-highlight {
-    color: #28a745;
-    font-weight: 600;
-    background: rgba(40, 167, 69, 0.1);
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin: 0 2px;
 }
 
 /* ===== КАРТА СТАНЦИЙ ===== */
@@ -347,6 +281,7 @@ select:focus, input:focus {
     background: #6c757d;
 }
 
+/* ===== ОСНОВНАЯ СЕТКА СТАНЦИЙ ===== */
 .metro-map {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -360,8 +295,6 @@ select:focus, input:focus {
 }
 
 .station-map-item {
-    width: 100%;
-    max-width: 180px;
     padding: 12px;
     border-radius: 8px;
     cursor: pointer;
@@ -369,12 +302,6 @@ select:focus, input:focus {
     border: 2px solid transparent;
     text-align: center;
     background: white;
-    box-sizing: border-box;
-}
-
-.station-map-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 .station-map-item.connected {
@@ -396,7 +323,6 @@ select:focus, input:focus {
 .station-map-item.selected {
     border-width: 4px !important;
     border-color: #0057b8 !important;
-    box-shadow: 0 0 10px rgba(0, 87, 184, 0.5) !important;
     transform: scale(1.02);
 }
 
@@ -428,204 +354,7 @@ select:focus, input:focus {
     background: #28a745;
 }
 
-/* ===== АДАПТИВНОСТЬ ДЛЯ КАРТЫ МЕТРО ===== */
-@media (max-width: 768px) {
-    .stations-map-container {
-        padding: 15px;
-        margin: 15px 0;
-    }
-    
-    .metro-map {
-        grid-template-columns: repeat(3, 1fr); /* Три колонки */
-        gap: 6px;
-        max-height: 350px;
-        padding: 8px;
-    }
-    
-    .station-map-item {
-        max-width: 100%;
-        padding: 8px 6px;
-        min-height: 60px; /* Уменьшаем высоту */
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        border-radius: 6px; /* Меньшие скругления */
-    }
-    
-    .station-name {
-        font-size: 11px; /* Уменьшаем шрифт */
-        margin-bottom: 3px;
-        line-height: 1.2;
-        font-weight: 500;
-    }
-    
-    .station-counts {
-        gap: 4px;
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    
-    .station-count {
-        font-size: 9px; /* Уменьшаем счетчики */
-        padding: 1px 3px;
-        border-radius: 8px;
-    }
-    
-    /* Компактная легенда в три колонки */
-    .map-legend {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-        width: 100%;
-        margin-bottom: 15px;
-    }
-    
-    .legend-item {
-        font-size: 10px;
-        justify-content: center;
-        text-align: center;
-        padding: 4px;
-        background: rgba(255, 255, 255, 0.7);
-        border-radius: 6px;
-    }
-    
-    .legend-color {
-        width: 10px;
-        height: 10px;
-        flex-shrink: 0;
-    }
-}
-
-@media (max-width: 480px) {
-    .stations-map-container {
-        padding: 10px;
-        margin: 10px 0;
-    }
-    
-    .metro-map {
-        grid-template-columns: repeat(3, 1fr); /* Сохраняем три колонки */
-        gap: 4px;
-        max-height: 300px;
-        padding: 6px;
-    }
-    
-    .station-map-item {
-        padding: 6px 4px;
-        min-height: 55px; /* Еще более компактные */
-    }
-    
-    .station-name {
-        font-size: 10px; /* Минимальный читаемый размер */
-        font-weight: 500;
-    }
-    
-    .station-counts {
-        gap: 2px;
-    }
-    
-    .station-count {
-        font-size: 8px;
-        padding: 1px 2px;
-    }
-    
-    /* Легенда для очень маленьких экранов */
-    .map-legend {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 6px;
-    }
-    
-    .legend-item {
-        font-size: 9px;
-        padding: 3px;
-    }
-    
-    .legend-color {
-        width: 8px;
-        height: 8px;
-    }
-    
-    /* Улучшение для очень маленьких экранов */
-    @media (max-width: 360px) {
-        .metro-map {
-            grid-template-columns: repeat(3, 1fr);
-            gap: 3px;
-        }
-        
-        .station-map-item {
-            padding: 5px 3px;
-            min-height: 50px;
-        }
-        
-        .station-name {
-            font-size: 9px;
-        }
-        
-        .map-legend {
-            gap: 4px;
-        }
-        
-        .legend-item {
-            font-size: 8px;
-        }
-    }
-}
-
-/* Дополнительные улучшения для квадратных плиток */
-.station-map-item {
-    aspect-ratio: 1; /* Делаем квадратными */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    transition: all 0.2s ease;
-}
-
-/* Улучшение скролла на мобильных */
-.metro-map::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-}
-
-.metro-map::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 2px;
-}
-
-.metro-map::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 2px;
-}
-
-.metro-map::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-}
-
-/* Анимация для быстрого скролла */
-.metro-map {
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch; /* Для iOS */
-}
-
-/* Индикатор скролла для мобильных */
-.metro-map::after {
-    content: "";
-    position: absolute;
-    bottom: 5px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40px;
-    height: 4px;
-    background: rgba(0, 87, 184, 0.5);
-    border-radius: 2px;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.metro-map.scrollable::after {
-    opacity: 1;
-}
-/* ===== КОМПАКТНЫЕ КВАДРАТНЫЕ ПЛИТКИ ===== */
+/* ===== КОМПАКТНЫЕ ПЛИТКИ 44x36 ДЛЯ МОБИЛЬНЫХ ===== */
 @media (max-width: 768px) {
     .stations-map-container {
         padding: 10px;
@@ -633,25 +362,22 @@ select:focus, input:focus {
     }
     
     .metro-map {
-        grid-template-columns: repeat(3, 44px); /* Фиксированные 3 колонки по 44px */
+        grid-template-columns: repeat(3, 44px);
         gap: 4px;
         max-height: 300px;
         padding: 8px;
         justify-content: center;
-        overflow-x: hidden;
     }
     
     .station-map-item {
         width: 44px;
         height: 36px;
         padding: 2px;
-        min-height: auto;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         border-radius: 4px;
-        text-align: center;
     }
     
     .station-name {
@@ -666,10 +392,9 @@ select:focus, input:focus {
     }
     
     .station-counts {
-        display: none; /* Скрываем счетчики для экономии места */
+        display: none;
     }
     
-    /* Компактная легенда */
     .map-legend {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -694,7 +419,6 @@ select:focus, input:focus {
     }
 }
 
-/* Для очень маленьких экранов */
 @media (max-width: 360px) {
     .metro-map {
         grid-template-columns: repeat(3, 42px);
@@ -711,26 +435,6 @@ select:focus, input:focus {
     }
 }
 
-/* Улучшение внешнего вида маленьких плиток */
-.station-map-item.connected {
-    border: 1px solid #28a745;
-    background: #d4edda;
-}
-
-.station-map-item.waiting {
-    border: 1px solid #ffc107;
-    background: #fff3cd;
-}
-
-.station-map-item.empty {
-    border: 1px solid #6c757d;
-    background: #f8f9fa;
-}
-
-.station-map-item.selected {
-    border: 2px solid #0057b8 !important;
-    box-shadow: 0 0 5px rgba(0, 87, 184, 0.7);
-}
 /* ===== СПИСКИ ПОЛЬЗОВАТЕЛЕЙ ===== */
 .users-list-section {
     margin-top: 30px;
@@ -756,18 +460,12 @@ select:focus, input:focus {
     margin-bottom: 10px;
     background: white;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .user-state-display.current-user {
     border-color: #007bff;
     background: #f8f9ff;
     border-left: 4px solid #007bff;
-}
-
-.user-state-display:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    transform: translateY(-2px);
 }
 
 .user-avatar {
@@ -780,12 +478,10 @@ select:focus, input:focus {
     color: white;
     font-size: 18px;
     font-weight: bold;
-    flex-shrink: 0;
 }
 
 .user-state-info {
     flex: 1;
-    min-width: 0;
 }
 
 .user-state-name {
@@ -797,7 +493,6 @@ select:focus, input:focus {
 .user-state-details {
     font-size: 14px;
     color: #666;
-    line-height: 1.4;
 }
 
 /* ===== ТАЙМЕРЫ ===== */
@@ -811,11 +506,6 @@ select:focus, input:focus {
     transition: all 0.3s;
 }
 
-.compact-timer:hover {
-    background: #e7f1ff;
-    transform: translateY(-2px);
-}
-
 .timer-header {
     display: flex;
     justify-content: space-between;
@@ -827,40 +517,6 @@ select:focus, input:focus {
     font-weight: 600;
     color: #0057b8;
     font-size: 16px;
-}
-
-.timer-status {
-    font-size: 14px;
-    color: #666;
-    font-weight: 500;
-}
-
-.timer-expanded {
-    display: none;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid #ddd;
-}
-
-.timer-expanded.active {
-    display: block;
-}
-
-.timer-options {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.timer-options .btn {
-    flex: 1;
-    margin-top: 0;
-    padding: 10px;
-    font-size: 14px;
-}
-
-.timer-option.active {
-    background: linear-gradient(to right, #28a745, #20c997);
 }
 
 .timer-display {
@@ -889,8 +545,6 @@ select:focus, input:focus {
     border-radius: 10px;
     color: white;
     min-width: 100px;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-    flex-shrink: 0;
 }
 
 .timer-label {
@@ -903,180 +557,6 @@ select:focus, input:focus {
     font-size: 16px;
     font-weight: bold;
     font-family: 'Courier New', monospace;
-}
-
-/* ===== КАРТОЧКИ И УВЕДОМЛЕНИЯ ===== */
-.request-card {
-    background-color: white;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 15px;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-    border-left: 5px solid #0057b8;
-    transition: all 0.3s;
-}
-
-.request-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
-}
-
-.request-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.station-header-card {
-    background: linear-gradient(135deg, #0057b8, #003d82);
-    color: white;
-    padding: 15px;
-    border-radius: 10px;
-    margin: 15px 0 10px 0;
-}
-
-.station-title {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.user-count-badge {
-    background: rgba(255,255,255,0.2);
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-}
-
-.user-info-compact {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.user-avatar-small {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    background: #0057b8;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: bold;
-}
-
-/* ===== СПЕЦИАЛЬНЫЕ ЭЛЕМЕНТЫ ===== */
-.disclaimer {
-    font-size: 16px;
-    color: #ff6b6b;
-    font-style: italic;
-    margin-bottom: 20px;
-    text-align: center;
-    padding: 12px;
-    background-color: #fff3f3;
-    border: 1px solid #ff6b6b;
-    border-radius: 8px;
-    font-weight: 500;
-    max-width: 600px;
-    margin: 0 auto 20px auto;
-    box-shadow: 0 2px 5px rgba(255, 107, 107, 0.2);
-}
-
-.station-name-highlight {
-    color: #0057b8;
-    font-weight: bold;
-    background: linear-gradient(135deg, #0057b8, #003d82);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    padding: 2px 8px;
-    border-radius: 6px;
-    background-color: #e7f1ff;
-    border: 2px solid #0057b8;
-    display: inline-block;
-    margin: 0 5px;
-    animation: stationPulse 2s infinite;
-}
-
-.refresh-info {
-    background: #e7f1ff;
-    color: #0057b8;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    text-align: center;
-    margin: 10px 0;
-    animation: pulse 2s infinite;
-}
-
-.no-requests, .loading {
-    text-align: center;
-    padding: 30px;
-    color: #666;
-}
-
-/* ===== НАВИГАЦИЯ ===== */
-.navigation-buttons {
-    display: flex;
-    gap: 5px;
-    margin: 15px 0;
-    justify-content: center;
-}
-
-.nav-btn {
-    padding: 8px 12px;
-    border: 2px solid #0057b8;
-    background: white;
-    color: #0057b8;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all 0.3s;
-}
-
-.nav-btn.active {
-    background: #0057b8;
-    color: white;
-}
-
-.nav-btn:not(.active):hover {
-    background: #e7f1ff;
-}
-
-/* ===== АНИМАЦИИ ===== */
-@keyframes stationPulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
-
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
-}
-
-@keyframes highlightPulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
-
-@keyframes pulseUpdate {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.02); }
-    100% { transform: scale(1); }
-}
-
-.state-card.active .state-icon {
-    animation: highlightPulse 0.6s ease;
-}
-
-.user-state-display.updating {
-    animation: pulseUpdate 0.8s ease-in-out;
 }
 
 /* ===== АДАПТИВНОСТЬ ===== */
@@ -1107,35 +587,12 @@ select:focus, input:focus {
         padding: 15px;
     }
     
-    .container {
-        border-radius: 10px;
-    }
-    
-    .metro-map {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        max-height: 300px;
-    }
-    
-    .map-controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
     .state-cards {
         grid-template-columns: 1fr;
     }
     
-    .gender-options, .city-options, .timer-options {
+    .gender-options, .city-options {
         flex-direction: column;
-    }
-    
-    .state-card {
-        min-height: 80px;
-        padding: 10px;
-    }
-    
-    .state-icon {
-        font-size: 20px;
     }
     
     .user-state-display {
@@ -1148,46 +605,6 @@ select:focus, input:focus {
         margin-left: 0;
         align-self: stretch;
         text-align: center;
-    }
-    
-    .user-state-info {
-        width: 100%;
-    }
-    
-    #joined-room-screen h2 {
-        font-size: 22px;
-        text-align: center;
-        line-height: 1.4;
-    }
-    
-    .station-name-highlight {
-        display: block;
-        margin: 10px auto;
-        max-width: 90%;
-        text-align: center;
-    }
-}
-
-@media (max-width: 480px) {
-    .header-icons {
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    
-    .header-title h1 {
-        font-size: 22px;
-    }
-    
-    .header-title .subtitle {
-        font-size: 14px;
-    }
-    
-    .station-map-item {
-        padding: 10px;
-    }
-    
-    .station-name {
-        font-size: 13px;
     }
 }
 

@@ -674,6 +674,3 @@ window.addEventListener('beforeunload', async function() {
     }
 });
 
-// Пинг активности при действиях пользователя
-document.addEventListener('click', pingActivity);
-document.addEventListener('keypress', pingActivity);

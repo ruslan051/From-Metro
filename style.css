@@ -877,23 +877,7 @@ footer {
 .user-settings-panel .btn {
     margin-top: 20px;
 }
-/* Стили для отображения состояния пользователя */
 
-.user-state-display {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 15px;
-    background: white;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    border-left: 4px solid #0057b8;
-}
-.user-state-display.current-user {
-    border-color: #007bff;
-    background-color: #f8f9ff;
-}
 
 .user-state-info {
     flex: 1;
@@ -1016,50 +1000,9 @@ footer {
     color: #495057;
 }
 
-.user-timer-display {
-    margin-left: auto;
-    text-align: right;
-    padding: 8px 12px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 10px;
-    color: white;
-    min-width: 100px;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-}
 
-.timer-label {
-    font-size: 11px;
-    opacity: 0.9;
-    margin-bottom: 2px;
-}
 
-.timer-value {
-    font-size: 16px;
-    font-weight: bold;
-    font-family: 'Courier New', monospace;
-}
 
-.user-state-display {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
-    border: 1px solid #e0e0e0;
-    border-radius: 12px;
-    margin-bottom: 10px;
-    background: white;
-    transition: all 0.3s ease;
-}
-
-.user-state-display.current-user {
-    border-color: #007bff;
-    background: #f8f9ff;
-}
-
-.user-state-display:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    transform: translateY(-2px);
-}
 /* Стили для контейнера пользователей */
 .users-list-container {
     max-height: 400px;
@@ -1067,7 +1010,7 @@ footer {
     margin-bottom: 20px;
 }
 
-/* Стили для отображения пользователя */
+/* Стили для отображения пользователя с таймером */
 .user-state-display {
     display: flex;
     align-items: center;
@@ -1078,11 +1021,13 @@ footer {
     margin-bottom: 10px;
     background: white;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .user-state-display.current-user {
     border-color: #007bff;
     background: #f8f9ff;
+    border-left: 4px solid #007bff; /* Сохраняем акцент для текущего пользователя */
 }
 
 .user-state-display:hover {

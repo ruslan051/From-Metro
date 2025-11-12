@@ -669,23 +669,36 @@ function updateUserTimerInfo(minutes) {
         status: timerText
     }).then((result) => {
         console.log('✅ Статус с таймером обновлен:', timerText);
-        console.log('✅ Ответ сервера:', result);
         
-        // Принудительно обновляем отображение
-        setTimeout(() => {
-            if (typeof loadRequests === 'function') {
-                console.log('🔄 Запуск loadRequests...');
-                loadRequests();
-            }
-            if (typeof loadGroupMembers === 'function') {
-                console.log('🔄 Запуск loadGroupMembers...');
-                loadGroupMembers();
-            }
-        }, 1000);
+        // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ОТОБРАЖЕНИЯ
+        forceRefreshUserDisplay();
         
     }).catch(error => {
         console.error('❌ Ошибка обновления таймера:', error);
     });
+}
+
+// Новая функция для принудительного обновления отображения
+function forceRefreshUserDisplay() {
+    console.log('🔄 Принудительное обновление отображения пользователей');
+    
+    // Обновляем на всех страницах где есть пользователи
+    if (typeof loadGroupMembers === 'function') {
+        console.log('🎯 Вызов loadGroupMembers');
+        loadGroupMembers();
+    }
+    if (typeof loadRequests === 'function') {
+        console.log('🎯 Вызов loadRequests');
+        loadRequests();
+    }
+    
+    // Если мы на второй странице, обновляем карту
+    if (waitingRoomScreen && waitingRoomScreen.classList.contains('active')) {
+        if (typeof loadStationsMap === 'function') {
+            console.log('🎯 Вызов loadStationsMap');
+            loadStationsMap();
+        }
+    }
 }
 // Инициализация таймера в комнате ожидания
 function initializeWaitingRoomTimer() {
@@ -786,6 +799,8 @@ function startTimer(event) {
             timer_total: selectedMinutes * 60
         }).then((result) => {
             console.log('✅ Статус запуска таймера обновлен:', timerText);
+                forceRefreshUserDisplay();
+
             
             // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ
             setTimeout(() => {
@@ -887,6 +902,8 @@ function stopTimer(event) {
     }
     
     console.log('✅ Таймер остановлен, остается открытым');
+        forceRefreshUserDisplay();
+
 }
 
 function updateTimerDisplay() {

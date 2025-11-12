@@ -454,16 +454,22 @@ function startGlobalRefresh() {
             if (typeof restoreSelectedStation === 'function') restoreSelectedStation();
         } else if (joinedRoomScreen && joinedRoomScreen.classList.contains('active')) {
             // На третьем экране обновляем участников группы и запросы
-            if (typeof loadGroupMembers === 'function') await loadGroupMembers();
-            if (typeof loadRequests === 'function') await loadRequests();
+            if (typeof loadGroupMembers === 'function') {
+                console.log('🔄 Автообновление участников группы');
+                await loadGroupMembers();
+            }
+            if (typeof loadRequests === 'function') {
+                console.log('🔄 Автообновление запросов');
+                await loadRequests();
+            }
             if (typeof restoreSelectedStates === 'function') restoreSelectedStates();
         }
         
         await pingActivity();
         
-    }, 5000);
+    }, 3000); // Уменьшим интервал до 3 секунд для быстрого обновления
     
-    console.log('✅ Глобальное обновление запущено каждые 5 секунд');
+    console.log('✅ Глобальное обновление запущено каждые 3 секунды');
 }
 
 // Функция остановки глобального обновления
@@ -492,7 +498,7 @@ function forceInitializeJoinedRoom() {
 
       // Инициализируем карточки
     initializeStateCards();
-    
+
     // Обновляем индикаторы
     updateStatusIndicators();
     updateUserStateDisplay();
@@ -566,7 +572,6 @@ function showWaitingRoom() {
     });
 }
 
-// Обновите функцию showJoinedRoom
 function showJoinedRoom() {
     if (!currentGroup) {
         alert('Сначала выберите станцию');
@@ -576,9 +581,20 @@ function showJoinedRoom() {
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
     joinedRoomScreen.classList.add('active');
     
-    // Принудительная инициализация
+    // ПРИНУДИТЕЛЬНАЯ ИНИЦИАЛИЗАЦИЯ И ОБНОВЛЕНИЕ
     setTimeout(() => {
         forceInitializeJoinedRoom();
+        
+        // ДОПОЛНИТЕЛЬНОЕ ОБНОВЛЕНИЕ ДАННЫХ
+        setTimeout(() => {
+            if (typeof loadGroupMembers === 'function') {
+                console.log('🔄 Принудительное обновление при переходе на страницу');
+                loadGroupMembers();
+            }
+            if (typeof loadRequests === 'function') {
+                loadRequests();
+            }
+        }, 1000);
     }, 100);
     
     // Загружаем модули если нужно

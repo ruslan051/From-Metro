@@ -4,7 +4,8 @@ window.debugTimer = debugTimer;
 window.debugUserData = debugUserData;
 // Добавьте в глобальную область
 window.debugTimerFull = debugTimerFull;
-
+// Добавьте в глобальную область
+window.debugUserStatuses = debugUserStatuses;
 // Функции для inline обработчиков карточек состояний
 function selectPosition(position, element) {
     console.log('📍 Выбрана позиция:', position, element);
@@ -377,17 +378,19 @@ async function loadRequests() {
                     requestCard.className = 'request-card';
                     const isCurrentUser = userId && user.id === userId;
                     
-                   // В функции loadRequests обновите блок с stateInfo:
-                        const stateInfo = [];
-                        if (user.position) stateInfo.push(`📍 ${user.position}`);
-                        if (user.mood) stateInfo.push(`😊 ${user.mood}`);
-                        // ДОБАВЛЯЕМ ИНФОРМАЦИЮ О ТАЙМЕРЕ ИЗ СТАТУСА
-                        if (user.status && user.status.includes('⏰')) {
-                            const timerMatch = user.status.match(/⏰\s*(.*?)(?=\s*$|$)/);
-                            if (timerMatch) {
-                                stateInfo.push(`⏰ ${timerMatch[1]}`);
-                            }
-                        }
+                   // ИСПРАВЛЕННЫЙ блок в loadRequests:
+                                const stateInfo = [];
+                                if (user.position) stateInfo.push(`📍 ${user.position}`);
+                                if (user.mood) stateInfo.push(`😊 ${user.mood}`);
+
+                                // ИСПРАВЛЕННОЕ извлечение информации о таймере
+                                if (user.status && user.status.includes('⏰')) {
+                                    const timerParts = user.status.split('⏰');
+                                    if (timerParts.length > 1) {
+                                        const timerText = timerParts[1].trim();
+                                        stateInfo.push(`⏰ ${timerText}`);
+                                    }
+                                }
                     // Формируем дополнительную информацию
                     const additionalInfo = [];
                     if (user.color) additionalInfo.push(`🎨 ${user.color}`);
@@ -427,6 +430,26 @@ async function loadRequests() {
                 });
     });
 }
+// Добавьте эту функцию для отладки
+function debugUserStatuses() {
+    console.log('🔍 Отладка статусов пользователей:');
+    
+    if (userId) {
+        getUsers().then(users => {
+            const currentUserData = users.find(u => u.id === userId);
+            console.log('👤 Ваш статус:', currentUserData?.status);
+            
+            if (currentGroup) {
+                const stationUsers = users.filter(u => u.station === currentGroup.station);
+                console.log('👥 Статусы всех пользователей на станции:');
+                stationUsers.forEach(user => {
+                    console.log(`- ${user.name}: ${user.status}`);
+                });
+            }
+        });
+    }
+}
+
 
 // Функция для проверки данных пользователя
 function debugUserData() {
@@ -457,7 +480,7 @@ function debugUserData() {
 
 
 
-// Обновленная функция загрузки участников группы
+// ЗАМЕНИТЕ текущую функцию loadGroupMembers на эту исправленную версию:
 async function loadGroupMembers() {
     if (!groupMembersContainer) {
         console.error('Контейнер group-members не найден');
@@ -502,13 +525,13 @@ async function loadGroupMembers() {
                 stateDetails = 'Позиция не указана • Настроение не указано';
             }
             
-            // ДОБАВЛЯЕМ ИНФОРМАЦИЮ О ТАЙМЕРЕ ИЗ СТАТУСА
+            // ИСПРАВЛЕННОЕ извлечение информации о таймере
             let timerInfo = '';
             if (user.status && user.status.includes('⏰')) {
-                // Извлекаем информацию о таймере из статуса
-                const timerMatch = user.status.match(/⏰\s*(.*?)(?=\s*$|$)/);
-                if (timerMatch) {
-                    const timerText = timerMatch[1];
+                // Простой и надежный способ извлечь текст после эмодзи таймера
+                const timerParts = user.status.split('⏰');
+                if (timerParts.length > 1) {
+                    const timerText = timerParts[1].trim();
                     if (user.status.includes('запущен')) {
                         timerInfo = ` • <span class="timer-highlight">⏰ ${timerText}</span>`;
                     } else if (user.status.includes('истекло') || user.status.includes('остановлен')) {
@@ -519,7 +542,7 @@ async function loadGroupMembers() {
                 }
             }
             
-            // ДОБАВЛЯЕМ ИНФОРМАЦИЮ О ЦВЕТЕ ОДЕЖДЫ И ВАГОНЕ
+            // Информация о цвете одежды и вагоне
             let additionalInfo = '';
             if (user.color) {
                 additionalInfo += `🎨 ${user.color}`;
@@ -643,11 +666,13 @@ function selectTimerOption(minutes, element, event) {
     
     console.log('✅ Установлено время:', minutes, 'минут');
     
-    // ПРИНУДИТЕЛЬНО ОБНОВЛЯЕМ ОТОБРАЖЕНИЕ
-    setTimeout(() => {
-        if (typeof loadRequests === 'function') loadRequests();
-        if (typeof loadGroupMembers === 'function') loadGroupMembers();
-    }, 500);
+    // Добавьте в конец updateUserTimerInfo:
+                setTimeout(() => {
+                    if (typeof loadGroupMembers === 'function') {
+                        console.log('🔄 Принудительное обновление участников группы');
+                        loadGroupMembers();
+                    }
+                }, 500);
 }
 
 // Функция обновления информации о таймере пользователя

@@ -122,7 +122,7 @@ async function migrateDatabase() {
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS user_agent TEXT`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS session_id VARCHAR(255)`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_waiting BOOLEAN DEFAULT true`,
-      `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_connected BOOLEAN DEFAULT false`
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_connected BOOLEAN DEFAULT false`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS timer_seconds INTEGER DEFAULT 0`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS timer_end TIMESTAMP`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS show_timer BOOLEAN DEFAULT false`

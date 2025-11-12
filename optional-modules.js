@@ -6,8 +6,7 @@ window.debugUserData = debugUserData;
 window.debugTimerFull = debugTimerFull;
 // Добавьте в глобальную область
 window.debugUserStatuses = debugUserStatuses;
-// Добавьте в глобальную область
-window.saveUserState = saveUserState;
+
 
 // Функции для inline обработчиков карточек состояний
 function selectPosition(position, element) {
@@ -86,18 +85,6 @@ function selectMood(mood, element) {
     
     console.log('✅ Настроение установлено:', mood);
 }
-// Добавьте эту функцию для явного сохранения состояния:
-async function saveUserState() {
-    console.log('💾 Явное сохранение состояния пользователя');
-    await updateUserState();
-    
-    // Принудительное обновление отображения
-    if (typeof loadGroupMembers === 'function') loadGroupMembers();
-    if (typeof loadRequests === 'function') loadRequests();
-    
-    alert('Состояние сохранено!');
-}
-
 
 // Станции метро (редко используемые данные)
 const stations = {

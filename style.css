@@ -892,7 +892,7 @@ select:focus, input:focus {
 footer {
     margin-top: 30px;
     text-align: center;
-    color: white;
+    color: rgb(5, 5, 5);
     font-size: 14px;
     opacity: 0.8;
 }

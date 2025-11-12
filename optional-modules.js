@@ -384,7 +384,55 @@ if (stationData) {
         }
     }
 }
+// ЗАМЕНИТЕ ЭТУ ФУНКЦИЮ:
+async function updateUserState() {
+    if (!userId) return;
+    
+    try {
+        // Получаем актуальные данные пользователя
+        const users = await getUsers();
+        const currentUserData = users.find(u => u.id === userId);
+        
+        if (!currentUserData) return;
 
+        // Проверяем, есть ли активный таймер в статусе
+        const hasActiveTimer = currentUserData.status && currentUserData.status.includes('⏰');
+        
+        let newStatus = '';
+        const stateParts = [];
+        
+        if (currentPosition) stateParts.push(currentPosition);
+        if (currentMood) stateParts.push(currentMood);
+        
+        // Если есть активный таймер, сохраняем его
+        if (hasActiveTimer) {
+            const timerMatch = currentUserData.status.match(/⏰\s*(.+)/);
+            if (timerMatch) {
+                stateParts.push(`⏰ ${timerMatch[1].trim()}`);
+            }
+        }
+        
+        newStatus = stateParts.join(' | ');
+        
+        // Если ничего нет, ставим стандартный статус
+        if (!newStatus) {
+            newStatus = 'Ожидание';
+        }
+
+        // Обновляем пользователя только если статус изменился
+        if (newStatus !== currentUserData.status) {
+            await updateUser(userId, { 
+                status: newStatus,
+                position: currentPosition,
+                mood: currentMood
+            });
+            console.log('✅ Состояние обновлено:', newStatus);
+        }
+        
+    } catch (error) {
+        console.error('❌ Ошибка обновления состояния:', error);
+    }
+}
 function selectStation(stationName, stationData) {
     currentSelectedStation = stationName;
     

@@ -535,6 +535,35 @@ function updateStatusIndicators() {
         }
     }
 }
+// Функции для inline обработчиков таймера
+function toggleTimer() {
+    console.log('🎯 Переключение таймера');
+    const expanded = document.getElementById('waiting-timer-expanded');
+    if (expanded) {
+        expanded.classList.toggle('active');
+        console.log('✅ Состояние таймера:', expanded.classList.contains('active') ? 'развернут' : 'свернут');
+    }
+}
+
+function selectTimerOption(minutes, element) {
+    console.log('🎯 Выбрана опция таймера:', minutes);
+    
+    // Снимаем выделение со всех опций
+    document.querySelectorAll('#waiting-timer-expanded .timer-option').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Выделяем текущую опцию
+    element.classList.add('active');
+    selectedMinutes = minutes;
+    
+    const display = document.getElementById('waiting-timer-display');
+    if (display) {
+        display.textContent = `Готов к запуску: ${minutes} мин`;
+    }
+    
+    console.log('✅ Установлено время:', minutes, 'минут');
+}
 // Инициализация таймера в комнате ожидания
 function initializeWaitingRoomTimer() {
     console.log('⏰ Инициализация таймера...');

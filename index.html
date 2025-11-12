@@ -131,7 +131,7 @@
                         <input type="text" id="color-select" placeholder="Например: черный, синий, красный" required>
                     </div>
                     
-                    <div class="compact-timer" id="waiting-room-timer">
+                  <div class="compact-timer" id="waiting-room-timer" onclick="toggleTimer()">
                         <div class="timer-header">
                             <div class="timer-title">⏰ Таймер ожидания</div>
                             <div class="timer-status" id="waiting-timer-status">Не активен</div>
@@ -139,14 +139,14 @@
                         <div class="timer-expanded" id="waiting-timer-expanded">
                             <p>Выберите время ожидания на станции</p>
                             <div class="timer-options">
-                                <button type="button" class="btn timer-option active" data-minutes="5">5 минут</button>
-                                <button type="button" class="btn timer-option" data-minutes="10">10 минут</button>
-                                <button type="button" class="btn timer-option" data-minutes="15">15 минут</button>
+                                <button type="button" class="btn timer-option active" data-minutes="5" onclick="selectTimerOption(5, this)">5 минут</button>
+                                <button type="button" class="btn timer-option" data-minutes="10" onclick="selectTimerOption(10, this)">10 минут</button>
+                                <button type="button" class="btn timer-option" data-minutes="15" onclick="selectTimerOption(15, this)">15 минут</button>
                             </div>
                             <div class="timer-display" id="waiting-timer-display">Не запущен</div>
                             <div class="timer-controls">
-                                <button type="button" class="btn btn-success" id="waiting-start-timer">Запустить таймер</button>
-                                <button type="button" class="btn btn-secondary" id="waiting-stop-timer" disabled>Остановить</button>
+                                <button type="button" class="btn btn-success" id="waiting-start-timer" onclick="startTimer()">Запустить таймер</button>
+                                <button type="button" class="btn btn-secondary" id="waiting-stop-timer" onclick="stopTimer()" disabled>Остановить</button>
                             </div>
                         </div>
                     </div>

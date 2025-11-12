@@ -1,5 +1,7 @@
 // Добавьте в глобальную область
 window.debugTimer = debugTimer;
+// Добавьте в глобальную область
+window.debugUserData = debugUserData;
 // Функции для inline обработчиков карточек состояний
 function selectPosition(position, element) {
     console.log('📍 Выбрана позиция:', position, element);
@@ -372,17 +374,17 @@ async function loadRequests() {
                     requestCard.className = 'request-card';
                     const isCurrentUser = userId && user.id === userId;
                     
-                    // Формируем информацию о состоянии пользователя
-                    const stateInfo = [];
-                    if (user.position) stateInfo.push(`📍 ${user.position}`);
-                    if (user.mood) stateInfo.push(`😊 ${user.mood}`);
-                    // ДОБАВЛЯЕМ ИНФОРМАЦИЮ О ТАЙМЕРЕ
-                    if (user.timer_minutes && user.timer_minutes > 0) {
-                        if (user.timer_started) {
-                            stateInfo.push(`⏰ Таймер: ${user.timer_minutes} мин`);
-                        } else {
-                            stateInfo.push(`⏰ Ожидание: ${user.timer_minutes} мин`);
-                        }}
+                   // В функции loadRequests обновите блок с stateInfo:
+                        const stateInfo = [];
+                        if (user.position) stateInfo.push(`📍 ${user.position}`);
+                        if (user.mood) stateInfo.push(`😊 ${user.mood}`);
+                        // ДОБАВЛЯЕМ ИНФОРМАЦИЮ О ТАЙМЕРЕ ИЗ СТАТУСА
+                        if (user.status && user.status.includes('⏰')) {
+                            const timerMatch = user.status.match(/⏰\s*(.*?)(?=\s*$|$)/);
+                            if (timerMatch) {
+                                stateInfo.push(`⏰ ${timerMatch[1]}`);
+                            }
+                        }
                     // Формируем дополнительную информацию
                     const additionalInfo = [];
                     if (user.color) additionalInfo.push(`🎨 ${user.color}`);
@@ -422,6 +424,36 @@ async function loadRequests() {
                 });
     });
 }
+
+// Функция для проверки данных пользователя
+function debugUserData() {
+    console.log('🔍 Отладка данных пользователя:');
+    console.log('📍 Текущий пользователь ID:', userId);
+    console.log('⏰ Выбранное время:', selectedMinutes);
+    
+    // Проверим данные в localStorage
+    const savedTimer = localStorage.getItem('selectedTimerMinutes');
+    console.log('💾 Сохраненное время в localStorage:', savedTimer);
+    
+    // Проверим текущего пользователя
+    if (userId) {
+        getUsers().then(users => {
+            const currentUserData = users.find(u => u.id === userId);
+            console.log('👤 Данные текущего пользователя:', {
+                id: currentUserData.id,
+                name: currentUserData.name,
+                status: currentUserData.status,
+                timer: currentUserData.timer,
+                timer_total: currentUserData.timer_total,
+                position: currentUserData.position,
+                mood: currentUserData.mood
+            });
+        });
+    }
+}
+
+
+
 // Обновленная функция загрузки участников группы
 async function loadGroupMembers() {
     if (!groupMembersContainer) {
@@ -467,13 +499,20 @@ async function loadGroupMembers() {
                 stateDetails = 'Позиция не указана • Настроение не указано';
             }
             
-            // ДОБАВЛЯЕМ ИНФОРМАЦИЮ О ТАЙМЕРЕ ЕСЛИ ЕСТЬ
+            // ДОБАВЛЯЕМ ИНФОРМАЦИЮ О ТАЙМЕРЕ ИЗ СТАТУСА
             let timerInfo = '';
-            if (user.timer_minutes && user.timer_minutes > 0) {
-                if (user.timer_started) {
-                    timerInfo = ` • <span class="timer-highlight">⏰ Таймер: ${user.timer_minutes} мин</span>`;
-                } else {
-                    timerInfo = ` • <span class="timer-waiting">⏰ Ожидание: ${user.timer_minutes} мин</span>`;
+            if (user.status && user.status.includes('⏰')) {
+                // Извлекаем информацию о таймере из статуса
+                const timerMatch = user.status.match(/⏰\s*(.*?)(?=\s*$|$)/);
+                if (timerMatch) {
+                    const timerText = timerMatch[1];
+                    if (user.status.includes('запущен')) {
+                        timerInfo = ` • <span class="timer-highlight">⏰ ${timerText}</span>`;
+                    } else if (user.status.includes('истекло') || user.status.includes('остановлен')) {
+                        timerInfo = ` • <span class="timer-highlight">⏰ ${timerText}</span>`;
+                    } else {
+                        timerInfo = ` • <span class="timer-waiting">⏰ ${timerText}</span>`;
+                    }
                 }
             }
             
@@ -601,6 +640,7 @@ function selectTimerOption(minutes, element, event) {
     
     console.log('✅ Установлено время:', minutes, 'минут');
 }
+
 // Функция обновления информации о таймере пользователя
 function updateUserTimerInfo(minutes) {
     if (!userId) return;
@@ -608,24 +648,19 @@ function updateUserTimerInfo(minutes) {
     // Сохраняем выбранное время в localStorage
     localStorage.setItem('selectedTimerMinutes', minutes);
     
-    // Обновляем статус пользователя
+    // Обновляем статус пользователя - используем только поле status
     const timerText = `⏰ Ожидание ${minutes} мин`;
     
-    // Если пользователь уже на станции, обновляем его статус
-    if (currentUser && currentUser.is_connected) {
-        updateUser(userId, {
-            status: timerText,
-            timer_minutes: minutes
-        }).then(() => {
-            console.log('✅ Статус с таймером обновлен');
-            // Обновляем отображение
-            if (typeof loadRequests === 'function') loadRequests();
-            if (typeof loadGroupMembers === 'function') loadGroupMembers();
-        });
-    } else {
-        // Если пользователь еще в режиме ожидания, сохраняем для будущего использования
-        console.log('✅ Время таймера сохранено:', minutes, 'минут');
-    }
+    updateUser(userId, {
+        status: timerText
+    }).then(() => {
+        console.log('✅ Статус с таймером обновлен');
+        // Обновляем отображение
+        if (typeof loadRequests === 'function') loadRequests();
+        if (typeof loadGroupMembers === 'function') loadGroupMembers();
+    }).catch(error => {
+        console.error('❌ Ошибка обновления таймера:', error);
+    });
 }
 // Инициализация таймера в комнате ожидания
 function initializeWaitingRoomTimer() {
@@ -717,11 +752,13 @@ function startTimer(event) {
         const timerText = `⏰ Таймер запущен: ${selectedMinutes} мин`;
         updateUser(userId, {
             status: timerText,
-            timer_minutes: selectedMinutes,
-            timer_started: true
+            timer: formatTime(timerSeconds),
+            timer_total: selectedMinutes * 60
         }).then(() => {
             if (typeof loadRequests === 'function') loadRequests();
             if (typeof loadGroupMembers === 'function') loadGroupMembers();
+        }).catch(error => {
+            console.error('❌ Ошибка обновления статуса:', error);
         });
     }
     
@@ -737,7 +774,8 @@ function startTimer(event) {
             if (userId) {
                 updateUser(userId, {
                     status: '⏰ Время истекло',
-                    timer_started: false
+                    timer: "00:00",
+                    timer_total: 0
                 }).then(() => {
                     if (typeof loadRequests === 'function') loadRequests();
                     if (typeof loadGroupMembers === 'function') loadGroupMembers();
@@ -745,11 +783,11 @@ function startTimer(event) {
             }
         }
         
+        // Обновляем оставшееся время каждую секунду
         if (userId) {
             try {
                 await updateUser(userId, { 
-                    timer: formatTime(timerSeconds),
-                    timerTotal: selectedMinutes * 60
+                    timer: formatTime(timerSeconds)
                 });
             } catch (error) {
                 console.error('Ошибка при обновлении таймера:', error);
@@ -791,9 +829,8 @@ function stopTimer(event) {
     if (userId) {
         try {
             updateUser(userId, { 
-                timer: "Не запущен",
-                timerTotal: 0,
-                timer_started: false,
+                timer: "00:00",
+                timer_total: 0,
                 status: '⏰ Таймер остановлен'
             }).then(() => {
                 if (typeof loadRequests === 'function') loadRequests();

@@ -1,3 +1,5 @@
+// Добавьте в глобальную область
+window.debugTimer = debugTimer;
 // Функции для inline обработчиков карточек состояний
 function selectPosition(position, element) {
     console.log('📍 Выбрана позиция:', position, element);
@@ -535,41 +537,75 @@ function updateStatusIndicators() {
 }
 // Инициализация таймера в комнате ожидания
 function initializeWaitingRoomTimer() {
-      if (!waitingTimer) {
-        waitingTimer = document.getElementById('waiting-room-timer');
-    }
-     if (!waitingTimerExpanded) {
-        waitingTimerExpanded = document.getElementById('waiting-timer-expanded');
-    }
-    if (waitingTimer && waitingTimerExpanded) {
-        waitingTimer.addEventListener('click', function() {
-            waitingTimerExpanded.classList.toggle('active');
-        });
-        console.log('✅ Таймер комнаты ожидания инициализирован');
+    console.log('⏰ Инициализация таймера...');
+    
+    // Перезагружаем элементы
+    waitingTimer = document.getElementById('waiting-room-timer');
+    waitingTimerExpanded = document.getElementById('waiting-timer-expanded');
+    waitingStartTimerBtn = document.getElementById('waiting-start-timer');
+    waitingStopTimerBtn = document.getElementById('waiting-stop-timer');
+    waitingTimerDisplay = document.getElementById('waiting-timer-display');
+    waitingTimerStatus = document.getElementById('waiting-timer-status');
+    
+    console.log('📍 Найденные элементы:', {
+        timer: !!waitingTimer,
+        expanded: !!waitingTimerExpanded,
+        startBtn: !!waitingStartTimerBtn,
+        stopBtn: !!waitingStopTimerBtn,
+        display: !!waitingTimerDisplay,
+        status: !!waitingTimerStatus
+    });
+    
+    if (!waitingTimer) {
+        console.error('❌ Таймер не найден');
+        return;
     }
     
+    if (!waitingTimerExpanded) {
+        console.error('❌ Расширенная часть таймера не найдена');
+        return;
+    }
+    
+    // Обработчик клика на заголовок таймера
+    waitingTimer.addEventListener('click', function(event) {
+        console.log('🎯 Клик по таймеру!');
+        waitingTimerExpanded.classList.toggle('active');
+        console.log('✅ Класс active:', waitingTimerExpanded.classList.contains('active'));
+    });
+    
+    // Обработчики кнопок таймера
     if (waitingStartTimerBtn) {
-        waitingStartTimerBtn.addEventListener('click', startTimer);
+        waitingStartTimerBtn.addEventListener('click', function() {
+            console.log('🎯 Клик по кнопке запуска таймера');
+            startTimer();
+        });
     }
     
     if (waitingStopTimerBtn) {
-        waitingStopTimerBtn.addEventListener('click', stopTimer);
-    }
-    
-    if (waitingTimerOptions.length > 0) {
-        waitingTimerOptions.forEach(btn => {
-            btn.addEventListener('click', function() {
-                waitingTimerOptions.forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                selectedMinutes = parseInt(this.getAttribute('data-minutes'));
-                if (waitingTimerDisplay) {
-                    waitingTimerDisplay.textContent = `Готов к запуску: ${selectedMinutes} мин`;
-                }
-            });
+        waitingStopTimerBtn.addEventListener('click', function() {
+            console.log('🎯 Клик по кнопке остановки таймера');
+            stopTimer();
         });
     }
+    
+    // Обработчики опций таймера
+    const timerOptions = document.querySelectorAll('#waiting-timer-expanded .timer-option');
+    console.log('📍 Найдено опций таймера:', timerOptions.length);
+    
+    timerOptions.forEach(btn => {
+        btn.addEventListener('click', function() {
+            console.log('🎯 Клик по опции таймера:', this.getAttribute('data-minutes'));
+            timerOptions.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            selectedMinutes = parseInt(this.getAttribute('data-minutes'));
+            if (waitingTimerDisplay) {
+                waitingTimerDisplay.textContent = `Готов к запуску: ${selectedMinutes} мин`;
+            }
+        });
+    });
+    
+    console.log('✅ Таймер инициализирован');
 }
-
 // Функции таймера
 function startTimer() {
     if (timerInterval) return;
@@ -648,6 +684,29 @@ function updateTimerDisplay() {
         }
     }
 }
+// Функция для отладки таймера
+function debugTimer() {
+    console.log('🔍 Отладка таймера:');
+    
+    const elements = {
+        'waiting-room-timer': document.getElementById('waiting-room-timer'),
+        'waiting-timer-expanded': document.getElementById('waiting-timer-expanded'),
+        'waiting-start-timer': document.getElementById('waiting-start-timer'),
+        'waiting-stop-timer': document.getElementById('waiting-stop-timer'),
+        'waiting-timer-status': document.getElementById('waiting-timer-status'),
+        'waiting-timer-display': document.getElementById('waiting-timer-display')
+    };
+    
+    console.table(elements);
+    
+    // Проверяем обработчики
+    const timer = document.getElementById('waiting-room-timer');
+    if (timer) {
+        console.log('✅ Таймер найден, проверяем обработчики...');
+        console.log('onclick атрибут:', timer.getAttribute('onclick'));
+    }
+}
+
 
 // Инициализация карточек состояний (только восстановление)
 function initializeStateCards() {

@@ -675,7 +675,7 @@ function selectTimerOption(minutes, element, event) {
                 }, 500);
 }
 
-// Функция обновления информации о таймере пользователя
+// ЗАМЕНИТЕ функцию updateUserTimerInfo:
 function updateUserTimerInfo(minutes) {
     if (!userId) {
         console.warn('❌ userId не установлен');
@@ -687,7 +687,7 @@ function updateUserTimerInfo(minutes) {
     // Сохраняем выбранное время в localStorage
     localStorage.setItem('selectedTimerMinutes', minutes);
     
-    // Обновляем статус пользователя
+    // ОБНОВЛЯЕМ СТАТУС С ЭМОДЗИ ТАЙМЕРА
     const timerText = `⏰ Ожидание ${minutes} мин`;
     
     updateUser(userId, {
@@ -696,7 +696,9 @@ function updateUserTimerInfo(minutes) {
         console.log('✅ Статус с таймером обновлен:', timerText);
         
         // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ОТОБРАЖЕНИЯ
-        forceRefreshUserDisplay();
+        setTimeout(() => {
+            forceRefreshUserDisplay();
+        }, 500);
         
     }).catch(error => {
         console.error('❌ Ошибка обновления таймера:', error);
@@ -816,33 +818,19 @@ function startTimer(event) {
     console.log('🔄 Запуск таймера на', selectedMinutes, 'минут');
     
     // ОБНОВЛЯЕМ СТАТУС ПОЛЬЗОВАТЕЛЯ ПРИ ЗАПУСКЕ ТАЙМЕРА
-    if (userId) {
-        const timerText = `⏰ Таймер запущен: ${selectedMinutes} мин`;
-        updateUser(userId, {
-            status: timerText,
-            timer: formatTime(timerSeconds),
-            timer_total: selectedMinutes * 60
-        }).then((result) => {
-            console.log('✅ Статус запуска таймера обновлен:', timerText);
-                forceRefreshUserDisplay();
-
-            
-            // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ
-            setTimeout(() => {
-                if (typeof loadRequests === 'function') {
-                    console.log('🔄 Обновление запросов после запуска таймера');
-                    loadRequests();
-                }
-                if (typeof loadGroupMembers === 'function') {
-                    console.log('🔄 Обновление участников после запуска таймера');
-                    loadGroupMembers();
-                }
-            }, 1000);
-            
-        }).catch(error => {
-            console.error('❌ Ошибка обновления статуса:', error);
-        });
-    }
+                if (userId) {
+                const timerText = `⏰ Таймер запущен: ${selectedMinutes} мин`;
+                updateUser(userId, {
+                    status: timerText, // ВАЖНО: перезаписываем статус с эмодзи таймера
+                    timer: formatTime(timerSeconds),
+                    timer_total: selectedMinutes * 60
+                }).then((result) => {
+                    console.log('✅ Статус запуска таймера обновлен:', timerText);
+                    forceRefreshUserDisplay();
+                }).catch(error => {
+                    console.error('❌ Ошибка обновления статуса:', error);
+                });
+            }
     
     timerInterval = setInterval(async function() {
         timerSeconds--;
@@ -911,26 +899,79 @@ function stopTimer(event) {
     if (waitingStopTimerBtn) waitingStopTimerBtn.disabled = true;
     
     // ОБНОВЛЯЕМ СТАТУС ПОЛЬЗОВАТЕЛЯ ПРИ ОСТАНОВКЕ ТАЙМЕРА
-    if (userId) {
-        try {
-            updateUser(userId, { 
-                timer: "00:00",
-                timer_total: 0,
-                status: '⏰ Таймер остановлен'
-            }).then(() => {
-                if (typeof loadRequests === 'function') loadRequests();
-                if (typeof loadGroupMembers === 'function') loadGroupMembers();
-            });
-        } catch (error) {
-            console.error('Ошибка при остановке таймера:', error);
+        if (userId) {
+            try {
+                updateUser(userId, { 
+                    timer: "00:00",
+                    timer_total: 0,
+                    status: '⏰ Таймер остановлен' // ВАЖНО: статус с эмодзи
+                }).then(() => {
+                    forceRefreshUserDisplay();
+                });
+            } catch (error) {
+                console.error('Ошибка при остановке таймера:', error);
+            }
         }
-    }
     
     console.log('✅ Таймер остановлен, остается открытым');
         forceRefreshUserDisplay();
 
 }
+// Добавьте эту функцию для объединения позиции, настроения и таймера
+function combineUserStatus(position, mood, timerStatus = '') {
+    const parts = [];
+    
+    if (position) parts.push(position);
+    if (mood) parts.push(mood);
+    if (timerStatus) parts.push(timerStatus);
+    
+    return parts.join(' • ');
+}
 
+// Обновите функцию updateUserState:
+async function updateUserState() {
+    if (userId && (currentPosition || currentMood)) {
+        // Сохраняем текущий статус таймера если он есть
+        const currentTimerStatus = currentUser?.status?.includes('⏰') ? currentUser.status.split('⏰')[1]?.trim() : '';
+        const timerPart = currentTimerStatus ? `⏰ ${currentTimerStatus}` : '';
+        
+        const stateText = combineUserStatus(currentPosition, currentMood, timerPart);
+        
+        try {
+            await updateUser(userId, { 
+                status: stateText || 'Ожидание',
+                position: currentPosition,
+                mood: currentMood
+            });
+            
+            if (typeof loadGroupMembers === 'function') await loadGroupMembers();
+            if (typeof loadRequests === 'function') await loadRequests();
+            
+            console.log('✅ Состояние обновлено на сервере:', stateText);
+        } catch (error) {
+            console.error('❌ Ошибка обновления состояния:', error);
+        }
+    }
+}
+// Добавьте эту функцию для тестирования
+function testTimerDisplay() {
+    console.log('🧪 Тестирование отображения таймера');
+    
+    if (userId) {
+        const testTimerStatus = '⏰ Таймер запущен: 5 мин';
+        updateUser(userId, {
+            status: testTimerStatus
+        }).then(() => {
+            console.log('✅ Тестовый статус установлен:', testTimerStatus);
+            setTimeout(() => {
+                if (typeof loadGroupMembers === 'function') loadGroupMembers();
+                if (typeof loadRequests === 'function') loadRequests();
+            }, 1000);
+        });
+    }
+}
+
+window.testTimerDisplay = testTimerDisplay;
 function updateTimerDisplay() {
     if (timerSeconds <= 0) {
         if (waitingTimerDisplay) waitingTimerDisplay.textContent = 'Время истекло';

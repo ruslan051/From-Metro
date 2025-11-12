@@ -2,37 +2,17 @@ import express from 'express';
 import cors from 'cors';
 import pkg from 'pg';
 import requestIp from 'request-ip';
+import helmet from 'helmet';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
 
 const { Pool } = pkg;
 
 // Сначала создаем app
 const app = express();
 const PORT = process.env.PORT || 3000;
-// Middleware для безопасности и производительности
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
-}));
+
 app.use(compression());
-app.use(cors());
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP'
-});
-app.use(limiter);
-
-// Логирование всех входящих запросов - ПЕРЕМЕСТИТЕ ЭТО ПОСЛЕ app initialization
-app.use((req, res, next) => {
-  console.log(`📍 ${new Date().toISOString()} ${req.method} ${req.path}`);
-  console.log('📍 Headers:', req.headers);
-  if (req.body && Object.keys(req.body).length > 0) {
-    console.log('📍 Body:', req.body);
-  }
-  next();
-});
-
 // Улучшенная CORS конфигурация
 app.use(cors({
   origin: [
@@ -47,6 +27,17 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
 }));
 
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP'
+});
+app.use(limiter);
+
+
+
 // Явно обрабатываем OPTIONS запросы для preflight
 app.options('*', cors());
 
@@ -54,12 +45,17 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(requestIp.mw());
 
+// Middleware для безопасности и производительности
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 // Увеличьте таймауты
 app.use((req, res, next) => {
   req.setTimeout(30000); // 30 секунд
   res.setTimeout(30000);
   next();
 });
+
 
 // PostgreSQL connection с улучшенной обработкой ошибок
 const pool = new Pool({
@@ -377,7 +373,26 @@ async function cleanupInactiveUsers() {
     console.error('❌ Ошибка очистки неактивных пользователей:', error);
   }
 }
+// ДИАГНОСТИЧЕСКИЙ MIDDLEWARE ⭐⭐⭐⭐
+app.use((req, res, next) => {
+  console.log('=== INCOMING REQUEST ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
+  console.log('======================');
+  next();
+});
 
+// Логирование всех входящих запросов - ПЕРЕМЕСТИТЕ ЭТО ПОСЛЕ app initialization
+app.use((req, res, next) => {
+  console.log(`📍 ${new Date().toISOString()} ${req.method} ${req.path}`);
+  console.log('📍 Headers:', req.headers);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('📍 Body:', req.body);
+  }
+  next();
+});
 // Генерация уникального ID сессии
 function generateSessionId(req) {
   const ip = req.clientIp || 'unknown';

@@ -65,6 +65,7 @@ function initializeCoreDOMElements() {
 }
 
 // Основные обработчики событий
+
 async function handleEnterWaitingRoom() {
     console.log('🚪 Вход в комнату ожидания');
     
@@ -119,13 +120,13 @@ async function handleEnterWaitingRoom() {
                 initializeCoreDOMElements();
             }
         }
-    } catch (error) { // ИСПРАВЛЕНО: заменил err на error
-        console.error('❌ Ошибка создания пользователя:', error); // ИСПРАВЛЕНО
+    } catch (error) {
+        console.error('❌ Ошибка создания пользователя:', error);
         
         // Показываем понятное сообщение об ошибке
-        const errorMessage = error.message.includes('Failed to fetch')  // ИСПРАВЛЕНО
+        const errorMessage = error.message.includes('Failed to fetch')
             ? 'Ошибка подключения к серверу. Проверьте интернет-соединение.'
-            : `Ошибка создания профиля: ${error.message}`; // ИСПРАВЛЕНО
+            : `Ошибка создания профиля: ${error.message}`;
         
         alert(errorMessage);
         
@@ -280,6 +281,8 @@ function initializeCityAndGenderSelection() {
 
 // Основные функции API
 async function createUser(userData) {
+
+ 
   try {
     console.log('📍 Отправка данных пользователя:', userData);
     
@@ -342,6 +345,10 @@ async function createUser(userData) {
     
     return fallbackUser;
   }
+     // Добавьте в функцию createUser для отладки
+console.log('📍 Отправка запроса на:', `${API_BASE}/users`);
+console.log('📍 Данные:', JSON.stringify(userData, null, 2));
+
 }
 
 async function getUsers() {
@@ -381,14 +388,26 @@ async function getUsers() {
 
 async function updateUser(userId, updates) {
     try {
+        console.log('📍 Отправка обновления пользователя:', { userId, updates });
+        
         const response = await fetch(`${API_BASE}/users/${userId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
             body: JSON.stringify(updates)
         });
-        return await response.json();
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('✅ Пользователь обновлен:', result);
+        return result;
     } catch (error) {
-        console.error('Ошибка обновления пользователя:', error);
+        console.error('❌ Ошибка обновления пользователя:', error);
         return null;
     }
 }

@@ -2,6 +2,9 @@
 window.debugTimer = debugTimer;
 // Добавьте в глобальную область
 window.debugUserData = debugUserData;
+// Добавьте в глобальную область
+window.debugTimerFull = debugTimerFull;
+
 // Функции для inline обработчиков карточек состояний
 function selectPosition(position, element) {
     console.log('📍 Выбрана позиция:', position, element);
@@ -639,25 +642,47 @@ function selectTimerOption(minutes, element, event) {
     updateUserTimerInfo(minutes);
     
     console.log('✅ Установлено время:', minutes, 'минут');
+    
+    // ПРИНУДИТЕЛЬНО ОБНОВЛЯЕМ ОТОБРАЖЕНИЕ
+    setTimeout(() => {
+        if (typeof loadRequests === 'function') loadRequests();
+        if (typeof loadGroupMembers === 'function') loadGroupMembers();
+    }, 500);
 }
 
 // Функция обновления информации о таймере пользователя
 function updateUserTimerInfo(minutes) {
-    if (!userId) return;
+    if (!userId) {
+        console.warn('❌ userId не установлен');
+        return;
+    }
+    
+    console.log('🔄 Обновление таймера пользователя:', minutes, 'минут');
     
     // Сохраняем выбранное время в localStorage
     localStorage.setItem('selectedTimerMinutes', minutes);
     
-    // Обновляем статус пользователя - используем только поле status
+    // Обновляем статус пользователя
     const timerText = `⏰ Ожидание ${minutes} мин`;
     
     updateUser(userId, {
         status: timerText
-    }).then(() => {
-        console.log('✅ Статус с таймером обновлен');
-        // Обновляем отображение
-        if (typeof loadRequests === 'function') loadRequests();
-        if (typeof loadGroupMembers === 'function') loadGroupMembers();
+    }).then((result) => {
+        console.log('✅ Статус с таймером обновлен:', timerText);
+        console.log('✅ Ответ сервера:', result);
+        
+        // Принудительно обновляем отображение
+        setTimeout(() => {
+            if (typeof loadRequests === 'function') {
+                console.log('🔄 Запуск loadRequests...');
+                loadRequests();
+            }
+            if (typeof loadGroupMembers === 'function') {
+                console.log('🔄 Запуск loadGroupMembers...');
+                loadGroupMembers();
+            }
+        }, 1000);
+        
     }).catch(error => {
         console.error('❌ Ошибка обновления таймера:', error);
     });
@@ -742,10 +767,15 @@ function startTimer(event) {
         event.stopPropagation();
     }
     
-    if (timerInterval) return;
+    if (timerInterval) {
+        console.log('⏹️ Таймер уже запущен');
+        return;
+    }
     
     timerSeconds = selectedMinutes * 60;
     updateTimerDisplay();
+    
+    console.log('🔄 Запуск таймера на', selectedMinutes, 'минут');
     
     // ОБНОВЛЯЕМ СТАТУС ПОЛЬЗОВАТЕЛЯ ПРИ ЗАПУСКЕ ТАЙМЕРА
     if (userId) {
@@ -754,9 +784,21 @@ function startTimer(event) {
             status: timerText,
             timer: formatTime(timerSeconds),
             timer_total: selectedMinutes * 60
-        }).then(() => {
-            if (typeof loadRequests === 'function') loadRequests();
-            if (typeof loadGroupMembers === 'function') loadGroupMembers();
+        }).then((result) => {
+            console.log('✅ Статус запуска таймера обновлен:', timerText);
+            
+            // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ
+            setTimeout(() => {
+                if (typeof loadRequests === 'function') {
+                    console.log('🔄 Обновление запросов после запуска таймера');
+                    loadRequests();
+                }
+                if (typeof loadGroupMembers === 'function') {
+                    console.log('🔄 Обновление участников после запуска таймера');
+                    loadGroupMembers();
+                }
+            }, 1000);
+            
         }).catch(error => {
             console.error('❌ Ошибка обновления статуса:', error);
         });
@@ -777,8 +819,11 @@ function startTimer(event) {
                     timer: "00:00",
                     timer_total: 0
                 }).then(() => {
-                    if (typeof loadRequests === 'function') loadRequests();
-                    if (typeof loadGroupMembers === 'function') loadGroupMembers();
+                    // Принудительное обновление
+                    setTimeout(() => {
+                        if (typeof loadRequests === 'function') loadRequests();
+                        if (typeof loadGroupMembers === 'function') loadGroupMembers();
+                    }, 1000);
                 });
             }
         }
@@ -882,6 +927,57 @@ function debugTimer() {
     if (timer) {
         console.log('✅ Таймер найден, проверяем обработчики...');
         console.log('onclick атрибут:', timer.getAttribute('onclick'));
+    }
+}
+
+// Расширенная функция для отладки таймера
+function debugTimerFull() {
+    console.log('🔍 ПОЛНАЯ ОТЛАДКА ТАЙМЕРА:');
+    
+    // Проверяем основные переменные
+    console.log('📍 Основные переменные:', {
+        userId: userId,
+        selectedMinutes: selectedMinutes,
+        timerSeconds: timerSeconds,
+        timerInterval: timerInterval
+    });
+    
+    // Проверяем localStorage
+    const savedTimer = localStorage.getItem('selectedTimerMinutes');
+    console.log('💾 localStorage selectedTimerMinutes:', savedTimer);
+    
+    // Проверяем DOM элементы
+    const elements = {
+        'waiting-timer-display': document.getElementById('waiting-timer-display')?.textContent,
+        'waiting-timer-status': document.getElementById('waiting-timer-status')?.textContent,
+        'timer-options-active': document.querySelectorAll('.timer-option.active').length
+    };
+    console.log('🎯 DOM элементы:', elements);
+    
+    // Проверяем данные текущего пользователя
+    if (userId) {
+        getUsers().then(users => {
+            const currentUserData = users.find(u => u.id === userId);
+            console.log('👤 Данные пользователя с сервера:', {
+                id: currentUserData?.id,
+                name: currentUserData?.name,
+                status: currentUserData?.status,
+                timer: currentUserData?.timer,
+                timer_total: currentUserData?.timer_total,
+                position: currentUserData?.position,
+                mood: currentUserData?.mood
+            });
+            
+            // Проверяем всех пользователей на станции
+            if (currentGroup) {
+                const stationUsers = users.filter(u => u.station === currentGroup.station);
+                console.log('👥 Все пользователи на станции:', stationUsers.map(u => ({
+                    name: u.name,
+                    status: u.status,
+                    timer: u.timer
+                })));
+            }
+        });
     }
 }
 
@@ -1150,7 +1246,14 @@ function forceInitializeJoinedRoom() {
     
     // Переинициализируем элементы
     initializeOptionalDOMElements();
-    
+
+     // Восстанавливаем заголовок станции если есть
+    if (currentGroup && currentGroup.station) {
+        updateStationTitle(currentGroup.station);
+    } else if (currentSelectedStation) {
+        updateStationTitle(currentSelectedStation);
+    }
+
     // Восстанавливаем состояния
     restoreSelectedStates();
     
@@ -1160,6 +1263,18 @@ function forceInitializeJoinedRoom() {
     // Обновляем индикаторы
     updateStatusIndicators();
     updateUserStateDisplay();
+    
+     // ОБНОВЛЯЕМ УЧАСТНИКОВ - ВАЖНО!
+    setTimeout(() => {
+        if (typeof loadGroupMembers === 'function') {
+            console.log('🔄 Принудительная загрузка участников группы');
+            loadGroupMembers();
+        }
+        if (typeof loadRequests === 'function') {
+            console.log('🔄 Принудительная загрузка запросов');
+            loadRequests();
+        }
+    }, 500);
     
     // Применяем стили
     setTimeout(forceApplyStyles, 200);

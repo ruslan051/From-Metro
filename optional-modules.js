@@ -587,7 +587,7 @@ function updateStatusIndicators() {
     const currentPositionSpan = document.getElementById('current-position');
     const currentMoodSpan = document.getElementById('current-mood');
     
-    console.log('🔄 Обновление индикаторов:', { currentPosition, currentMood });
+   
     
     if (currentPositionSpan) {
         currentPositionSpan.textContent = currentPosition || 'не выбрана';
@@ -626,11 +626,11 @@ function updateStatusIndicators() {
 
 // Функция для переключения таймера
 function toggleTimer(event) {
-    console.log('🎯 Переключение таймера');
+   
     
     // Останавливаем всплытие события, если клик был по кнопке опции
     if (event && event.target.closest('.timer-option')) {
-        console.log('⏹️ Клик по опции таймера - не закрываем');
+        
         return;
     }
     

@@ -841,7 +841,7 @@ async function joinStation(station) {
 function updateStationTitle(stationName) {
     const titleElement = document.querySelector('#joined-room-screen h2');
     if (titleElement) {
-        titleElement.innerHTML = `Вы выбрали станцию <span class="station-name-highlight">${stationName}</span>!`;
+        titleElement.innerHTML = `Вы выбрали станцию <span class="station-name-highlight">${stationName}</span>`;
         console.log('✅ Заголовок обновлен:', stationName);
     } else {
         console.warn('❌ Элемент заголовка не найден');

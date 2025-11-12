@@ -700,27 +700,31 @@ function updateUserTimerInfo(minutes) {
     
     console.log('🔄 Обновление таймера пользователя:', minutes, 'минут');
     
-    // Сохраняем выбранное время в localStorage
     localStorage.setItem('selectedTimerMinutes', minutes);
     
-    // ОБНОВЛЯЕМ СТАТУС С ЭМОДЗИ ТАЙМЕРА
-    const timerText = `⏰ Ожидание ${minutes} мин`;
+    // ВАЖНО: Обновляем статус с эмодзи
+    const positionPart = currentPosition ? currentPosition : '';
+    const moodPart = currentMood ? currentMood : '';
+    
+    let newStatus = '';
+    if (positionPart && moodPart) {
+        newStatus = `${positionPart} | ${moodPart} | ⏰ Ожидание: ${minutes} мин`;
+    } else if (positionPart || moodPart) {
+        const statePart = positionPart || moodPart;
+        newStatus = `${statePart} | ⏰ Ожидание: ${minutes} мин`;
+    } else {
+        newStatus = `⏰ Ожидание: ${minutes} мин`;
+    }
     
     updateUser(userId, {
-        status: timerText
+        status: newStatus // С ЭМОДЗИ В СТАТУСЕ
     }).then((result) => {
-        console.log('✅ Статус с таймером обновлен:', timerText);
-        
-        // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ОТОБРАЖЕНИЯ
-        setTimeout(() => {
-            forceRefreshUserDisplay();
-        }, 500);
-        
+        console.log('✅ Статус с таймером обновлен:', newStatus);
+        forceRefreshUserDisplay();
     }).catch(error => {
         console.error('❌ Ошибка обновления таймера:', error);
     });
 }
-
 // Новая функция для принудительного обновления отображения
 function forceRefreshUserDisplay() {
     console.log('🔄 Принудительное обновление отображения пользователей');
@@ -814,14 +818,11 @@ function initializeWaitingRoomTimer() {
     
     console.log('✅ Таймер инициализирован');
 }
-// Функция запуска таймера
+// ЗАМЕНИТЕ функцию startTimer:
 function startTimer(event) {
     console.log('🎯 Запуск таймера');
     
-    // Останавливаем всплытие события
-    if (event) {
-        event.stopPropagation();
-    }
+    if (event) event.stopPropagation();
     
     if (timerInterval) {
         console.log('⏹️ Таймер уже запущен');
@@ -833,20 +834,33 @@ function startTimer(event) {
     
     console.log('🔄 Запуск таймера на', selectedMinutes, 'минут');
     
-    // ОБНОВЛЯЕМ СТАТУС ПОЛЬЗОВАТЕЛЯ ПРИ ЗАПУСКЕ ТАЙМЕРА
-                if (userId) {
-                const timerText = `⏰ Таймер запущен: ${selectedMinutes} мин`;
-                updateUser(userId, {
-                    status: timerText, // ВАЖНО: перезаписываем статус с эмодзи таймера
-                    timer: formatTime(timerSeconds),
-                    timer_total: selectedMinutes * 60
-                }).then((result) => {
-                    console.log('✅ Статус запуска таймера обновлен:', timerText);
-                    forceRefreshUserDisplay();
-                }).catch(error => {
-                    console.error('❌ Ошибка обновления статуса:', error);
-                });
-            }
+    // ВАЖНО: Обновляем статус с эмодзи таймера
+    if (userId) {
+        // Сохраняем текущие позицию и настроение
+        const positionPart = currentPosition ? currentPosition : '';
+        const moodPart = currentMood ? currentMood : '';
+        
+        let newStatus = '';
+        if (positionPart && moodPart) {
+            newStatus = `${positionPart} | ${moodPart} | ⏰ Таймер: ${selectedMinutes} мин`;
+        } else if (positionPart || moodPart) {
+            const statePart = positionPart || moodPart;
+            newStatus = `${statePart} | ⏰ Таймер: ${selectedMinutes} мин`;
+        } else {
+            newStatus = `⏰ Таймер: ${selectedMinutes} мин`;
+        }
+        
+        updateUser(userId, {
+            status: newStatus, // С ЭМОДЗИ В СТАТУСЕ
+            timer: formatTime(timerSeconds),
+            timer_total: selectedMinutes * 60
+        }).then((result) => {
+            console.log('✅ Статус с таймером обновлен:', newStatus);
+            forceRefreshUserDisplay();
+        }).catch(error => {
+            console.error('❌ Ошибка обновления статуса:', error);
+        });
+    }
     
     timerInterval = setInterval(async function() {
         timerSeconds--;
@@ -855,24 +869,9 @@ function startTimer(event) {
         if (timerSeconds <= 0) {
             stopTimer();
             alert('Время ожидания истекло!');
-            
-            // ОБНОВЛЯЕМ СТАТУС ПОЛЬЗОВАТЕЛЯ ПРИ ЗАВЕРШЕНИИ ТАЙМЕРА
-            if (userId) {
-                updateUser(userId, {
-                    status: '⏰ Время истекло',
-                    timer: "00:00",
-                    timer_total: 0
-                }).then(() => {
-                    // Принудительное обновление
-                    setTimeout(() => {
-                        if (typeof loadRequests === 'function') loadRequests();
-                        if (typeof loadGroupMembers === 'function') loadGroupMembers();
-                    }, 1000);
-                });
-            }
         }
         
-        // Обновляем оставшееся время каждую секунду
+        // Обновляем только время таймера каждую секунду
         if (userId) {
             try {
                 await updateUser(userId, { 
@@ -886,8 +885,6 @@ function startTimer(event) {
     
     if (waitingStartTimerBtn) waitingStartTimerBtn.disabled = true;
     if (waitingStopTimerBtn) waitingStopTimerBtn.disabled = false;
-    
-    console.log('✅ Таймер запущен, остается открытым');
 }
 function debugTimerIssue() {
     console.log('🔍 Отладка проблемы с таймером:');
@@ -953,20 +950,33 @@ function stopTimer(event) {
     if (waitingStartTimerBtn) waitingStartTimerBtn.disabled = false;
     if (waitingStopTimerBtn) waitingStopTimerBtn.disabled = true;
     
-    // ОБНОВЛЯЕМ СТАТУС ПОЛЬЗОВАТЕЛЯ ПРИ ОСТАНОВКЕ ТАЙМЕРА
-        if (userId) {
-            try {
-                updateUser(userId, { 
-                    timer: "00:00",
-                    timer_total: 0,
-                    status: '⏰ Таймер остановлен' // ВАЖНО: статус с эмодзи
-                }).then(() => {
-                    forceRefreshUserDisplay();
-                });
-            } catch (error) {
-                console.error('Ошибка при остановке таймера:', error);
+    // В функции stopTimer ОБНОВИТЕ часть с пользователем:
+            if (userId) {
+                try {
+                    // Сохраняем текущие позицию и настроение
+                    const positionPart = currentPosition ? currentPosition : '';
+                    const moodPart = currentMood ? currentMood : '';
+                    
+                    let newStatus = '';
+                    if (positionPart && moodPart) {
+                        newStatus = `${positionPart} | ${moodPart}`;
+                    } else if (positionPart || moodPart) {
+                        newStatus = positionPart || moodPart;
+                    } else {
+                        newStatus = 'Ожидание';
+                    }
+                    
+                    updateUser(userId, { 
+                        timer: "00:00",
+                        timer_total: 0,
+                        status: newStatus // Убираем таймер из статуса
+                    }).then(() => {
+                        forceRefreshUserDisplay();
+                    });
+                } catch (error) {
+                    console.error('Ошибка при остановке таймера:', error);
+                }
             }
-        }
     
     console.log('✅ Таймер остановлен, остается открытым');
         forceRefreshUserDisplay();
@@ -994,50 +1004,39 @@ async function updateUserState() {
         
         if (!currentUserData) return;
 
-        // Сохраняем информацию о таймере из текущего статуса
-        let timerInfo = '';
-        if (currentUserData.status && currentUserData.status.includes('⏰')) {
-            const timerMatch = currentUserData.status.match(/⏰\s*(.+)/);
-            if (timerMatch) {
-                timerInfo = `⏰ ${timerMatch[1].trim()}`;
-            }
-        }
-
-        // Формируем новый статус
+        // Проверяем, есть ли активный таймер в статусе
+        const hasActiveTimer = currentUserData.status && currentUserData.status.includes('⏰');
+        
+        let newStatus = '';
         const stateParts = [];
+        
         if (currentPosition) stateParts.push(currentPosition);
         if (currentMood) stateParts.push(currentMood);
         
-        let stateText = stateParts.join(' • ');
-        
-        // Добавляем таймер если он есть
-        if (timerInfo) {
-            if (stateText) {
-                stateText += ' • ' + timerInfo;
-            } else {
-                stateText = timerInfo;
+        // Если есть активный таймер, сохраняем его
+        if (hasActiveTimer) {
+            const timerMatch = currentUserData.status.match(/⏰\s*(.+)/);
+            if (timerMatch) {
+                stateParts.push(`⏰ ${timerMatch[1].trim()}`);
             }
         }
-
+        
+        newStatus = stateParts.join(' | ');
+        
         // Если ничего нет, ставим стандартный статус
-        if (!stateText) {
-            stateText = 'Ожидание';
+        if (!newStatus) {
+            newStatus = 'Ожидание';
         }
 
-        // Обновляем пользователя
-        await updateUser(userId, { 
-            status: stateText,
-            position: currentPosition,
-            mood: currentMood
-        });
-
-        console.log('✅ Состояние обновлено с таймером:', stateText);
-        
-        // Принудительно обновляем отображение
-        setTimeout(() => {
-            if (typeof loadGroupMembers === 'function') loadGroupMembers();
-            if (typeof loadRequests === 'function') loadRequests();
-        }, 300);
+        // Обновляем пользователя только если статус изменился
+        if (newStatus !== currentUserData.status) {
+            await updateUser(userId, { 
+                status: newStatus,
+                position: currentPosition,
+                mood: currentMood
+            });
+            console.log('✅ Состояние обновлено:', newStatus);
+        }
         
     } catch (error) {
         console.error('❌ Ошибка обновления состояния:', error);

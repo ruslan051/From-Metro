@@ -595,7 +595,7 @@ async function loadGroupMembers() {
                     <div class="user-state-name">${user.name} ${isCurrentUser ? '(Вы)' : ''}</div>
                     <div class="user-state-details">
                         ${stateDetails}${timerInfo}
-                        ${additionalInfo ? `<div style="margin-top: 5px; font-size: 12px; color: #666;">${additionalInfo}</div>` : ''}
+                        ${additionalInfo ? `<div style="margin-top: 5px; font-size: 14px; color: #666;">${additionalInfo}</div>` : ''}
                     </div>
                 </div>
             `;

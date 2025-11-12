@@ -535,9 +535,17 @@ function updateStatusIndicators() {
         }
     }
 }
-// Функции для inline обработчиков таймера
-function toggleTimer() {
+
+// Функция для переключения таймера
+function toggleTimer(event) {
     console.log('🎯 Переключение таймера');
+    
+    // Останавливаем всплытие события, если клик был по кнопке опции
+    if (event && event.target.closest('.timer-option')) {
+        console.log('⏹️ Клик по опции таймера - не закрываем');
+        return;
+    }
+    
     const expanded = document.getElementById('waiting-timer-expanded');
     if (expanded) {
         expanded.classList.toggle('active');
@@ -545,8 +553,15 @@ function toggleTimer() {
     }
 }
 
-function selectTimerOption(minutes, element) {
+// Функция для выбора опции таймера
+function selectTimerOption(minutes, element, event) {
     console.log('🎯 Выбрана опция таймера:', minutes);
+    
+    // Останавливаем всплытие события
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
     
     // Снимаем выделение со всех опций
     document.querySelectorAll('#waiting-timer-expanded .timer-option').forEach(btn => {
@@ -563,6 +578,9 @@ function selectTimerOption(minutes, element) {
     }
     
     console.log('✅ Установлено время:', minutes, 'минут');
+    
+    // НЕ закрываем таймер после выбора опции
+    // Таймер остается открытым для запуска
 }
 // Инициализация таймера в комнате ожидания
 function initializeWaitingRoomTimer() {
@@ -635,8 +653,15 @@ function initializeWaitingRoomTimer() {
     
     console.log('✅ Таймер инициализирован');
 }
-// Функции таймера
-function startTimer() {
+// Функция запуска таймера
+function startTimer(event) {
+    console.log('🎯 Запуск таймера');
+    
+    // Останавливаем всплытие события
+    if (event) {
+        event.stopPropagation();
+    }
+    
     if (timerInterval) return;
     
     timerSeconds = selectedMinutes * 60;
@@ -665,9 +690,20 @@ function startTimer() {
     
     if (waitingStartTimerBtn) waitingStartTimerBtn.disabled = true;
     if (waitingStopTimerBtn) waitingStopTimerBtn.disabled = false;
+    
+    // Таймер остается открытым после запуска
+    console.log('✅ Таймер запущен, остается открытым');
 }
 
-function stopTimer() {
+// Функция остановки таймера
+function stopTimer(event) {
+    console.log('🎯 Остановка таймера');
+    
+    // Останавливаем всплытие события
+    if (event) {
+        event.stopPropagation();
+    }
+    
     if (timerInterval) {
         clearInterval(timerInterval);
         timerInterval = null;
@@ -693,6 +729,9 @@ function stopTimer() {
             console.error('Ошибка при остановке таймера:', error);
         }
     }
+    
+    // Таймер остается открытым после остановки
+    console.log('✅ Таймер остановлен, остается открытым');
 }
 
 function updateTimerDisplay() {

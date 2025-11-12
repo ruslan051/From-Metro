@@ -428,6 +428,162 @@ select:focus, input:focus {
     background: #28a745;
 }
 
+/* ===== АДАПТИВНОСТЬ ДЛЯ КАРТЫ МЕТРО ===== */
+@media (max-width: 768px) {
+    .stations-map-container {
+        padding: 15px;
+        margin: 15px 0;
+    }
+    
+    .metro-map {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 8px;
+        max-height: 350px;
+        padding: 8px;
+    }
+    
+    .station-map-item {
+        max-width: 100%;
+        padding: 10px 8px;
+        min-height: 70px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .station-name {
+        font-size: 12px;
+        margin-bottom: 4px;
+        line-height: 1.2;
+    }
+    
+    .station-counts {
+        gap: 5px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .station-count {
+        font-size: 10px;
+        padding: 1px 4px;
+    }
+    
+    .map-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .map-legend {
+        gap: 10px;
+    }
+    
+    .legend-item {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 480px) {
+    .stations-map-container {
+        padding: 12px;
+        margin: 10px 0;
+    }
+    
+    .metro-map {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 6px;
+        max-height: 300px;
+        padding: 6px;
+    }
+    
+    .station-map-item {
+        padding: 8px 6px;
+        min-height: 65px;
+    }
+    
+    .station-name {
+        font-size: 11px;
+        font-weight: 500;
+    }
+    
+    .station-counts {
+        gap: 3px;
+    }
+    
+    .station-count {
+        font-size: 9px;
+        padding: 1px 3px;
+    }
+    
+    .map-legend {
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .legend-item {
+        font-size: 10px;
+    }
+    
+    /* Улучшение для очень маленьких экранов */
+    @media (max-width: 360px) {
+        .metro-map {
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 4px;
+        }
+        
+        .station-map-item {
+            padding: 6px 4px;
+            min-height: 60px;
+        }
+        
+        .station-name {
+            font-size: 10px;
+        }
+    }
+}
+
+/* Улучшение скролла на мобильных */
+.metro-map::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.metro-map::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.metro-map::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.metro-map::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Анимация загрузки для карты */
+.metro-map.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+.loading-spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #0057b8;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 /* ===== СПИСКИ ПОЛЬЗОВАТЕЛЕЙ ===== */
 .users-list-section {
     margin-top: 30px;

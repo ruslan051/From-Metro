@@ -375,6 +375,16 @@ async function loadRequests() {
             if (user.mood) stateInfo.push(`Настроение: ${user.mood}`);
             const stateText = stateInfo.join(' • ');
             
+             // Формируем дополнительную информацию
+            const additionalInfo = [];
+            if (user.color) additionalInfo.push(`🎨 ${user.color}`);
+            if (user.wagon && user.wagon !== '' && user.wagon !== 'Не указан') {
+                additionalInfo.push(`🚇 Вагон ${user.wagon}`);
+            }
+            
+            const stateText = stateInfo.join(' • ');
+            const additionalText = additionalInfo.join(' • ');
+
             requestCard.innerHTML = `
                 <div class="request-header">
                     <div class="user-info-compact">
@@ -450,7 +460,15 @@ async function loadGroupMembers() {
             } else {
                 stateDetails = 'Позиция не указана • Настроение не указано';
             }
-            
+            // ДОБАВЛЯЕМ ИНФОРМАЦИЮ О ЦВЕТЕ ОДЕЖДЫ И ВАГОНЕ
+            let additionalInfo = '';
+            if (user.color) {
+                additionalInfo += `🎨 ${user.color}`;
+            }
+            if (user.wagon && user.wagon !== '' && user.wagon !== 'Не указан') {
+                if (additionalInfo) additionalInfo += ' • ';
+                additionalInfo += `🚇 Вагон ${user.wagon}`;
+            }
             memberElement.innerHTML = `
                 <div style="width: 50px; height: 50px; border-radius: 50%; background: ${user.color_code || '#007bff'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: bold;">
                     ${user.name.charAt(0)}

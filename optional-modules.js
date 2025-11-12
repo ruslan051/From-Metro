@@ -6,6 +6,8 @@ window.debugUserData = debugUserData;
 window.debugTimerFull = debugTimerFull;
 // Добавьте в глобальную область
 window.debugUserStatuses = debugUserStatuses;
+// Добавьте в глобальную область
+window.saveUserState = saveUserState;
 // Функции для inline обработчиков карточек состояний
 function selectPosition(position, element) {
     console.log('📍 Выбрана позиция:', position, element);
@@ -28,7 +30,7 @@ function selectPosition(position, element) {
     currentPosition = position;
     localStorage.setItem('selectedPosition', position);
     
-    updateUserState();
+    
     updateUserStateDisplay();
     
     console.log('✅ Позиция установлена:', position);
@@ -56,6 +58,7 @@ function testSelection() {
 window.testSelection = testSelection;
 window.selectPosition = selectPosition;
 window.selectMood = selectMood;
+
 function selectMood(mood, element) {
     console.log('😊 Выбрано настроение:', mood, element);
     
@@ -77,11 +80,24 @@ function selectMood(mood, element) {
     currentMood = mood;
     localStorage.setItem('selectedMood', mood);
     
-    updateUserState();
+    
     updateUserStateDisplay();
     
     console.log('✅ Настроение установлено:', mood);
 }
+// Добавьте эту функцию для явного сохранения состояния:
+async function saveUserState() {
+    console.log('💾 Явное сохранение состояния пользователя');
+    await updateUserState();
+    
+    // Принудительное обновление отображения
+    if (typeof loadGroupMembers === 'function') loadGroupMembers();
+    if (typeof loadRequests === 'function') loadRequests();
+    
+    alert('Состояние сохранено!');
+}
+
+
 // Станции метро (редко используемые данные)
 const stations = {
     spb: [
@@ -928,29 +944,64 @@ function combineUserStatus(position, mood, timerStatus = '') {
     return parts.join(' • ');
 }
 
-// Обновите функцию updateUserState:
+// ЗАМЕНИТЕ функцию updateUserState:
 async function updateUserState() {
-    if (userId && (currentPosition || currentMood)) {
-        // Сохраняем текущий статус таймера если он есть
-        const currentTimerStatus = currentUser?.status?.includes('⏰') ? currentUser.status.split('⏰')[1]?.trim() : '';
-        const timerPart = currentTimerStatus ? `⏰ ${currentTimerStatus}` : '';
+    if (!userId) return;
+    
+    try {
+        // Сначала получаем актуальные данные пользователя
+        const users = await getUsers();
+        const currentUserData = users.find(u => u.id === userId);
         
-        const stateText = combineUserStatus(currentPosition, currentMood, timerPart);
+        if (!currentUserData) return;
         
-        try {
+        // Сохраняем информацию о таймере из текущего статуса
+        let timerInfo = '';
+        if (currentUserData.status && currentUserData.status.includes('⏰')) {
+            const timerParts = currentUserData.status.split('⏰');
+            if (timerParts.length > 1) {
+                timerInfo = `⏰ ${timerParts[1].trim()}`;
+            }
+        }
+        
+        // Формируем новый статус
+        let newStatus = '';
+        const stateParts = [];
+        
+        if (currentPosition) stateParts.push(currentPosition);
+        if (currentMood) stateParts.push(currentMood);
+        
+        if (stateParts.length > 0) {
+            newStatus = stateParts.join(' • ');
+        }
+        
+        // Добавляем таймер если он есть
+        if (timerInfo) {
+            if (newStatus) {
+                newStatus += ' • ' + timerInfo;
+            } else {
+                newStatus = timerInfo;
+            }
+        }
+        
+        // Если ничего не выбрано, ставим стандартный статус
+        if (!newStatus) {
+            newStatus = 'Ожидание';
+        }
+        
+        // Обновляем пользователя только если статус изменился
+        if (newStatus !== currentUserData.status) {
             await updateUser(userId, { 
-                status: stateText || 'Ожидание',
+                status: newStatus,
                 position: currentPosition,
                 mood: currentMood
             });
             
-            if (typeof loadGroupMembers === 'function') await loadGroupMembers();
-            if (typeof loadRequests === 'function') await loadRequests();
-            
-            console.log('✅ Состояние обновлено на сервере:', stateText);
-        } catch (error) {
-            console.error('❌ Ошибка обновления состояния:', error);
+            console.log('✅ Состояние обновлено:', newStatus);
         }
+        
+    } catch (error) {
+        console.error('❌ Ошибка обновления состояния:', error);
     }
 }
 // Добавьте эту функцию для тестирования

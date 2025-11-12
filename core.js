@@ -453,16 +453,16 @@ function startGlobalRefresh() {
             if (typeof loadRequests === 'function') await loadRequests();
             if (typeof restoreSelectedStation === 'function') restoreSelectedStation();
         } else if (joinedRoomScreen && joinedRoomScreen.classList.contains('active')) {
-            // На третьем экране обновляем участников группы и запросы
-            if (typeof loadGroupMembers === 'function') {
-                console.log('🔄 Автообновление участников группы');
-                await loadGroupMembers();
-            }
-            if (typeof loadRequests === 'function') {
-                console.log('🔄 Автообновление запросов');
-                await loadRequests();
-            }
-            if (typeof restoreSelectedStates === 'function') restoreSelectedStates();
+                // На третьем экране обновляем участников группы и запросы, но не перезаписываем статус
+                if (typeof loadGroupMembers === 'function') {
+                    console.log('🔄 Автообновление участников группы');
+                    await loadGroupMembers();
+                }
+                if (typeof loadRequests === 'function') {
+                    console.log('🔄 Автообновление запросов');
+                    await loadRequests();
+                }
+            
         }
         
         await pingActivity();

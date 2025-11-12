@@ -29,6 +29,17 @@ let setupScreen, waitingRoomScreen, joinedRoomScreen;
 let backToSetupBtn, backToWaitingBtn, leaveGroupBtn;
 let enterWaitingRoomBtn, confirmStationBtn;
 
+// Добавьте уникальный идентификатор устройства - здесь мы разделим user id чтобы из под одной вай фай сети заходил не один, а несколько человек с разных устройств
+function generateDeviceId() {
+    let deviceId = localStorage.getItem('metroDeviceId');
+    if (!deviceId) {
+        deviceId = 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+        localStorage.setItem('metroDeviceId', deviceId);
+    }
+    return deviceId;
+}
+
+const currentDeviceId = generateDeviceId();
 // Безопасное получение элементов
 function getElementSafe(id) {
     const element = document.getElementById(id);
@@ -71,7 +82,8 @@ async function handleEnterWaitingRoom() {
     
     const getRandomName = (gender) => {
         const names = gender === 'male' ? maleNames : femaleNames;
-        return names[Math.floor(Math.random() * names.length)];
+        const baseName = names[Math.floor(Math.random() * names.length)];
+        return `${baseName}#${currentDeviceId.substr(-4)}`; // Добавляем уникальный суффикс
     };
     
     const randomName = getRandomName(selectedGender);
@@ -90,7 +102,8 @@ async function handleEnterWaitingRoom() {
         position: '',
         mood: '',
         isWaiting: true,
-        isConnected: false
+        isConnected: false,  // ← ДОБАВЬТЕ ЗАПЯТУЮ ЗДЕСЬ
+        deviceId: currentDeviceId // Добавляем идентификатор устройства
     };
     
     console.log('📍 Данные для создания пользователя:', userData);
@@ -193,7 +206,7 @@ async function handleConfirmStation() {
     
     if (userId) {
         try {
-            await updateUser(userId, {
+            await safeUserUpdate(userId, {
                 station: currentSelectedStation,
                 wagon: wagonValue,
                 color: colorValue,
@@ -240,7 +253,7 @@ async function handleLeaveGroup() {
     currentMood = '';
     if (userId) {
         try {
-            await updateUser(userId, { 
+            await safeUserUpdate(userId, { 
                 status: 'Ожидание',
                 is_waiting: true,
                 is_connected: false,
@@ -389,7 +402,7 @@ async function getUsers() {
     }
 }
 
-async function updateUser(userId, updates) {
+async function safeUserUpdate(userId, updates) {
     try {
         console.log('📍 Отправка обновления пользователя:', { userId, updates });
         
@@ -501,7 +514,7 @@ function forceInitializeJoinedRoom() {
 
     // Обновляем индикаторы
     updateStatusIndicators();
-    updateUserStateDisplay();
+    safeUserUpdateStateDisplay();
     
     // Загружаем участников
     if (typeof loadGroupMembers === 'function') {

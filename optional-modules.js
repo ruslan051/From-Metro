@@ -11,7 +11,8 @@ window.debugUserStatuses = debugUserStatuses;
 // Функции для inline обработчиков карточек состояний
 function selectPosition(position, element) {
     console.log('📍 Выбрана позиция:', position, element);
-    
+     const deviceKey = currentDeviceId ? `_${currentDeviceId}` : '';
+    localStorage.setItem(`selectedPosition${deviceKey}`, position);
     // Снимаем выделение со всех карточек позиций
     const allPositionCards = document.querySelectorAll('#position-cards .state-card');
     allPositionCards.forEach(card => {
@@ -31,9 +32,52 @@ function selectPosition(position, element) {
     localStorage.setItem('selectedPosition', position);
     
     
-    updateUserStateDisplay();
+    safeUserUpdateStateDisplay();
     
     console.log('✅ Позиция установлена:', position);
+}
+// Добавьте эту функцию для проверки и создания пользователя
+async function ensureUserOwnership() {
+    if (!userId) return true;
+    
+    try {
+        const users = await getUsers();
+        const currentUserData = users.find(u => u.id === userId);
+        
+        if (!currentUserData) {
+            console.log('👤 Пользователь не найден, создаем нового');
+            return false;
+        }
+        
+        // Проверяем владение по deviceId или по имени
+        const isOurUser = currentUserData.deviceId === currentDeviceId || 
+                         currentUserData.name.includes(currentDeviceId.substr(-4));
+        
+        if (!isOurUser) {
+            console.warn('⚠️ Обнаружен чужой пользователь, создаем нового');
+            // Сбрасываем userId чтобы создать нового пользователя
+            userId = null;
+            currentUser = null;
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Ошибка проверки владения:', error);
+        return false;
+    }
+}
+
+// Вызывайте эту функцию перед важными действиями
+async function selectPosition(position, element) {
+    const isOwner = await ensureUserOwnership();
+    if (!isOwner) {
+        console.log('🔄 Создаем нового пользователя...');
+        await handleEnterWaitingRoom();
+        return;
+    }
+    
+    // ОСТАЛЬНАЯ ЛОГИКА...
 }
 // Тестовая функция для проверки работы
 function testSelection() {
@@ -58,7 +102,61 @@ function testSelection() {
 window.testSelection = testSelection;
 window.selectPosition = selectPosition;
 window.selectMood = selectMood;
+// Добавьте проверку устройства перед обновлением
+async function safeUserUpdate(updates) {
+    if (!userId) return;
+    
+    try {
+        // Получаем текущие данные пользователя
+        const users = await getUsers();
+        const currentUserData = users.find(u => u.id === userId);
+        
+        // Проверяем, что это наш пользователь (по deviceId или имени)
+        if (currentUserData && currentUserData.deviceId === currentDeviceId) {
+            return await safeUserUpdate(userId, updates);
+        } else {
+            console.error('❌ Попытка обновить чужого пользователя!');
+            // Создаем нового пользователя
+            await handleEnterWaitingRoom();
+            return null;
+        }
+    } catch (error) {
+        console.error('Ошибка безопасного обновления:', error);
+        return null;
+    }
+}
 
+
+// В функции selectPosition:
+await safeUserUpdate({
+    position: position,
+    status: newStatus
+});
+
+// В функции selectMood:
+await safeUserUpdate({
+    mood: mood,
+    status: newStatus
+});
+
+// В функции safeUserUpdateTimerInfo:
+await safeUserUpdate({
+    status: newStatus
+});
+
+// В функции startTimer:
+await safeUserUpdate({
+    status: newStatus,
+    timer: formatTime(timerSeconds),
+    timer_total: selectedMinutes * 60
+});
+
+// В функции stopTimer:
+await safeUserUpdate({ 
+    timer: "00:00",
+    timer_total: 0,
+    status: newStatus
+});
 function selectMood(mood, element) {
     console.log('😊 Выбрано настроение:', mood, element);
     
@@ -81,7 +179,7 @@ function selectMood(mood, element) {
     localStorage.setItem('selectedMood', mood);
     
     
-    updateUserStateDisplay();
+    safeUserUpdateStateDisplay();
     
     console.log('✅ Настроение установлено:', mood);
 }
@@ -125,7 +223,7 @@ window.initializeWaitingRoomTimer = initializeWaitingRoomTimer;
 window.initializeStateCards = initializeStateCards;
 window.restoreSelectedStation = restoreSelectedStation;
 window.joinStation = joinStation;
-window.updateUserState = updateUserState;
+window.safeUserUpdateState = safeUserUpdateState;
 window.startTimer = startTimer;
 window.stopTimer = stopTimer;
 
@@ -579,7 +677,7 @@ async function loadGroupMembers() {
         if (activePosition || activeMood) {
             setTimeout(() => {
                 restoreSelectedStates();
-                updateUserStateDisplay();
+                safeUserUpdateStateDisplay();
             }, 100);
         }
         
@@ -678,11 +776,11 @@ function selectTimerOption(minutes, element, event) {
     }
     
     // ОБНОВЛЯЕМ ИНФОРМАЦИЮ ПОЛЬЗОВАТЕЛЯ С ВЫБРАННЫМ ВРЕМЕНЕМ
-    updateUserTimerInfo(minutes);
+    safeUserUpdateTimerInfo(minutes);
     
     console.log('✅ Установлено время:', minutes, 'минут');
     
-    // Добавьте в конец updateUserTimerInfo:
+    // Добавьте в конец safeUserUpdateTimerInfo:
                 setTimeout(() => {
                     if (typeof loadGroupMembers === 'function') {
                         console.log('🔄 Принудительное обновление участников группы');
@@ -691,8 +789,8 @@ function selectTimerOption(minutes, element, event) {
                 }, 500);
 }
 
-// ЗАМЕНИТЕ функцию updateUserTimerInfo:
-function updateUserTimerInfo(minutes) {
+// ЗАМЕНИТЕ функцию safeUserUpdateTimerInfo:
+function safeUserUpdateTimerInfo(minutes) {
     if (!userId) {
         console.warn('❌ userId не установлен');
         return;
@@ -716,7 +814,7 @@ function updateUserTimerInfo(minutes) {
         newStatus = `⏰ Ожидание: ${minutes} мин`;
     }
     
-    updateUser(userId, {
+    safeUserUpdate(userId, {
         status: newStatus // С ЭМОДЗИ В СТАТУСЕ
     }).then((result) => {
         console.log('✅ Статус с таймером обновлен:', newStatus);
@@ -729,7 +827,7 @@ function updateUserTimerInfo(minutes) {
 let lastUpdateTime = 0;
 const UPDATE_COOLDOWN = 2000; // 2 секунды между запросами
 
-async function safeUpdateUser(userId, updates) {
+async function safesafeUserUpdate(userId, updates) {
     const now = Date.now();
     if (now - lastUpdateTime < UPDATE_COOLDOWN) {
         console.log('⏳ Пропускаем обновление - слишком часто');
@@ -737,7 +835,7 @@ async function safeUpdateUser(userId, updates) {
     }
     
     lastUpdateTime = now;
-    return await updateUser(userId, updates);
+    return await safeUserUpdate(userId, updates);
 }
 
 // Добавьте защиту от частых пингов
@@ -886,7 +984,7 @@ function startTimer(event) {
             newStatus = `⏰ Таймер: ${selectedMinutes} мин`;
         }
         
-        updateUser(userId, {
+        safeUserUpdate(userId, {
             status: newStatus,
             timer: formatTime(timerSeconds),
             timer_total: selectedMinutes * 60
@@ -922,7 +1020,7 @@ function startTimer(event) {
                     newStatus = '⏰ Время истекло';
                 }
                 
-                updateUser(userId, {
+                safeUserUpdate(userId, {
                     status: newStatus,
                     timer: "00:00",
                     timer_total: 0
@@ -1014,7 +1112,7 @@ function stopTimer(event) {
                         newStatus = 'Ожидание';
                     }
                     
-                    updateUser(userId, { 
+                    safeUserUpdate(userId, { 
                         timer: "00:00",
                         timer_total: 0,
                         status: newStatus // Убираем таймер из статуса
@@ -1041,8 +1139,8 @@ function combineUserStatus(position, mood, timerStatus = '') {
     return parts.join(' • ');
 }
 
-// ЗАМЕНИТЕ функцию updateUserState:
-async function updateUserState() {
+// ЗАМЕНИТЕ функцию safeUserUpdateState:
+async function safeUserUpdateState() {
     if (!userId) return;
     
     try {
@@ -1078,7 +1176,7 @@ async function updateUserState() {
 
         // Обновляем пользователя только если статус изменился
         if (newStatus !== currentUserData.status) {
-            await updateUser(userId, { 
+            await safeUserUpdate(userId, { 
                 status: newStatus,
                 position: currentPosition,
                 mood: currentMood
@@ -1096,7 +1194,7 @@ function testTimerDisplay() {
     
     if (userId) {
         const testTimerStatus = '⏰ Таймер запущен: 5 мин';
-        updateUser(userId, {
+        safeUserUpdate(userId, {
             status: testTimerStatus
         }).then(() => {
             console.log('✅ Тестовый статус установлен:', testTimerStatus);
@@ -1213,11 +1311,16 @@ function initializeStateCards() {
 }
 // Функция восстановления выбранных состояний
 function restoreSelectedStates() {
+      // Добавляем deviceId в ключи localStorage
+    const deviceKey = currentDeviceId ? `_${currentDeviceId}` : '';
+
     const savedPosition = localStorage.getItem('selectedPosition');
     const savedMood = localStorage.getItem('selectedMood');
-    
+        const savedStation = localStorage.getItem(`selectedStation${deviceKey}`);
+
     console.log('🔄 Восстановление состояний:', { savedPosition, savedMood });
     
+   // ВОССТАНАВЛИВАЕМ ТОЛЬКО ЕСЛИ ЭТО НАШИ ДАННЫЕ
     if (savedPosition) {
         currentPosition = savedPosition;
         const positionCard = document.querySelector(`[data-position="${savedPosition}"]`);
@@ -1262,10 +1365,10 @@ if (savedTimerMinutes) {
     }
 }
     
-    updateUserStateDisplay();
+    safeUserUpdateStateDisplay();
 }
 // Функция обновления отображения состояния пользователя
-function updateUserStateDisplay() {
+function safeUserUpdateStateDisplay() {
     console.log('🔄 Обновление отображения состояния:', { currentPosition, currentMood });
     
     updateStatusIndicators();
@@ -1312,12 +1415,12 @@ function updateUserStateDisplay() {
     }
 
 // Функция обновления состояния пользователя
-async function updateUserState() {
+async function safeUserUpdateState() {
     if (userId && (currentPosition || currentMood)) {
         const stateText = [currentPosition, currentMood].filter(Boolean).join(' | ');
         
         try {
-            await updateUser(userId, { 
+            await safeUserUpdate(userId, { 
                 status: stateText || 'Ожидание',
                 position: currentPosition,
                 mood: currentMood
@@ -1483,7 +1586,7 @@ function forceInitializeJoinedRoom() {
         
         // Обновляем индикаторы
         updateStatusIndicators();
-        updateUserStateDisplay();
+        safeUserUpdateStateDisplay();
         
         // Применяем стили
         forceApplyStyles();

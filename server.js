@@ -8,6 +8,20 @@ const { Pool } = pkg;
 // Сначала создаем app
 const app = express();
 const PORT = process.env.PORT || 3000;
+// Middleware для безопасности и производительности
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+app.use(compression());
+app.use(cors());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP'
+});
+app.use(limiter);
 
 // Логирование всех входящих запросов - ПЕРЕМЕСТИТЕ ЭТО ПОСЛЕ app initialization
 app.use((req, res, next) => {

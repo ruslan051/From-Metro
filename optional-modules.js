@@ -503,6 +503,10 @@ async function loadGroupMembers() {
             user.is_connected === true
         );
         
+        // СОХРАНЯЕМ текущее состояние выбранных карточек перед обновлением
+        const activePosition = currentPosition;
+        const activeMood = currentMood;
+        
         groupMembersContainer.innerHTML = '';
         
         if (groupUsers.length === 0) {
@@ -570,6 +574,14 @@ async function loadGroupMembers() {
             `;
             groupMembersContainer.appendChild(memberElement);
         });
+        
+        // ВОССТАНАВЛИВАЕМ состояние выбранных карточек после обновления
+        if (activePosition || activeMood) {
+            setTimeout(() => {
+                restoreSelectedStates();
+                updateUserStateDisplay();
+            }, 100);
+        }
         
     } catch (error) {
         console.error('Ошибка загрузки участников группы:', error);
@@ -1455,24 +1467,29 @@ function forceInitializeJoinedRoom() {
     // Переинициализируем элементы
     initializeOptionalDOMElements();
 
-     // Восстанавливаем заголовок станции если есть
+    // Восстанавливаем заголовок станции если есть
     if (currentGroup && currentGroup.station) {
         updateStationTitle(currentGroup.station);
     } else if (currentSelectedStation) {
         updateStationTitle(currentSelectedStation);
     }
 
-    // Восстанавливаем состояния
-    restoreSelectedStates();
+    // Восстанавливаем состояния с задержкой для гарантии
+    setTimeout(() => {
+        restoreSelectedStates();
+        
+        // Инициализируем карточки
+        initializeStateCards();
+        
+        // Обновляем индикаторы
+        updateStatusIndicators();
+        updateUserStateDisplay();
+        
+        // Применяем стили
+        forceApplyStyles();
+    }, 200);
     
-    // Инициализируем карточки
-    initializeStateCards();
-    
-    // Обновляем индикаторы
-    updateStatusIndicators();
-    updateUserStateDisplay();
-    
-     // ОБНОВЛЯЕМ УЧАСТНИКОВ - ВАЖНО!
+    // ОБНОВЛЯЕМ УЧАСТНИКОВ - ВАЖНО!
     setTimeout(() => {
         if (typeof loadGroupMembers === 'function') {
             console.log('🔄 Принудительная загрузка участников группы');
@@ -1483,14 +1500,6 @@ function forceInitializeJoinedRoom() {
             loadRequests();
         }
     }, 500);
-    
-    // Применяем стили
-    setTimeout(forceApplyStyles, 200);
-    
-    // Загружаем участников
-    if (typeof loadGroupMembers === 'function') {
-        loadGroupMembers();
-    }
     
     console.log('✅ Joined room инициализирован');
 }

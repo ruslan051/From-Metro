@@ -587,18 +587,25 @@ async function loadGroupMembers() {
                 additionalInfo += `🚇 Вагон ${user.wagon}`;
             }
             
-            memberElement.innerHTML = `
-                <div style="width: 50px; height: 50px; border-radius: 50%; background: ${user.color_code || '#007bff'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: bold;">
-                    ${user.name.charAt(0)}
-                </div>
-                <div class="user-state-info">
-                    <div class="user-state-name">${user.name} ${isCurrentUser ? '(Вы)' : ''}</div>
-                    <div class="user-state-details">
-                        ${stateDetails}${timerInfo}
-                        ${additionalInfo ? `<div style="margin-top: 5px; font-size: 14px; color: #666;">${additionalInfo}</div>` : ''}
-                    </div>
-                </div>
-            `;
+            // В функции loadGroupMembers замените блок создания memberElement:
+                    memberElement.innerHTML = `
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: ${user.color_code || '#007bff'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: bold;">
+                            ${user.name.charAt(0)}
+                        </div>
+                        <div class="user-state-info">
+                            <div class="user-state-name">${user.name} ${isCurrentUser ? '(Вы)' : ''}</div>
+                            <div class="user-state-details">
+                                ${stateDetails}
+                                ${additionalInfo ? `<div style="margin-top: 5px; font-size: 12px; color: #666;">${additionalInfo}</div>` : ''}
+                            </div>
+                        </div>
+                        ${user.show_timer && user.timer_seconds > 0 ? `
+                            <div class="user-timer-display">
+                                <div class="timer-label">⏰ Осталось:</div>
+                                <div class="timer-value">${formatTime(user.timer_seconds)}</div>
+                            </div>
+                        ` : ''}
+                    `;
             groupMembersContainer.appendChild(memberElement);
         });
         
@@ -837,6 +844,7 @@ function initializeWaitingRoomTimer() {
     
     console.log('✅ Таймер инициализирован');
 }
+// Новая функция запуска таймера
 function startTimer(event) {
     console.log('🎯 Запуск таймера');
     
@@ -848,63 +856,45 @@ function startTimer(event) {
     }
     
     timerSeconds = selectedMinutes * 60;
+    const timerEnd = new Date(Date.now() + timerSeconds * 1000);
+    
     updateTimerDisplay();
     
     console.log('🔄 Запуск таймера на', selectedMinutes, 'минут');
     
-    // ВАЖНО: Обновляем статус только один раз при запуске
+    // Сохраняем таймер на сервере
     if (userId) {
-        const positionPart = currentPosition ? currentPosition : '';
-        const moodPart = currentMood ? currentMood : '';
-        
-        let newStatus = '';
-        if (positionPart && moodPart) {
-            newStatus = `${positionPart} | ${moodPart} | ⏰ Таймер: ${selectedMinutes} мин`;
-        } else if (positionPart || moodPart) {
-            const statePart = positionPart || moodPart;
-            newStatus = `${statePart} | ⏰ Таймер: ${selectedMinutes} мин`;
-        } else {
-            newStatus = `⏰ Таймер: ${selectedMinutes} мин`;
-        }
-        
         updateUser(userId, {
-            status: newStatus,
-            timer: formatTime(timerSeconds),
-            timer_total: selectedMinutes * 60
+            timer_seconds: timerSeconds,
+            timer_end: timerEnd.toISOString(),
+            show_timer: true,
+            status: generateUserStatus() // Обновляем статус без таймера
         }).then((result) => {
-            console.log('✅ Статус с таймером обновлен:', newStatus);
+            console.log('✅ Таймер сохранен на сервере');
+            forceRefreshUserDisplay();
         }).catch(error => {
-            console.error('❌ Ошибка обновления статуса:', error);
+            console.error('❌ Ошибка сохранения таймера:', error);
         });
     }
-    
-    let lastServerUpdate = Date.now();
-    const SERVER_UPDATE_INTERVAL = 10000; // Обновлять на сервере только каждые 10 секунд
     
     timerInterval = setInterval(async function() {
         timerSeconds--;
         updateTimerDisplay();
         
+        // Обновляем оставшееся время на сервере каждые 30 секунд
+        if (timerSeconds % 30 === 0 && userId) {
+            try {
+                await updateUser(userId, { 
+                    timer_seconds: timerSeconds
+                });
+            } catch (error) {
+                console.error('Ошибка обновления таймера на сервере:', error);
+            }
+        }
+        
         if (timerSeconds <= 0) {
             stopTimer();
             alert('Время ожидания истекло!');
-            return;
-        }
-        
-        // Обновляем время на сервере только каждые 10 секунд
-        const now = Date.now();
-        if (now - lastServerUpdate >= SERVER_UPDATE_INTERVAL) {
-            if (userId) {
-                try {
-                    await updateUser(userId, { 
-                        timer: formatTime(timerSeconds)
-                    });
-                    lastServerUpdate = now;
-                    console.log('🔄 Таймер обновлен на сервере:', formatTime(timerSeconds));
-                } catch (error) {
-                    console.error('Ошибка при обновлении таймера:', error);
-                }
-            }
         }
         
     }, 1000);
@@ -912,31 +902,54 @@ function startTimer(event) {
     if (waitingStartTimerBtn) waitingStartTimerBtn.disabled = true;
     if (waitingStopTimerBtn) waitingStopTimerBtn.disabled = false;
 }
-function debugTimerIssue() {
-    console.log('🔍 Отладка проблемы с таймером:');
+
+// Новая функция остановки таймера
+function stopTimer(event) {
+    console.log('🎯 Остановка таймера');
     
+    if (event) event.stopPropagation();
+    
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+    
+    timerSeconds = 0;
+    if (waitingTimerDisplay) waitingTimerDisplay.textContent = 'Не запущен';
+    if (waitingTimerStatus) {
+        waitingTimerStatus.textContent = 'Не активен';
+        waitingTimerStatus.style.color = '#666';
+    }
+    
+    if (waitingStartTimerBtn) waitingStartTimerBtn.disabled = false;
+    if (waitingStopTimerBtn) waitingStopTimerBtn.disabled = true;
+    
+    // Убираем таймер на сервере
     if (userId) {
-        getUsers().then(users => {
-            const currentUser = users.find(u => u.id === userId);
-            console.log('📊 Данные пользователя:', {
-                status: currentUser?.status,
-                position: currentUser?.position,
-                mood: currentUser?.mood,
-                timer: currentUser?.timer,
-                hasTimerEmoji: currentUser?.status?.includes('⏰')
-            });
-            
-            // Проверяем всех пользователей на станции
-            if (currentGroup) {
-                const stationUsers = users.filter(u => u.station === currentGroup.station);
-                console.log('👥 Пользователи на станции с таймерами:');
-                stationUsers.forEach(user => {
-                    if (user.status?.includes('⏰')) {
-                        console.log(`- ${user.name}: ${user.status}`);
-                    }
-                });
-            }
+        updateUser(userId, {
+            timer_seconds: 0,
+            show_timer: false,
+            status: generateUserStatus()
+        }).then(() => {
+            console.log('✅ Таймер остановлен на сервере');
+            forceRefreshUserDisplay();
+        }).catch(error => {
+            console.error('Ошибка при остановке таймера:', error);
         });
+    }
+}
+
+// Вспомогательная функция для генерации статуса
+function generateUserStatus() {
+    const positionPart = currentPosition ? currentPosition : '';
+    const moodPart = currentMood ? currentMood : '';
+    
+    if (positionPart && moodPart) {
+        return `${positionPart} | ${moodPart}`;
+    } else if (positionPart || moodPart) {
+        return positionPart || moodPart;
+    } else {
+        return 'Ожидание';
     }
 }
 
@@ -1362,6 +1375,7 @@ function restoreSelectedStation() {
 
 // Вспомогательные функции
 function formatTime(seconds) {
+    if (seconds <= 0) return '00:00';
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;

@@ -464,6 +464,13 @@ function startGlobalRefresh() {
                 }
             
         }
+
+         // Автоматически обновляем отображение таймеров
+        if (joinedRoomScreen && joinedRoomScreen.classList.contains('active')) {
+            if (typeof loadGroupMembers === 'function') {
+                await loadGroupMembers();
+                    }
+        }
         
         await pingActivity();
         

@@ -695,7 +695,11 @@ app.put('/api/users/:id', asyncHandler(async (req, res) => {
       position: 'position',
       mood: 'mood',
       isWaiting: 'is_waiting',
-      isConnected: 'is_connected'
+      isConnected: 'is_connected',
+      // ДОБАВЬТЕ ЭТИ НОВЫЕ ПОЛЯ:
+      timer_seconds: 'timer_seconds',
+      timer_end: 'timer_end',
+      show_timer: 'show_timer'
     };
     
     Object.keys(updates).forEach(key => {

@@ -8,6 +8,7 @@ window.debugTimerFull = debugTimerFull;
 window.debugUserStatuses = debugUserStatuses;
 // Добавьте в глобальную область
 window.saveUserState = saveUserState;
+
 // Функции для inline обработчиков карточек состояний
 function selectPosition(position, element) {
     console.log('📍 Выбрана позиция:', position, element);
@@ -30,7 +31,8 @@ function selectPosition(position, element) {
     currentPosition = position;
     localStorage.setItem('selectedPosition', position);
     
-    
+     // НЕМЕДЛЕННО сохраняем состояние
+    updateUserState();
     updateUserStateDisplay();
     
     console.log('✅ Позиция установлена:', position);
@@ -81,21 +83,40 @@ function selectMood(mood, element) {
     localStorage.setItem('selectedMood', mood);
     
     
+     // НЕМЕДЛЕННО сохраняем состояние
+    updateUserState();
     updateUserStateDisplay();
     
     console.log('✅ Настроение установлено:', mood);
 }
-// Добавьте эту функцию для явного сохранения состояния:
+// Функция для явного сохранения состояния пользователя
 async function saveUserState() {
     console.log('💾 Явное сохранение состояния пользователя');
-    await updateUserState();
     
-    // Принудительное обновление отображения
-    if (typeof loadGroupMembers === 'function') loadGroupMembers();
-    if (typeof loadRequests === 'function') loadRequests();
+    if (!userId) {
+        console.warn('❌ userId не установлен');
+        return;
+    }
     
-    alert('Состояние сохранено!');
+    try {
+        await updateUser(userId, {
+            position: currentPosition,
+            mood: currentMood,
+            status: [currentPosition, currentMood].filter(Boolean).join(' | ') || 'Ожидание'
+        });
+        
+        console.log('✅ Состояние сохранено на сервере');
+        
+        // Принудительное обновление отображения
+        if (typeof loadGroupMembers === 'function') await loadGroupMembers();
+        if (typeof loadRequests === 'function') await loadRequests();
+        
+    } catch (error) {
+        console.error('❌ Ошибка сохранения состояния:', error);
+    }
 }
+
+
 
 
 // Станции метро (редко используемые данные)
@@ -496,7 +517,6 @@ function debugUserData() {
 
 
 
-// ЗАМЕНИТЕ текущую функцию loadGroupMembers на эту исправленную версию:
 async function loadGroupMembers() {
     if (!groupMembersContainer) {
         console.error('Контейнер group-members не найден');
@@ -544,7 +564,6 @@ async function loadGroupMembers() {
             // ИСПРАВЛЕННОЕ извлечение информации о таймере
             let timerInfo = '';
             if (user.status && user.status.includes('⏰')) {
-                // Простой и надежный способ извлечь текст после эмодзи таймера
                 const timerParts = user.status.split('⏰');
                 if (timerParts.length > 1) {
                     const timerText = timerParts[1].trim();
@@ -1263,25 +1282,53 @@ function updateUserStateDisplay() {
         }, 800);
     }
 
-// Функция обновления состояния пользователя
+// Функция обновления состояния пользователя - ИСПРАВЛЕННАЯ ВЕРСИЯ
 async function updateUserState() {
-    if (userId && (currentPosition || currentMood)) {
-        const stateText = [currentPosition, currentMood].filter(Boolean).join(' | ');
+    if (!userId) return;
+    
+    try {
+        // Получаем актуальные данные пользователя
+        const users = await getUsers();
+        const currentUserData = users.find(u => u.id === userId);
         
-        try {
+        if (!currentUserData) return;
+
+        // Проверяем, есть ли активный таймер в статусе
+        const hasActiveTimer = currentUserData.status && currentUserData.status.includes('⏰');
+        
+        let newStatus = '';
+        const stateParts = [];
+        
+        if (currentPosition) stateParts.push(currentPosition);
+        if (currentMood) stateParts.push(currentMood);
+        
+        // Если есть активный таймер, сохраняем его
+        if (hasActiveTimer) {
+            const timerMatch = currentUserData.status.match(/⏰\s*(.+)/);
+            if (timerMatch) {
+                stateParts.push(`⏰ ${timerMatch[1].trim()}`);
+            }
+        }
+        
+        newStatus = stateParts.join(' | ');
+        
+        // Если ничего нет, ставим стандартный статус
+        if (!newStatus) {
+            newStatus = 'Ожидание';
+        }
+
+        // Обновляем пользователя только если статус изменился
+        if (newStatus !== currentUserData.status) {
             await updateUser(userId, { 
-                status: stateText || 'Ожидание',
+                status: newStatus,
                 position: currentPosition,
                 mood: currentMood
             });
-            
-            if (typeof loadGroupMembers === 'function') await loadGroupMembers();
-            if (typeof loadRequests === 'function') await loadRequests();
-            
-            console.log('✅ Состояние обновлено на сервере:', stateText);
-        } catch (error) {
-            console.error('❌ Ошибка обновления состояния:', error);
+            console.log('✅ Состояние обновлено:', newStatus);
         }
+        
+    } catch (error) {
+        console.error('❌ Ошибка обновления состояния:', error);
     }
 }
 

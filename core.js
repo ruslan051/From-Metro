@@ -1,10 +1,7 @@
 // Глобальные флаги для проверки загрузки модулей
 window.optionalModulesLoaded = false;
 window.optionalModulesLoading = false;
-// Глобальные переменные для индикатора
-let usersIndicator = null;
-let usersIndicatorCount = null;
-let usersIndicatorTooltip = null;
+
 
 // Текущий пользователь и состояние
 let currentUser = null;
@@ -40,10 +37,10 @@ function getElementSafe(id) {
     }
     return element;
 }
-function initializeUsersIndicator() {
+mpts = 0;function initializeUsersIndicator() {
 
 // Несколько попыток найти элемент
-    let attempts = 0;
+    let atte
     const maxAttempts = 10;
 
      const tryInitialize = () => {
@@ -68,112 +65,7 @@ function initializeUsersIndicator() {
        // ЗАПУСТИТЬ функцию
     tryInitialize();
 }
-// Функция обновления индикатора пользователей
-async function updateUsersIndicator() {
-    if (!usersIndicator || !usersIndicatorCount || !usersIndicatorTooltip) {
-        setTimeout(() => {
-            const indicator = document.getElementById('users-indicator');
-            if (indicator) {
-                const countElement = indicator.querySelector('.indicator-count');
-                const tooltipElement = indicator.querySelector('.indicator-tooltip');
-                if (countElement) countElement.textContent = '1';
-                if (tooltipElement) tooltipElement.textContent = 'Вы в сети';
-                indicator.classList.add('active');
-            }
-        }, 1000);
-        return;
-    }
-    
-    try {
-        const users = await getUsers();
-        
-        // Фильтруем только онлайн пользователей в выбранном городе
-        const onlineUsers = users.filter(user => 
-            user.online === true && 
-            user.city === selectedCity
-        );
-        
-        // ВКЛЮЧАЕМ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ДАЖЕ ЕСЛИ ОН ЕЩЕ НЕ СОХРАНЕН НА СЕРВЕРЕ
-        let userCount = onlineUsers.length;
 
-        // Если текущий пользователь еще не в списке, но мы на сайте - добавляем его
-        if (userId) {
-            // Проверяем, есть ли текущий пользователь в списке
-            const currentUserInList = onlineUsers.some(user => user.id === userId);
-            if (!currentUserInList) {
-                userCount += 1;
-            }
-        } else {
-            // Если пользователь еще не создан, но находится на сайте - считаем его
-            userCount += 1;
-        }
-        
-        // Обновляем счетчик
-        usersIndicatorCount.textContent = userCount;
-        
-        // Обновляем подсказку с детальной информацией
-        if (userCount === 0) {
-            usersIndicatorTooltip.textContent = 'Нет активных пользователей';
-            usersIndicator.classList.remove('active');
-        } else {
-            // Группируем по станциям
-            const usersByStation = {};
-            
-            // Добавляем текущего пользователя если он есть
-            if (currentUser && !userId) {
-                if (!usersByStation['Настройка профиля']) {
-                    usersByStation['Настройка профиля'] = [];
-                }
-                usersByStation['Настройка профиля'].push({
-                    name: 'Вы',
-                    status: 'Настройка профиля'
-                });
-            }
-
-            // Добавляем остальных пользователей
-            onlineUsers.forEach(user => {
-                const station = user.station || 'Ожидание выбора';
-                if (!usersByStation[station]) {
-                    usersByStation[station] = [];
-                }
-                usersByStation[station].push(user);
-            });
-            
-            // Сортируем станции по количеству пользователей
-            const sortedStations = Object.keys(usersByStation)
-                .filter(station => station) // убираем пустые станции
-                .sort((a, b) => usersByStation[b].length - usersByStation[a].length)
-                .slice(0, 5); // показываем топ-5 станций
-            
-            let tooltipText = `Всего: ${userCount} пользователей\n`;
-            
-            if (sortedStations.length > 0) {
-                tooltipText += '\nТоп станций:\n';
-                sortedStations.forEach(station => {
-                    const count = usersByStation[station].length;
-                    tooltipText += `• ${station}: ${count}\n`;
-                });
-                
-                if (Object.keys(usersByStation).length > 5) {
-                    tooltipText += `... и еще ${Object.keys(usersByStation).length - 5} станций`;
-                }
-            } else {
-                tooltipText += '\nПользователи в режиме ожидания';
-            }
-            
-            usersIndicatorTooltip.textContent = tooltipText;
-            usersIndicator.classList.add('active');
-        }
-        
-        console.log(`👥 Индикатор обновлен: ${userCount} пользователей`);
-        
-    } catch (error) {
-        console.error('❌ Ошибка обновления индикатора:', error);
-        usersIndicatorCount.textContent = '1'; // Минимум 1 - текущий пользователь
-        usersIndicatorTooltip.textContent = 'Вы в сети';
-        usersIndicator.classList.add('active');
-    }
-}
 // Инициализация основных DOM элементов
 function initializeCoreDOMElements() {
     console.log('🔧 Инициализация основных DOM элементов...');
@@ -558,8 +450,7 @@ function startGlobalRefresh() {
     
     globalRefreshInterval = setInterval(async () => {
         console.log('🔄 Глобальное обновление данных...');
-        // ВСЕГДА обновляем индикатор пользователей независимо от страницы
-        await updateUsersIndicator(); 
+      
         if (setupScreen && setupScreen.classList.contains('active')) {
             // На первом экране ничего не обновляем
         } else if (waitingRoomScreen && waitingRoomScreen.classList.contains('active')) {
@@ -635,8 +526,6 @@ function showSetup() {
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
     setupScreen.classList.add('active');
     stopGlobalRefresh();
-      // Но индикатор продолжаем обновлять
-    updateUsersIndicator();
 }
 
 function showWaitingRoom() {
@@ -697,30 +586,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Инициализируем основные DOM элементы
     initializeCoreDOMElements();
-      // Инициализируем индикатор пользователей с задержкой
-    setTimeout(() => 
-    {
-        console.log('🔄 Инициализация индикатора...');
-        initializeUsersIndicator();
-          // Проверяем что элементы найдены перед использованием
-        if (usersIndicator && usersIndicatorCount && usersIndicatorTooltip) {
-            usersIndicatorCount.textContent = '1';
-            usersIndicatorTooltip.textContent = 'Вы в сети';
-            usersIndicator.classList.add('active');
         
-    }})
-
     
-    // СРАЗУ показываем, что есть минимум 1 пользователь (текущий)
-    setTimeout(() => {
-        if (usersIndicatorCount) {
-            usersIndicatorCount.textContent = '1';
-            usersIndicatorTooltip.textContent = 'Вы в сети';
-            usersIndicator.classList.add('active');
-        }
-         // Затем обновляем реальными данными
-        updateUsersIndicator();
-    }, 500);
+
 
     
     // Инициализация основных обработчиков

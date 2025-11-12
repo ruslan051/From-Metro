@@ -937,7 +937,7 @@ function generateUserStatus() {
     }
 }
 
-window.debugTimerIssue = debugTimerIssue;
+
 // Временно уменьшите интервал обновления для отладки
 function startDebugRefresh() {
     setInterval(async () => {

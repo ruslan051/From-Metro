@@ -326,7 +326,7 @@ select:focus, input:focus {
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .legend-color {

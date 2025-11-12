@@ -1,3 +1,41 @@
+/* Стили для выделения названия станции в заголовке */
+.station-name-highlight {
+    color: #0057b8;
+    font-weight: bold;
+    background: linear-gradient(135deg, #0057b8, #003d82);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background-color: #e7f1ff;
+    border: 2px solid #0057b8;
+    display: inline-block;
+    margin: 0 5px;
+    animation: stationPulse 2s infinite;
+}
+
+@keyframes stationPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Адаптивность для заголовка */
+@media (max-width: 768px) {
+    #joined-room-screen h2 {
+        font-size: 22px;
+        text-align: center;
+        line-height: 1.4;
+    }
+    
+    .station-name-highlight {
+        display: block;
+        margin: 10px auto;
+        max-width: 90%;
+        text-align: center;
+    }
+}
 /* Проверка загрузки стилей состояний */
 .state-card.active {
     border-color: #28a745 !important;

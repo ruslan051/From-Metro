@@ -201,7 +201,10 @@ async function handleConfirmStation() {
                 is_connected: true,
                 status: 'Выбрал станцию: ' + currentSelectedStation
             });
-            
+
+              // ОБНОВЛЯЕМ ЗАГОЛОВОК ПЕРЕД ПЕРЕХОДОМ
+            updateStationTitle(currentSelectedStation);
+
             if (typeof joinStation === 'function') {
                 await joinStation(currentSelectedStation);
             }
@@ -477,9 +480,18 @@ function forceInitializeJoinedRoom() {
     
     // Переинициализируем элементы
     initializeOptionalDOMElements();
-    
+
+    // Восстанавливаем заголовок станции если есть
+    if (currentGroup && currentGroup.station) {
+        updateStationTitle(currentGroup.station);
+    } else if (currentSelectedStation) {
+        updateStationTitle(currentSelectedStation);
+    }
     // Восстанавливаем состояния
     restoreSelectedStates();
+
+      // Инициализируем карточки
+    initializeStateCards();
     
     // Обновляем индикаторы
     updateStatusIndicators();

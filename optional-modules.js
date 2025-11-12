@@ -802,7 +802,9 @@ async function joinStation(station) {
                 station: station,
                 users: result.users
             };
-            
+             // ОБНОВЛЯЕМ ЗАГОЛОВОК ПЕРЕД ПОКАЗОМ ЭКРАНА
+            updateStationTitle(station);
+
             waitingRoomScreen.classList.remove('active');
             joinedRoomScreen.classList.add('active');
             
@@ -819,7 +821,16 @@ async function joinStation(station) {
         alert('Ошибка при присоединении к станции: ' + error.message);
     }
 }
-
+// Функция обновления заголовка с названием станции
+function updateStationTitle(stationName) {
+    const titleElement = document.querySelector('#joined-room-screen h2');
+    if (titleElement) {
+        titleElement.innerHTML = `Вы выбрали станцию <span class="station-name-highlight">${stationName}</span>!`;
+        console.log('✅ Заголовок обновлен:', stationName);
+    } else {
+        console.warn('❌ Элемент заголовка не найден');
+    }
+}
 // Инициализация дополнительных модулей при загрузке
 document.addEventListener('DOMContentLoaded', function() {
     // Отложенная инициализация дополнительных элементов

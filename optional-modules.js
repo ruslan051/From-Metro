@@ -547,7 +547,7 @@ async function loadGroupMembers() {
             const memberElement = document.createElement('div');
             memberElement.className = `user-state-display ${isCurrentUser ? 'current-user' : ''}`;
             
-            // Форматируем информацию о состоянии с подсветкой
+            // Форматируем информацию о состоянии
             let stateDetails = '';
             if (user.position || user.mood) {
                 if (user.position) {
@@ -561,51 +561,36 @@ async function loadGroupMembers() {
                 stateDetails = 'Позиция не указана • Настроение не указано';
             }
             
-            // ИСПРАВЛЕННОЕ извлечение информации о таймере
-            let timerInfo = '';
-            if (user.status && user.status.includes('⏰')) {
-                const timerParts = user.status.split('⏰');
-                if (timerParts.length > 1) {
-                    const timerText = timerParts[1].trim();
-                    if (user.status.includes('запущен')) {
-                        timerInfo = ` • <span class="timer-highlight">⏰ ${timerText}</span>`;
-                    } else if (user.status.includes('истекло') || user.status.includes('остановлен')) {
-                        timerInfo = ` • <span class="timer-highlight">⏰ ${timerText}</span>`;
-                    } else {
-                        timerInfo = ` • <span class="timer-waiting">⏰ ${timerText}</span>`;
-                    }
-                }
-            }
-            
             // Информация о цвете одежды и вагоне
             let additionalInfo = '';
             if (user.color) {
-                additionalInfo += `🎨Цвет одежды ${user.color}`;
+                additionalInfo += `🎨 ${user.color}`;
             }
             if (user.wagon && user.wagon !== '' && user.wagon !== 'Не указан') {
                 if (additionalInfo) additionalInfo += ' • ';
                 additionalInfo += `🚇 Вагон ${user.wagon}`;
             }
             
-            // В функции loadGroupMembers замените блок создания memberElement:
-                    memberElement.innerHTML = `
-                        <div style="width: 50px; height: 50px; border-radius: 50%; background: ${user.color_code || '#007bff'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: bold;">
-                            ${user.name.charAt(0)}
-                        </div>
-                        <div class="user-state-info">
-                            <div class="user-state-name">${user.name} ${isCurrentUser ? '(Вы)' : ''}</div>
-                            <div class="user-state-details">
-                                ${stateDetails}
-                                ${additionalInfo ? `<div style="margin-top: 5px; font-size: 12px; color: #666;">${additionalInfo}</div>` : ''}
-                            </div>
-                        </div>
-                        ${user.show_timer && user.timer_seconds > 0 ? `
-                            <div class="user-timer-display">
-                                <div class="timer-label">⏰ Осталось:</div>
-                                <div class="timer-value">${formatTime(user.timer_seconds)}</div>
-                            </div>
-                        ` : ''}
-                    `;
+            // HTML структура пользователя
+            memberElement.innerHTML = `
+                <div class="user-avatar" style="background: ${user.color_code || '#007bff'};">
+                    ${user.name.charAt(0)}
+                </div>
+                <div class="user-state-info">
+                    <div class="user-state-name">${user.name} ${isCurrentUser ? '(Вы)' : ''}</div>
+                    <div class="user-state-details">
+                        ${stateDetails}
+                        ${additionalInfo ? `<div style="margin-top: 5px; font-size: 12px; color: #666;">${additionalInfo}</div>` : ''}
+                    </div>
+                </div>
+                ${user.show_timer && user.timer_seconds > 0 ? `
+                    <div class="user-timer-display">
+                        <div class="timer-label">⏰ Осталось:</div>
+                        <div class="timer-value">${formatTime(user.timer_seconds)}</div>
+                    </div>
+                ` : ''}
+            `;
+            
             groupMembersContainer.appendChild(memberElement);
         });
         
@@ -616,7 +601,6 @@ async function loadGroupMembers() {
         }
     }
 }
-
 
 // Функция обновления индикаторов текущего состояния
 function updateStatusIndicators() {

@@ -145,8 +145,7 @@
                     <!-- Выбор цвета одежды -->
                     <div class="form-group">
                         <label for="color-select">Цвет верхней одежды или стиль</label>
-                        <input type="text" id="color-select" placeholder="Например: черный верх, 
-                        синий низ, очки, шапка" required>
+                        <input type="text" id="color-select" placeholder= "<i>Например:черный верх,синий низ,очки,шапка</i>" required>
                     </div>
                     
                     <!-- Таймер ожидания -->
@@ -207,31 +206,38 @@
                 
                 <!-- Выбор позиции в вагоне -->
                 <div class="state-section">
-                    <h4>🎯 Ваша позиция в вагоне</h4>
+                    <h4>🎯 Ваша позиция на станции или в вагоне</h4>
                     <div class="state-cards" id="position-cards">
                         <div class="state-card" data-position="Брожу по станции" onclick="selectPosition('Брожу по станции', this)">
                             <div class="state-icon">📖</div>
                             <div class="state-name">Брожу по станции</div>
                         </div>
-                        <div class="state-card" data-position="Сижу читаю" onclick="selectPosition('Сижу читаю', this)">
+                         <div class="state-card" data-position="Сижу на станции" onclick="selectPosition('Сижу на станции', this)">
                             <div class="state-icon">📖</div>
-                            <div class="state-name">Сижу читаю</div>
+                            <div class="state-name">Сижу на станции</div>
+                        <div class="state-card" data-position="Иду к поезду" onclick="selectPosition('Иду к поезду', this)">
+                            <div class="state-icon">📖</div>
+                            <div class="state-name">Иду к поезду</div>
                         </div>
-                        <div class="state-card" data-position="Стою по центру" onclick="selectPosition('Стою по центру', this)">
+                        <div class="state-card" data-position="Стою по центру в вагоне" onclick="selectPosition('Стою по центру в вагоне', this)">
                             <div class="state-icon">🧍</div>
-                            <div class="state-name">Стою по центру</div>
+                            <div class="state-name">Стою по центру в вагоне</div>
                         </div>
-                        <div class="state-card" data-position="Стою у двери" onclick="selectPosition('Стою у двери', this)">
+                        <div class="state-card" data-position="Стою у двери в вагоне" onclick="selectPosition('Стою у двери в вагоне', this)">
                             <div class="state-icon">🚪</div>
-                            <div class="state-name">Стою у двери</div>
+                            <div class="state-name">Стою у двери в вагоне</div>
                         </div>
-                        <div class="state-card" data-position="Сижу по центру" onclick="selectPosition('Сижу по центру', this)">
+                        <div class="state-card" data-position="Сижу по центру в вагоне" onclick="selectPosition('Сижу по центру в вагоне', this)">
                             <div class="state-icon">💺</div>
-                            <div class="state-name">Сижу по центру</div>
+                            <div class="state-name">Сижу по центру в вагоне</div>
                         </div>
-                        <div class="state-card" data-position="Сижу у двери" onclick="selectPosition('Сижу у двери', this)">
+                        <div class="state-card" data-position="Сижу у двери в вагоне" onclick="selectPosition('Сижу у двери в вагоне', this)">
                             <div class="state-icon">🪑</div>
-                            <div class="state-name">Сижу у двери</div>
+                            <div class="state-name">Сижу у двери в вагоне</div>
+                        </div>
+                         <div class="state-card" data-position="Сижу читаю в вагоне" onclick="selectPosition('Сижу читаю в вагоне', this)">
+                            <div class="state-icon">📖</div>
+                            <div class="state-name">Сижу читаю в вагоне</div>
                         </div>
                     </div>
                 </div>
@@ -248,11 +254,11 @@
                             <div class="state-icon">😴</div>
                             <div class="state-name">Сплю</div>
                         </div>
-                        <div class="state-card" data-mood="Хорошее настроение, улыбаюсь" onclick="selectMood('Хорошее настроение, улыбаюсь', this)">
+                        <div class="state-card" data-mood="Хорошее настроение" onclick="selectMood('Хорошее настроение, улыбаюсь', this)">
                             <div class="state-icon">😊</div>
                             <div class="state-name">Хорошее настроение</div>
                         </div>
-                        <div class="state-card" data-mood="Плохое настроение, грустно" onclick="selectMood('Плохое настроение, грустно', this)">
+                        <div class="state-card" data-mood="Плохое настроение" onclick="selectMood('Плохое настроение, грустно', this)">
                             <div class="state-icon">😔</div>
                             <div class="state-name">Плохое настроение</div>
                         </div>

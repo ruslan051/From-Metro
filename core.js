@@ -1,35 +1,57 @@
+// =============================================
+// КОНФИГУРАЦИЯ И ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// =============================================
+
 // Глобальные флаги для проверки загрузки модулей
 window.optionalModulesLoaded = false;
 window.optionalModulesLoading = false;
 
-
-// Текущий пользователь и состояние
-let currentUser = null;
-let timerInterval = null;
-let timerSeconds = 0;
-let userId = null;
-let selectedMinutes = 5;
-let selectedCity = 'spb';
-let selectedGender = 'male';
-let currentPosition = '';
-let currentMood = '';
-let currentGroup = null;
-let currentSelectedStation = null;
-let globalRefreshInterval = null;
-
-// Сказочные имена для мужчин и женщин
-const maleNames = ['Иван-Царевич', 'Кощей Бессмертный', 'Добрыня Никитич', 'Леший', 'Водяной', 'Бабай', 'Соловей-Разбойник', 'Змей Горыныч'];
-const femaleNames = ['Василиса Премудрая', 'Баба Яга', 'Царевна-Лягушка', 'Снегурочка', 'Марья-Искусница', 'Аленушка', 'Кикимора', 'Русалка'];
-
 // API endpoints
 const API_BASE = 'https://metro-backend-xlkt.onrender.com/api';
 
-// Глобальные переменные для DOM элементов
-let setupScreen, waitingRoomScreen, joinedRoomScreen;
-let backToSetupBtn, backToWaitingBtn, leaveGroupBtn;
-let enterWaitingRoomBtn, confirmStationBtn;
+// Константы приложения
+const CONSTANTS = {
+    MALE_NAMES: ['Иван-Царевич', 'Кощей Бессмертный', 'Добрыня Никитич', 'Леший', 'Водяной', 'Бабай', 'Соловей-Разбойник', 'Змей Горыныч'],
+    FEMALE_NAMES: ['Василиса Премудрая', 'Баба Яга', 'Царевна-Лягушка', 'Снегурочка', 'Марья-Искусница', 'Аленушка', 'Кикимора', 'Русалка'],
+    COLORS: ['#dc3545', '#007bff', '#28a745', '#ffc107', '#6f42c1', '#e83e8c', '#fd7e14', '#20c997'],
+    REFRESH_INTERVAL: 3000
+};
 
-// Безопасное получение элементов
+// Текущее состояние приложения
+const AppState = {
+    currentUser: null,
+    userId: null,
+    selectedCity: 'spb',
+    selectedGender: 'male',
+    selectedMinutes: 5,
+    currentPosition: '',
+    currentMood: '',
+    currentGroup: null,
+    currentSelectedStation: null,
+    timerInterval: null,
+    timerSeconds: 0,
+    globalRefreshInterval: null
+};
+
+// Глобальные ссылки на DOM элементы
+const DOM = {
+    setupScreen: null,
+    waitingRoomScreen: null,
+    joinedRoomScreen: null,
+    backToSetupBtn: null,
+    backToWaitingBtn: null,
+    leaveGroupBtn: null,
+    enterWaitingRoomBtn: null,
+    confirmStationBtn: null
+};
+
+// =============================================
+// УТИЛИТЫ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// =============================================
+
+/**
+ * Безопасное получение элемента по ID
+ */
 function getElementSafe(id) {
     const element = document.getElementById(id);
     if (!element) {
@@ -38,61 +60,114 @@ function getElementSafe(id) {
     return element;
 }
 
-// Инициализация основных DOM элементов
+/**
+ * Генерация случайного цвета
+ */
+function getRandomColor() {
+    return CONSTANTS.COLORS[Math.floor(Math.random() * CONSTANTS.COLORS.length)];
+}
+
+/**
+ * Загрузка внешнего скрипта
+ */
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
+// =============================================
+// ИНИЦИАЛИЗАЦИЯ DOM И ОБРАБОТЧИКОВ СОБЫТИЙ
+// =============================================
+
+/**
+ * Инициализация основных DOM элементов
+ */
 function initializeCoreDOMElements() {
     console.log('🔧 Инициализация основных DOM элементов...');
     
     // Основные экраны
-    setupScreen = getElementSafe('setup-screen');
-    waitingRoomScreen = getElementSafe('waiting-room-screen');
-    joinedRoomScreen = getElementSafe('joined-room-screen');
+    DOM.setupScreen = getElementSafe('setup-screen');
+    DOM.waitingRoomScreen = getElementSafe('waiting-room-screen');
+    DOM.joinedRoomScreen = getElementSafe('joined-room-screen');
     
-     // Если элементы не найдены, попробуем найти их снова
-    if (!setupScreen || !waitingRoomScreen || !joinedRoomScreen) {
-        console.warn('❌ Основные экраны не найдены, повторная попытка...');
-        setupScreen = document.getElementById('setup-screen');
-        waitingRoomScreen = document.getElementById('waiting-room-screen');
-        joinedRoomScreen = document.getElementById('joined-room-screen');
-    }
     // Основные кнопки навигации
-    backToSetupBtn = getElementSafe('back-to-setup');
-    backToWaitingBtn = getElementSafe('back-to-waiting');
-    leaveGroupBtn = getElementSafe('leave-group');
-    enterWaitingRoomBtn = getElementSafe('enter-waiting-room');
-    confirmStationBtn = getElementSafe('confirm-station');
+    DOM.backToSetupBtn = getElementSafe('back-to-setup');
+    DOM.backToWaitingBtn = getElementSafe('back-to-waiting');
+    DOM.leaveGroupBtn = getElementSafe('leave-group');
+    DOM.enterWaitingRoomBtn = getElementSafe('enter-waiting-room');
+    DOM.confirmStationBtn = getElementSafe('confirm-station');
     
     console.log('✅ Основные DOM элементы инициализированы');
 }
 
-// Основные обработчики событий
+/**
+ * Инициализация выбора города и пола
+ */
+function initializeCityAndGenderSelection() {
+    // Обработчики выбора города
+    const cityOptions = document.querySelectorAll('.city-option');
+    cityOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            cityOptions.forEach(opt => opt.classList.remove('active'));
+            this.classList.add('active');
+            AppState.selectedCity = this.getAttribute('data-city');
+            console.log('📍 Выбран город:', AppState.selectedCity);
+        });
+    });
 
+    // Обработчики выбора пола
+    const genderOptions = document.querySelectorAll('.gender-option');
+    genderOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            genderOptions.forEach(opt => opt.classList.remove('active'));
+            this.classList.add('active');
+            AppState.selectedGender = this.getAttribute('data-gender');
+            console.log('👤 Выбран пол:', AppState.selectedGender);
+        });
+    });
+}
+
+/**
+ * Инициализация обработчиков событий
+ */
+function initializeEventHandlers() {
+    if (DOM.enterWaitingRoomBtn) {
+        DOM.enterWaitingRoomBtn.addEventListener('click', handleEnterWaitingRoom);
+    }
+    
+    if (DOM.backToSetupBtn) {
+        DOM.backToSetupBtn.addEventListener('click', handleBackToSetup);
+    }
+    
+    if (DOM.backToWaitingBtn) {
+        DOM.backToWaitingBtn.addEventListener('click', handleBackToWaiting);
+    }
+    
+    if (DOM.leaveGroupBtn) {
+        DOM.leaveGroupBtn.addEventListener('click', handleLeaveGroup);
+    }
+    
+    if (DOM.confirmStationBtn) {
+        DOM.confirmStationBtn.addEventListener('click', handleConfirmStation);
+    }
+}
+
+// =============================================
+// ОБРАБОТЧИКИ ПОЛЬЗОВАТЕЛЬСКИХ ДЕЙСТВИЙ
+// =============================================
+
+/**
+ * Обработчик входа в комнату ожидания
+ */
 async function handleEnterWaitingRoom() {
     console.log('🚪 Вход в комнату ожидания');
     
-    const getRandomName = (gender) => {
-        const names = gender === 'male' ? maleNames : femaleNames;
-        return names[Math.floor(Math.random() * names.length)];
-    };
-    
-    const randomName = getRandomName(selectedGender);
-    
-    const userData = {
-        name: randomName,
-        station: '',
-        wagon: '',
-        color: '',
-        colorCode: getRandomColor(),
-        status: 'В режиме ожидания',
-        timer: "00:00",
-        online: true,
-        city: selectedCity,
-        gender: selectedGender,
-        position: '',
-        mood: '',
-        isWaiting: true,
-        isConnected: false
-    };
-    
+    const userData = createUserData();
     console.log('📍 Данные для создания пользователя:', userData);
 
     try {
@@ -100,12 +175,12 @@ async function handleEnterWaitingRoom() {
         const createdUser = await createUser(validatedData);
         
         if (createdUser) {
-            currentUser = createdUser;
-            userId = createdUser.id;
+            AppState.currentUser = createdUser;
+            AppState.userId = createdUser.id;
             
-            if (setupScreen && waitingRoomScreen) {
-                setupScreen.classList.remove('active');
-                waitingRoomScreen.classList.add('active');
+            if (DOM.setupScreen && DOM.waitingRoomScreen) {
+                DOM.setupScreen.classList.remove('active');
+                DOM.waitingRoomScreen.classList.add('active');
                 
                 // Загружаем дополнительные модули по требованию
                 loadOptionalModules().then(() => {
@@ -122,91 +197,63 @@ async function handleEnterWaitingRoom() {
         }
     } catch (error) {
         console.error('❌ Ошибка создания пользователя:', error);
-        
-        // Показываем понятное сообщение об ошибке
-        const errorMessage = error.message.includes('Failed to fetch')
-            ? 'Ошибка подключения к серверу. Проверьте интернет-соединение.'
-            : `Ошибка создания профиля: ${error.message}`;
-        
-        alert(errorMessage);
-        
-        // Показываем кнопку для повторной попытки
-        const retry = confirm('Не удалось подключиться к серверу. Попробовать снова?');
-        if (retry) {
-            handleEnterWaitingRoom();
-        }
+        handleUserCreationError(error);
     }
 }
 
-
-
+/**
+ * Обработчик возврата к настройкам
+ */
 function handleBackToSetup() {
     console.log('🔙 Назад к настройкам');
-    setupScreen.classList.add('active');
-    waitingRoomScreen.classList.remove('active');
+    DOM.setupScreen.classList.add('active');
+    DOM.waitingRoomScreen.classList.remove('active');
     stopGlobalRefresh();
 }
 
+/**
+ * Обработчик возврата к ожиданию
+ */
 function handleBackToWaiting() {
     console.log('🔙 Назад к ожиданию');
-    waitingRoomScreen.classList.add('active');
-    joinedRoomScreen.classList.remove('active');
+    DOM.waitingRoomScreen.classList.add('active');
+    DOM.joinedRoomScreen.classList.remove('active');
 }
 
+/**
+ * Обработчик подтверждения станции
+ */
 async function handleConfirmStation() {
     console.log('✅ Подтверждаем станцию');
     
-    // ПРОВЕРКА ЦВЕТА - исправленная логика
-    let colorValue = '';
-    
-    // Проверяем, есть ли элемент colorSelect на текущей странице
-    if (window.colorSelect && window.colorSelect.value) {
-        colorValue = window.colorSelect.value;
-    } else {
-        // Если на 3 странице, ищем элемент по-другому
-        const colorInput = document.getElementById('color-select');
-        if (colorInput) {
-            colorValue = colorInput.value;
-        }
-    }
-    
+    const colorValue = getSelectedColor();
     if (!colorValue) {
         alert('Пожалуйста, укажите цвет верхней одежды');
         return;
     }
     
-    if (!currentSelectedStation) {
+    if (!AppState.currentSelectedStation) {
         alert('Пожалуйста, выберите станцию на карте');
         return;
     }
     
-    // Проверяем вагон
-    let wagonValue = '';
-    if (window.wagonSelect && window.wagonSelect.value) {
-        wagonValue = window.wagonSelect.value;
-    } else {
-        const wagonSelect = document.getElementById('wagon-select');
-        if (wagonSelect) {
-            wagonValue = wagonSelect.value;
-        }
-    }
+    const wagonValue = getSelectedWagon();
     
-    if (userId) {
+    if (AppState.userId) {
         try {
-            await updateUser(userId, {
-                station: currentSelectedStation,
+            await updateUser(AppState.userId, {
+                station: AppState.currentSelectedStation,
                 wagon: wagonValue,
                 color: colorValue,
                 is_waiting: false,
                 is_connected: true,
-                status: 'Выбрал станцию: ' + currentSelectedStation
+                status: 'Выбрал станцию: ' + AppState.currentSelectedStation
             });
 
-              // ОБНОВЛЯЕМ ЗАГОЛОВОК ПЕРЕД ПЕРЕХОДОМ
-            updateStationTitle(currentSelectedStation);
+            updateStationTitle(AppState.currentSelectedStation);
 
             if (typeof joinStation === 'function') {
-                await joinStation(currentSelectedStation);
+                await joinStation(AppState.currentSelectedStation);
             }
             
         } catch (error) {
@@ -216,31 +263,19 @@ async function handleConfirmStation() {
     }
 }
 
-function validateUserData(userData) {
-  const required = ['name', 'city', 'gender'];
-  const missing = required.filter(field => !userData[field]);
-  
-  if (missing.length > 0) {
-    throw new Error(`Отсутствуют обязательные поля: ${missing.join(', ')}`);
-  }
-  
-  return {
-    ...userData,
-    name: userData.name.trim() || 'Аноним',
-    station: userData.station || '',
-    wagon: userData.wagon || '',
-    color: userData.color || 'Синий',
-    status: userData.status || 'Ожидание'
-  };
-}
+/**
+ * Обработчик выхода из группы
+ */
 async function handleLeaveGroup() {
     console.log('🚪 Покидаем группу');
-      // СБРАСЫВАЕМ СОСТОЯНИЯ ПРИ ВЫХОДЕ ИЗ ГРУППЫ
-    currentPosition = '';
-    currentMood = '';
-    if (userId) {
+    
+    // Сбрасываем состояния при выходе из группы
+    AppState.currentPosition = '';
+    AppState.currentMood = '';
+    
+    if (AppState.userId) {
         try {
-            await updateUser(userId, { 
+            await updateUser(AppState.userId, { 
                 status: 'Ожидание',
                 is_waiting: true,
                 is_connected: false,
@@ -250,123 +285,190 @@ async function handleLeaveGroup() {
         }
     }
     
-    currentGroup = null;
-    joinedRoomScreen.classList.remove('active');
-    waitingRoomScreen.classList.add('active');
+    AppState.currentGroup = null;
+    DOM.joinedRoomScreen.classList.remove('active');
+    DOM.waitingRoomScreen.classList.add('active');
     
     console.log('✅ Вышли из группы');
 }
 
-// Инициализация выбора города и пола
-function initializeCityAndGenderSelection() {
-    // Обработчики выбора города
-    const cityOptions = document.querySelectorAll('.city-option');
-    cityOptions.forEach(option => {
-        option.addEventListener('click', function() {
-            cityOptions.forEach(opt => opt.classList.remove('active'));
-            this.classList.add('active');
-            selectedCity = this.getAttribute('data-city');
-            console.log('📍 Выбран город:', selectedCity);
-        });
-    });
+// =============================================
+// ФУНКЦИИ РАБОТЫ С ДАННЫМИ ПОЛЬЗОВАТЕЛЯ
+// =============================================
 
-    // Обработчики выбора пола
-    const genderOptions = document.querySelectorAll('.gender-option');
-    genderOptions.forEach(option => {
-        option.addEventListener('click', function() {
-            genderOptions.forEach(opt => opt.classList.remove('active'));
-            this.classList.add('active');
-            selectedGender = this.getAttribute('data-gender');
-            console.log('👤 Выбран пол:', selectedGender);
-        });
-    });
+/**
+ * Создание данных пользователя
+ */
+function createUserData() {
+    const getRandomName = (gender) => {
+        const names = gender === 'male' ? CONSTANTS.MALE_NAMES : CONSTANTS.FEMALE_NAMES;
+        return names[Math.floor(Math.random() * names.length)];
+    };
+
+    const randomName = getRandomName(AppState.selectedGender);
+    
+    return {
+        name: randomName,
+        station: '',
+        wagon: '',
+        color: '',
+        colorCode: getRandomColor(),
+        status: 'В режиме ожидания',
+        timer: "00:00",
+        online: true,
+        city: AppState.selectedCity,
+        gender: AppState.selectedGender,
+        position: '',
+        mood: '',
+        isWaiting: true,
+        isConnected: false
+    };
 }
 
-// Основные функции API
-async function createUser(userData) {
-
- 
-  try {
-    console.log('📍 Отправка данных пользователя:', userData);
+/**
+ * Валидация данных пользователя
+ */
+function validateUserData(userData) {
+    const required = ['name', 'city', 'gender'];
+    const missing = required.filter(field => !userData[field]);
     
-    const response = await fetch(`${API_BASE}/users`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(userData)
-    });
-    
-    console.log('📍 Статус ответа:', response.status);
-    
-    if (!response.ok) {
-      let errorMessage = `HTTP error! status: ${response.status}`;
-      
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.error || errorMessage;
-        console.error('📍 Детали ошибки от сервера:', errorData);
-      } catch (e) {
-        console.error('📍 Не удалось прочитать тело ошибки');
-      }
-      
-      throw new Error(errorMessage);
+    if (missing.length > 0) {
+        throw new Error(`Отсутствуют обязательные поля: ${missing.join(', ')}`);
     }
     
-    const result = await response.json();
-    console.log('✅ Пользователь создан успешно:', result);
-    return result;
+    return {
+        ...userData,
+        name: userData.name.trim() || 'Аноним',
+        station: userData.station || '',
+        wagon: userData.wagon || '',
+        color: userData.color || 'Синий',
+        status: userData.status || 'Ожидание'
+    };
+}
+
+/**
+ * Обработка ошибок создания пользователя
+ */
+function handleUserCreationError(error) {
+    const errorMessage = error.message.includes('Failed to fetch')
+        ? 'Ошибка подключения к серверу. Проверьте интернет-соединение.'
+        : `Ошибка создания профиля: ${error.message}`;
     
-  } catch (error) {
-    console.error('❌ Ошибка создания пользователя:', error);
+    alert(errorMessage);
     
-    // Fallback: сохраняем данные локально
+    const retry = confirm('Не удалось подключиться к серверу. Попробовать снова?');
+    if (retry) {
+        handleEnterWaitingRoom();
+    }
+}
+
+/**
+ * Получение выбранного цвета
+ */
+function getSelectedColor() {
+    if (window.colorSelect && window.colorSelect.value) {
+        return window.colorSelect.value;
+    } else {
+        const colorInput = document.getElementById('color-select');
+        return colorInput ? colorInput.value : '';
+    }
+}
+
+/**
+ * Получение выбранного вагона
+ */
+function getSelectedWagon() {
+    if (window.wagonSelect && window.wagonSelect.value) {
+        return window.wagonSelect.value;
+    } else {
+        const wagonSelect = document.getElementById('wagon-select');
+        return wagonSelect ? wagonSelect.value : '';
+    }
+}
+
+// =============================================
+// API ФУНКЦИИ
+// =============================================
+
+/**
+ * Создание пользователя через API
+ */
+async function createUser(userData) {
+    try {
+        console.log('📍 Отправка данных пользователя:', userData);
+        console.log('📍 Отправка запроса на:', `${API_BASE}/users`);
+        
+        const response = await fetch(`${API_BASE}/users`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(userData)
+        });
+        
+        console.log('📍 Статус ответа:', response.status);
+        
+        if (!response.ok) {
+            let errorMessage = `HTTP error! status: ${response.status}`;
+            
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorMessage;
+                console.error('📍 Детали ошибки от сервера:', errorData);
+            } catch (e) {
+                console.error('📍 Не удалось прочитать тело ошибки');
+            }
+            
+            throw new Error(errorMessage);
+        }
+        
+        const result = await response.json();
+        console.log('✅ Пользователь создан успешно:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('❌ Ошибка создания пользователя:', error);
+        return createFallbackUser(userData);
+    }
+}
+
+/**
+ * Создание резервного пользователя (оффлайн режим)
+ */
+function createFallbackUser(userData) {
     const fallbackUser = {
-      id: Math.floor(Math.random() * 10000) + 1, // Используем случайное число вместо Date.now()
-      name: userData.name || 'Аноним',
-      station: userData.station || '',
-      wagon: userData.wagon || '',
-      color: userData.color || 'Синий',
-      color_code: userData.colorCode || getRandomColor(),
-      status: userData.status || 'Ожидание',
-      city: userData.city || 'spb',
-      gender: userData.gender || 'male',
-      online: true,
-      isFallback: true
+        id: Math.floor(Math.random() * 10000) + 1,
+        name: userData.name || 'Аноним',
+        station: userData.station || '',
+        wagon: userData.wagon || '',
+        color: userData.color || 'Синий',
+        color_code: userData.colorCode || getRandomColor(),
+        status: userData.status || 'Ожидание',
+        city: userData.city || 'spb',
+        gender: userData.gender || 'male',
+        online: true,
+        isFallback: true
     };
     
     // Сохраняем в localStorage
     try {
-      const localUsers = JSON.parse(localStorage.getItem('metroUsers') || '[]');
-      localUsers.push(fallbackUser);
-      localStorage.setItem('metroUsers', JSON.stringify(localUsers));
-      console.log('✅ Пользователь сохранен локально');
+        const localUsers = JSON.parse(localStorage.getItem('metroUsers') || '[]');
+        localUsers.push(fallbackUser);
+        localStorage.setItem('metroUsers', JSON.stringify(localUsers));
+        console.log('✅ Пользователь сохранен локально');
     } catch (e) {
-      console.error('❌ Ошибка локального сохранения:', e);
+        console.error('❌ Ошибка локального сохранения:', e);
     }
     
     return fallbackUser;
-  }
-     // Добавьте в функцию createUser для отладки
-console.log('📍 Отправка запроса на:', `${API_BASE}/users`);
-console.log('📍 Данные:', JSON.stringify(userData, null, 2));
-
 }
 
+/**
+ * Получение списка пользователей
+ */
 async function getUsers() {
     try {
-        const response = await fetch(`${API_BASE}/users`);
-        const users = await response.json();
-        return users.map((user, index) => ({
-            ...user,
-            id: user.id || index + 1
-        }));
-    } catch (error) {
-        console.error('Ошибка получения пользователей:', error);
-        return [];
-    }
-     try {
         console.log('🔄 Запрос пользователей с сервера...');
         const response = await fetch(`${API_BASE}/users`);
         
@@ -389,6 +491,9 @@ async function getUsers() {
     }
 }
 
+/**
+ * Обновление данных пользователя
+ */
 async function updateUser(userId, updates) {
     try {
         console.log('📍 Отправка обновления пользователя:', { userId, updates });
@@ -415,6 +520,9 @@ async function updateUser(userId, updates) {
     }
 }
 
+/**
+ * Удаление пользователя
+ */
 async function deleteUser(userId) {
     try {
         await fetch(`${API_BASE}/users/${userId}`, { method: 'DELETE' });
@@ -423,10 +531,13 @@ async function deleteUser(userId) {
     }
 }
 
+/**
+ * Обновление активности пользователя
+ */
 async function pingActivity() {
-    if (userId) {
+    if (AppState.userId) {
         try {
-            await fetch(`${API_BASE}/users/${userId}/ping`, { method: 'POST' });
+            await fetch(`${API_BASE}/users/${AppState.userId}/ping`, { method: 'POST' });
             console.log('✅ Активность обновлена');
             return true;
         } catch (error) {
@@ -436,88 +547,72 @@ async function pingActivity() {
     }
 }
 
-// Функция для запуска глобального обновления каждые 5 секунд
+// =============================================
+// СИСТЕМА ОБНОВЛЕНИЯ ДАННЫХ
+// =============================================
+
+/**
+ * Запуск глобального обновления данных
+ */
 function startGlobalRefresh() {
-    if (globalRefreshInterval) {
-        clearInterval(globalRefreshInterval);
+    if (AppState.globalRefreshInterval) {
+        clearInterval(AppState.globalRefreshInterval);
     }
     
-    globalRefreshInterval = setInterval(async () => {
+    AppState.globalRefreshInterval = setInterval(async () => {
         console.log('🔄 Глобальное обновление данных...');
-      
-        if (setupScreen && setupScreen.classList.contains('active')) {
+        
+        if (DOM.setupScreen && DOM.setupScreen.classList.contains('active')) {
             // На первом экране ничего не обновляем
-        } else if (waitingRoomScreen && waitingRoomScreen.classList.contains('active')) {
+        } else if (DOM.waitingRoomScreen && DOM.waitingRoomScreen.classList.contains('active')) {
             // На втором экране обновляем карту станций и запросы
             if (typeof loadStationsMap === 'function') await loadStationsMap();
             if (typeof loadRequests === 'function') await loadRequests();
             if (typeof restoreSelectedStation === 'function') restoreSelectedStation();
-        } else if (joinedRoomScreen && joinedRoomScreen.classList.contains('active')) {
-                // На третьем экране обновляем участников группы и запросы, но не перезаписываем статус
-                if (typeof loadGroupMembers === 'function') {
-                    console.log('🔄 Автообновление участников группы');
-                    await loadGroupMembers();
-                }
-                if (typeof loadRequests === 'function') {
-                    console.log('🔄 Автообновление запросов');
-                    await loadRequests();
-                }
-            
+        } else if (DOM.joinedRoomScreen && DOM.joinedRoomScreen.classList.contains('active')) {
+            // На третьем экране обновляем участников группы и запросы
+            if (typeof loadGroupMembers === 'function') {
+                console.log('🔄 Автообновление участников группы');
+                await loadGroupMembers();
+            }
+            if (typeof loadRequests === 'function') {
+                console.log('🔄 Автообновление запросов');
+                await loadRequests();
+            }
         }
 
-         // Автоматически обновляем отображение таймеров
-        if (joinedRoomScreen && joinedRoomScreen.classList.contains('active')) {
+        // Автоматически обновляем отображение таймеров
+        if (DOM.joinedRoomScreen && DOM.joinedRoomScreen.classList.contains('active')) {
             if (typeof loadGroupMembers === 'function') {
                 await loadGroupMembers();
-                    }
+            }
         }
         
         await pingActivity();
         
-    }, 3000); // Уменьшим интервал до 3 секунд для быстрого обновления
+    }, CONSTANTS.REFRESH_INTERVAL);
     
     console.log('✅ Глобальное обновление запущено каждые 3 секунды');
 }
 
-// Функция остановки глобального обновления
+/**
+ * Остановка глобального обновления
+ */
 function stopGlobalRefresh() {
-    if (globalRefreshInterval) {
-        clearInterval(globalRefreshInterval);
-        globalRefreshInterval = null;
+    if (AppState.globalRefreshInterval) {
+        clearInterval(AppState.globalRefreshInterval);
+        AppState.globalRefreshInterval = null;
         console.log('⏹️ Глобальное обновление остановлено');
     }
 }
-// Функция для принудительной инициализации при переходе на страницу
-function forceInitializeJoinedRoom() {
-    console.log('🔄 Принудительная инициализация joined room...');
-    
-    // Переинициализируем элементы
-    initializeOptionalDOMElements();
 
-    // Восстанавливаем заголовок станции если есть
-    if (currentGroup && currentGroup.station) {
-        updateStationTitle(currentGroup.station);
-    } else if (currentSelectedStation) {
-        updateStationTitle(currentSelectedStation);
-    }
-    // Восстанавливаем состояния
-    restoreSelectedStates();
+// =============================================
+// СИСТЕМА МОДУЛЕЙ И ДОПОЛНИТЕЛЬНЫХ ФУНКЦИЙ
+// =============================================
 
-      // Инициализируем карточки
-    initializeStateCards();
-
-    // Обновляем индикаторы
-    updateStatusIndicators();
-    updateUserStateDisplay();
-    
-    // Загружаем участников
-    if (typeof loadGroupMembers === 'function') {
-        loadGroupMembers();
-    }
-    
-    console.log('✅ Joined room инициализирован');
-}
-// Функция загрузки дополнительных модулей
+/**
+ * Загрузка дополнительных модулей
+ */
 async function loadOptionalModules() {
     if (window.optionalModulesLoaded || window.optionalModulesLoading) return;
     
@@ -525,13 +620,9 @@ async function loadOptionalModules() {
     console.log('📦 Загрузка дополнительных модулей...');
     
     try {
-         // Сначала инициализируем основные DOM элементы
         initializeCoreDOMElements();
-          
-        // Затем загружаем скрипт
         await loadScript('optional-modules.js');
 
-        // Затем инициализируем дополнительные элементы
         if (typeof initializeOptionalDOMElements === 'function') {
             initializeOptionalDOMElements();
         }
@@ -545,54 +636,99 @@ async function loadOptionalModules() {
         window.optionalModulesLoading = false;
     }
 }
-// Вспомогательная функция для загрузки скриптов
-function loadScript(src) {
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-    });
+
+/**
+ * Принудительная инициализация joined room
+ */
+function forceInitializeJoinedRoom() {
+    console.log('🔄 Принудительная инициализация joined room...');
+    
+    // Переинициализируем элементы
+    if (typeof initializeOptionalDOMElements === 'function') {
+        initializeOptionalDOMElements();
+    }
+
+    // Восстанавливаем заголовок станции если есть
+    if (AppState.currentGroup && AppState.currentGroup.station) {
+        updateStationTitle(AppState.currentGroup.station);
+    } else if (AppState.currentSelectedStation) {
+        updateStationTitle(AppState.currentSelectedStation);
+    }
+
+    // Восстанавливаем состояния
+    if (typeof restoreSelectedStates === 'function') {
+        restoreSelectedStates();
+    }
+
+    // Инициализируем карточки
+    if (typeof initializeStateCards === 'function') {
+        initializeStateCards();
+    }
+
+    // Обновляем индикаторы
+    if (typeof updateStatusIndicators === 'function') {
+        updateStatusIndicators();
+    }
+    if (typeof updateUserStateDisplay === 'function') {
+        updateUserStateDisplay();
+    }
+    
+    // Загружаем участников
+    if (typeof loadGroupMembers === 'function') {
+        loadGroupMembers();
+    }
+    
+    console.log('✅ Joined room инициализирован');
 }
 
-// Функции навигации (ДОБАВЛЕНО для HTML)
+// =============================================
+// СИСТЕМА НАВИГАЦИИ
+// =============================================
+
+/**
+ * Показать экран настроек
+ */
 function showSetup() {
-    if (!setupScreen) initializeCoreDOMElements();
+    if (!DOM.setupScreen) initializeCoreDOMElements();
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-    setupScreen.classList.add('active');
+    DOM.setupScreen.classList.add('active');
     stopGlobalRefresh();
 }
 
+/**
+ * Показать комнату ожидания
+ */
 function showWaitingRoom() {
-    if (!userId) {
+    if (!AppState.userId) {
         alert('Сначала создайте профиль');
         return showSetup();
     }
-    if (!waitingRoomScreen) initializeCoreDOMElements();
+    if (!DOM.waitingRoomScreen) initializeCoreDOMElements();
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-    waitingRoomScreen.classList.add('active');
+    DOM.waitingRoomScreen.classList.add('active');
     
-    // Загружаем модули если нужно
     loadOptionalModules().then(() => {
         startGlobalRefresh();
     });
 }
 
+/**
+ * Показать экран присоединенной комнаты
+ */
 function showJoinedRoom() {
-    if (!currentGroup) {
+    if (!AppState.currentGroup) {
         alert('Сначала выберите станцию');
         return;
     }
-    if (!joinedRoomScreen) initializeCoreDOMElements();
+    if (!DOM.joinedRoomScreen) initializeCoreDOMElements();
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-    joinedRoomScreen.classList.add('active');
+    DOM.joinedRoomScreen.classList.add('active');
     
-    // ПРИНУДИТЕЛЬНАЯ ИНИЦИАЛИЗАЦИЯ И ОБНОВЛЕНИЕ
+    // Принудительная инициализация и обновление
     setTimeout(() => {
         forceInitializeJoinedRoom();
         
-        // ДОПОЛНИТЕЛЬНОЕ ОБНОВЛЕНИЕ ДАННЫХ
+        // Дополнительное обновление данных
         setTimeout(() => {
             if (typeof loadGroupMembers === 'function') {
                 console.log('🔄 Принудительное обновление при переходе на страницу');
@@ -604,49 +740,26 @@ function showJoinedRoom() {
         }, 1000);
     }, 100);
     
-    // Загружаем модули если нужно
     loadOptionalModules().then(() => {
         startGlobalRefresh();
     });
 }
 
-// Вспомогательные функции
-function getRandomColor() {
-    const colors = ['#dc3545', '#007bff', '#28a745', '#ffc107', '#6f42c1', '#e83e8c', '#fd7e14', '#20c997'];
-    return colors[Math.floor(Math.random() * colors.length)];
-}
+// =============================================
+// ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
+// =============================================
 
-// Основная инициализация при загрузке DOM
+/**
+ * Основная инициализация при загрузке DOM
+ */
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚇 DOM загружен, инициализация ядра...');
     
     // Инициализируем основные DOM элементы
     initializeCoreDOMElements();
-        
     
-
-
-    
-    // Инициализация основных обработчиков
-    if (enterWaitingRoomBtn) {
-        enterWaitingRoomBtn.addEventListener('click', handleEnterWaitingRoom);
-    }
-    
-    if (backToSetupBtn) {
-        backToSetupBtn.addEventListener('click', handleBackToSetup);
-    }
-    
-    if (backToWaitingBtn) {
-        backToWaitingBtn.addEventListener('click', handleBackToWaiting);
-    }
-    
-    if (leaveGroupBtn) {
-        leaveGroupBtn.addEventListener('click', handleLeaveGroup);
-    }
-    
-    if (confirmStationBtn) {
-        confirmStationBtn.addEventListener('click', handleConfirmStation);
-    }
+    // Инициализация обработчиков событий
+    initializeEventHandlers();
     
     // Инициализация выбора города и пола
     initializeCityAndGenderSelection();
@@ -654,23 +767,24 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ Ядро приложения инициализировано');
 });
 
-// Запуск при полной загрузке страницы
+/**
+ * Запуск при полной загрузке страницы
+ */
 window.addEventListener('load', function() {
-    
-    
     console.log('🚇 Ядро приложения "Из метро" полностью загружено');
 });
 
-// Остановка при закрытии страницы
+/**
+ * Остановка при закрытии страницы
+ */
 window.addEventListener('beforeunload', async function() {
     stopGlobalRefresh();
     
-    if (userId) {
+    if (AppState.userId) {
         try {
-            await deleteUser(userId);
+            await deleteUser(AppState.userId);
         } catch (error) {
             console.error('Ошибка при удалении пользователя:', error);
         }
     }
 });
-

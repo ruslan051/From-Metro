@@ -26,7 +26,7 @@ const USER_COLORS = [
   '#6f42c1', '#e83e8c', '#fd7e14', '#20c997'
 ];
 // Добавьте в backend
-const NodeCache = require('node-cache');
+import NodeCache from 'node-cache';
 const cache = new NodeCache({ stdTTL: 10 }); // 10 секунд
 
 

@@ -95,8 +95,8 @@
                 </nav>
                 
                 <p> 🔴 Выберите станцию на карте для присоединения </p>
-                <p> 🔴 цвет верхней одежды </p>
-                <p> 🔴 номер вагона (если в пути)</p>
+                <p> 🔴 Цвет верхней одежды или стиль </p>
+                <p> 🔴 Номер вагона (если в пути)</p>
                 
                 <!-- Контейнер карты станций -->
                 <div class="stations-map-container">
@@ -144,8 +144,8 @@
                     
                     <!-- Выбор цвета одежды -->
                     <div class="form-group">
-                        <label for="color-select">Цвет верхней одежды</label>
-                        <input type="text" id="color-select" placeholder="Например: черный, синий, красный" required>
+                        <label for="color-select">Цвет верхней одежды или стиль, </label>
+                        <input type="text" id="color-select" placeholder="Например: черный верх, синий низ, очки, шапка" required>
                     </div>
                     
                     <!-- Таймер ожидания -->
@@ -208,6 +208,10 @@
                 <div class="state-section">
                     <h4>🎯 Ваша позиция в вагоне</h4>
                     <div class="state-cards" id="position-cards">
+                        <div class="state-card" data-position="Брожу по станции" onclick="selectPosition('Брожу по станции', this)">
+                            <div class="state-icon">📖</div>
+                            <div class="state-name">Брожу по станции</div>
+                        </div>
                         <div class="state-card" data-position="Сижу читаю" onclick="selectPosition('Сижу читаю', this)">
                             <div class="state-icon">📖</div>
                             <div class="state-name">Сижу читаю</div>

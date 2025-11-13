@@ -25,6 +25,10 @@ const USER_COLORS = [
   '#dc3545', '#007bff', '#28a745', '#ffc107', 
   '#6f42c1', '#e83e8c', '#fd7e14', '#20c997'
 ];
+// Добавьте в backend
+const NodeCache = require('node-cache');
+const cache = new NodeCache({ stdTTL: 10 }); // 10 секунд
+
 
 // =============================================
 // ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
@@ -455,11 +459,13 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
 }));
 
-// Rate limiting middleware
+// В backend коде увеличьте лимиты
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP'
+  max: 300, // Увеличьте до 300 запросов в минуту
+  message: 'Too many requests from this IP',
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use(limiter);
 
@@ -546,11 +552,21 @@ app.get('/api/health', async (req, res) => {
 
 // Получение всех пользователей
 app.get('/api/users', asyncHandler(async (req, res) => {
+  const cacheKey = 'online_users';
+  const cachedUsers = cache.get(cacheKey);
+  
+  if (cachedUsers) {
+    return res.json(cachedUsers);
+  }
+  
   const result = await pool.query(`
-    SELECT * FROM users 
+    SELECT id, name, station, color_code, status, position, mood, timer_seconds
+    FROM users 
     WHERE online = true 
     ORDER BY created_at DESC
   `);
+  
+  cache.set(cacheKey, result.rows);
   res.json(result.rows);
 }));
 

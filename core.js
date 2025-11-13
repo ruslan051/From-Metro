@@ -354,41 +354,69 @@ console.log('📍 Данные:', JSON.stringify(userData, null, 2));
 
 }
 
+let usersCache = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 10000; // 10 секунд
+
+
 async function getUsers() {
+    const now = Date.now();
+    
+    // Возвращаем кэшированные данные если они свежие
+    if (usersCache && (now - cacheTimestamp) < CACHE_DURATION) {
+        return usersCache;
+    }
+    
     try {
         const response = await fetch(`${API_BASE}/users`);
-        const users = await response.json();
-        return users.map((user, index) => ({
-            ...user,
-            id: user.id || index + 1
-        }));
-    } catch (error) {
-        console.error('Ошибка получения пользователей:', error);
-        return [];
-    }
-     try {
-        console.log('🔄 Запрос пользователей с сервера...');
-        const response = await fetch(`${API_BASE}/users`);
         
-        console.log('📡 Статус ответа:', response.status);
-        console.log('📡 URL:', `${API_BASE}/users`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        if (response.status === 429) {
+            // Используем старые данные при 429 ошибке
+            console.warn('⚠️ 429 ошибка, используем кэш');
+            return usersCache || [];
         }
         
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
         const users = await response.json();
-        console.log('✅ Получены пользователи:', users.length);
-        return users.map((user, index) => ({
+        usersCache = users.map((user, index) => ({
             ...user,
             id: user.id || index + 1
         }));
+        cacheTimestamp = now;
+        
+        return usersCache;
     } catch (error) {
         console.error('❌ Ошибка получения пользователей:', error);
-        return [];
+        return usersCache || []; // Возвращаем кэш при ошибке
     }
 }
+let retryDelay = 3000; // начальная задержка
 
+async function globalRefreshHandler() {
+    try {
+        console.log('🔄 Глобальное обновление данных...');
+        
+        // Ваш существующий код обновления...
+        
+        // Сбрасываем задержку при успешном запросе
+        retryDelay = 3000;
+        
+    } catch (error) {
+        console.error('❌ Ошибка обновления:', error);
+        
+        // Экспоненциальная задержка
+        retryDelay = Math.min(retryDelay * 2, 60000); // максимум 60 секунд
+        
+        if (globalRefreshInterval) {
+            clearInterval(globalRefreshInterval);
+            globalRefreshInterval = setInterval(globalRefreshHandler, retryDelay);
+            console.log(`⏳ Увеличиваем интервал обновления до ${retryDelay}ms`);
+        }
+    }
+    
+    await pingActivity();
+}
 async function updateUser(userId, updates) {
     try {
         console.log('📍 Отправка обновления пользователя:', { userId, updates });
@@ -423,20 +451,29 @@ async function deleteUser(userId) {
     }
 }
 
+let lastPingTime = 0;
+const PING_INTERVAL = 15000; // 15 секунд
+
 async function pingActivity() {
-    if (userId) {
-        try {
-            await fetch(`${API_BASE}/users/${userId}/ping`, { method: 'POST' });
-            console.log('✅ Активность обновлена');
-            return true;
-        } catch (error) {
-            console.error('Ошибка пинга активности:', error);
-            return false;
-        }
+    if (!userId) return false;
+    
+    const now = Date.now();
+    if (now - lastPingTime < PING_INTERVAL) {
+        return false; // Слишком рано для следующего ping
+    }
+    
+    try {
+        await fetch(`${API_BASE}/users/${userId}/ping`, { method: 'POST' });
+        lastPingTime = now;
+        console.log('✅ Активность обновлена');
+        return true;
+    } catch (error) {
+        console.error('Ошибка пинга активности:', error);
+        return false;
     }
 }
 
-// Функция для запуска глобального обновления каждые 5 секунд
+// Функция для запуска глобального обновления каждые 10 секунд
 function startGlobalRefresh() {
     if (globalRefreshInterval) {
         clearInterval(globalRefreshInterval);
@@ -474,7 +511,7 @@ function startGlobalRefresh() {
         
         await pingActivity();
         
-    }, 3000); // Уменьшим интервал до 3 секунд для быстрого обновления
+    }, 10000); // интервал 10 секунд обновления
     
     console.log('✅ Глобальное обновление запущено каждые 3 секунды');
 }

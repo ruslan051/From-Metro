@@ -1,676 +1,1098 @@
-// Глобальные флаги для проверки загрузки модулей
-window.optionalModulesLoaded = false;
-window.optionalModulesLoading = false;
+import express from 'express';
+import cors from 'cors';
+import pkg from 'pg';
+import requestIp from 'request-ip';
+import helmet from 'helmet';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
 
+const { Pool } = pkg;
 
-// Текущий пользователь и состояние
-let currentUser = null;
-let timerInterval = null;
-let timerSeconds = 0;
-let userId = null;
-let selectedMinutes = 5;
-let selectedCity = 'spb';
-let selectedGender = 'male';
-let currentPosition = '';
-let currentMood = '';
-let currentGroup = null;
-let currentSelectedStation = null;
-let globalRefreshInterval = null;
+// =============================================
+// КОНСТАНТЫ И НАСТРОЙКИ
+// =============================================
 
-// Сказочные имена для мужчин и женщин
-const maleNames = ['Иван-Царевич', 'Кощей Бессмертный', 'Добрыня Никитич', 'Леший', 'Водяной', 'Бабай', 'Соловей-Разбойник', 'Змей Горыныч'];
-const femaleNames = ['Василиса Премудрая', 'Баба Яга', 'Царевна-Лягушка', 'Снегурочка', 'Марья-Искусница', 'Аленушка', 'Кикимора', 'Русалка'];
+const PORT = process.env.PORT || 3000;
+const CORS_ORIGINS = [
+  'https://frommetro.vercel.app',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:8080',
+  'https://your-frontend-domain.vercel.app'
+];
 
-// API endpoints
-const API_BASE = 'https://metro-backend-xlkt.onrender.com/api';
+const USER_COLORS = [
+  '#dc3545', '#007bff', '#28a745', '#ffc107', 
+  '#6f42c1', '#e83e8c', '#fd7e14', '#20c997'
+];
 
-// Глобальные переменные для DOM элементов
-let setupScreen, waitingRoomScreen, joinedRoomScreen;
-let backToSetupBtn, backToWaitingBtn, leaveGroupBtn;
-let enterWaitingRoomBtn, confirmStationBtn;
+// =============================================
+// ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
+// =============================================
 
-// Безопасное получение элементов
-function getElementSafe(id) {
-    const element = document.getElementById(id);
-    if (!element) {
-        console.warn(`❌ Элемент ${id} не найден`);
-    }
-    return element;
+const app = express();
+
+// =============================================
+// ПОДКЛЮЧЕНИЕ К БАЗЕ ДАННЫХ
+// =============================================
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+});
+
+// Обработчик ошибок пула соединений
+pool.on('error', (err, client) => {
+  console.error('❌ Unexpected error on idle client', err);
+});
+
+// =============================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// =============================================
+
+/**
+ * Генерирует случайный цвет из предопределенного списка
+ */
+function getRandomColor() {
+  return USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
 }
 
-// Инициализация основных DOM элементов
-function initializeCoreDOMElements() {
-    console.log('🔧 Инициализация основных DOM элементов...');
-    
-    // Основные экраны
-    setupScreen = getElementSafe('setup-screen');
-    waitingRoomScreen = getElementSafe('waiting-room-screen');
-    joinedRoomScreen = getElementSafe('joined-room-screen');
-    
-     // Если элементы не найдены, попробуем найти их снова
-    if (!setupScreen || !waitingRoomScreen || !joinedRoomScreen) {
-        console.warn('❌ Основные экраны не найдены, повторная попытка...');
-        setupScreen = document.getElementById('setup-screen');
-        waitingRoomScreen = document.getElementById('waiting-room-screen');
-        joinedRoomScreen = document.getElementById('joined-room-screen');
-    }
-    // Основные кнопки навигации
-    backToSetupBtn = getElementSafe('back-to-setup');
-    backToWaitingBtn = getElementSafe('back-to-waiting');
-    leaveGroupBtn = getElementSafe('leave-group');
-    enterWaitingRoomBtn = getElementSafe('enter-waiting-room');
-    confirmStationBtn = getElementSafe('confirm-station');
-    
-    console.log('✅ Основные DOM элементы инициализированы');
+/**
+ * Генерирует уникальный ID сессии на основе IP и User-Agent
+ */
+function generateSessionId(req) {
+  const ip = req.clientIp || 'unknown';
+  const userAgent = req.get('User-Agent') || 'unknown';
+  const timestamp = Date.now().toString();
+  return Buffer.from(`${ip}-${userAgent}-${timestamp}`).toString('base64').slice(0, 32);
 }
 
-// Основные обработчики событий
+/**
+ * Обертка для обработки ошибок в async функциях
+ */
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
 
-async function handleEnterWaitingRoom() {
-    console.log('🚪 Вход в комнату ожидания');
-    
-    const getRandomName = (gender) => {
-        const names = gender === 'male' ? maleNames : femaleNames;
-        return names[Math.floor(Math.random() * names.length)];
-    };
-    
-    const randomName = getRandomName(selectedGender);
-    
-    const userData = {
-        name: randomName,
-        station: '',
-        wagon: '',
-        color: '',
-        colorCode: getRandomColor(),
-        status: 'В режиме ожидания',
-        timer: "00:00",
-        online: true,
-        city: selectedCity,
-        gender: selectedGender,
-        position: '',
-        mood: '',
-        isWaiting: true,
-        isConnected: false
-    };
-    
-    console.log('📍 Данные для создания пользователя:', userData);
+// =============================================
+// ФУНКЦИИ ДЛЯ РАБОТЫ С БАЗОЙ ДАННЫХ
+// =============================================
 
-    try {
-        const validatedData = validateUserData(userData);
-        const createdUser = await createUser(validatedData);
-        
-        if (createdUser) {
-            currentUser = createdUser;
-            userId = createdUser.id;
-            
-            if (setupScreen && waitingRoomScreen) {
-                setupScreen.classList.remove('active');
-                waitingRoomScreen.classList.add('active');
-                
-                // Загружаем дополнительные модули по требованию
-                loadOptionalModules().then(() => {
-                    if (typeof loadStationsMap === 'function') loadStationsMap();
-                    if (typeof loadRequests === 'function') loadRequests();
-                    startGlobalRefresh();
-                });
-                
-                console.log('✅ Пользователь создан:', createdUser.name);
-            } else {
-                console.error('❌ Экраны не найдены');
-                initializeCoreDOMElements();
-            }
-        }
-    } catch (error) {
-        console.error('❌ Ошибка создания пользователя:', error);
-        
-        // Показываем понятное сообщение об ошибке
-        const errorMessage = error.message.includes('Failed to fetch')
-            ? 'Ошибка подключения к серверу. Проверьте интернет-соединение.'
-            : `Ошибка создания профиля: ${error.message}`;
-        
-        alert(errorMessage);
-        
-        // Показываем кнопку для повторной попытки
-        const retry = confirm('Не удалось подключиться к серверу. Попробовать снова?');
-        if (retry) {
-            handleEnterWaitingRoom();
-        }
-    }
-}
-
-
-
-function handleBackToSetup() {
-    console.log('🔙 Назад к настройкам');
-    setupScreen.classList.add('active');
-    waitingRoomScreen.classList.remove('active');
-    stopGlobalRefresh();
-}
-
-function handleBackToWaiting() {
-    console.log('🔙 Назад к ожиданию');
-    waitingRoomScreen.classList.add('active');
-    joinedRoomScreen.classList.remove('active');
-}
-
-async function handleConfirmStation() {
-    console.log('✅ Подтверждаем станцию');
-    
-    // ПРОВЕРКА ЦВЕТА - исправленная логика
-    let colorValue = '';
-    
-    // Проверяем, есть ли элемент colorSelect на текущей странице
-    if (window.colorSelect && window.colorSelect.value) {
-        colorValue = window.colorSelect.value;
-    } else {
-        // Если на 3 странице, ищем элемент по-другому
-        const colorInput = document.getElementById('color-select');
-        if (colorInput) {
-            colorValue = colorInput.value;
-        }
-    }
-    
-    if (!colorValue) {
-        alert('Пожалуйста, укажите цвет верхней одежды');
-        return;
-    }
-    
-    if (!currentSelectedStation) {
-        alert('Пожалуйста, выберите станцию на карте');
-        return;
-    }
-    
-    // Проверяем вагон
-    let wagonValue = '';
-    if (window.wagonSelect && window.wagonSelect.value) {
-        wagonValue = window.wagonSelect.value;
-    } else {
-        const wagonSelect = document.getElementById('wagon-select');
-        if (wagonSelect) {
-            wagonValue = wagonSelect.value;
-        }
-    }
-    
-    if (userId) {
-        try {
-            await updateUser(userId, {
-                station: currentSelectedStation,
-                wagon: wagonValue,
-                color: colorValue,
-                is_waiting: false,
-                is_connected: true,
-                status: 'Выбрал станцию: ' + currentSelectedStation
-            });
-
-              // ОБНОВЛЯЕМ ЗАГОЛОВОК ПЕРЕД ПЕРЕХОДОМ
-            updateStationTitle(currentSelectedStation);
-
-            if (typeof joinStation === 'function') {
-                await joinStation(currentSelectedStation);
-            }
-            
-        } catch (error) {
-            console.error('Ошибка при обновлении параметров:', error);
-            alert('Ошибка: ' + error.message);
-        }
-    }
-}
-
-function validateUserData(userData) {
-  const required = ['name', 'city', 'gender'];
-  const missing = required.filter(field => !userData[field]);
+/**
+ * Проверяет наличие обязательных переменных окружения
+ */
+function checkEnvironment() {
+  const requiredEnvVars = ['DATABASE_URL'];
+  const missing = requiredEnvVars.filter(envVar => !process.env[envVar]);
   
   if (missing.length > 0) {
-    throw new Error(`Отсутствуют обязательные поля: ${missing.join(', ')}`);
+    console.error('❌ Отсутствуют обязательные переменные окружения:', missing.join(', '));
+    process.exit(1);
   }
   
-  return {
-    ...userData,
-    name: userData.name.trim() || 'Аноним',
-    station: userData.station || '',
-    wagon: userData.wagon || '',
-    color: userData.color || 'Синий',
-    status: userData.status || 'Ожидание'
-  };
-}
-async function handleLeaveGroup() {
-    console.log('🚪 Покидаем группу');
-      // СБРАСЫВАЕМ СОСТОЯНИЯ ПРИ ВЫХОДЕ ИЗ ГРУППЫ
-    currentPosition = '';
-    currentMood = '';
-    if (userId) {
-        try {
-            await updateUser(userId, { 
-                status: 'Ожидание',
-                is_waiting: true,
-                is_connected: false,
-            });
-        } catch (error) {
-            console.error('Ошибка при обновлении пользователя:', error);
-        }
-    }
-    
-    currentGroup = null;
-    joinedRoomScreen.classList.remove('active');
-    waitingRoomScreen.classList.add('active');
-    
-    console.log('✅ Вышли из группы');
+  console.log('✅ Все переменные окружения настроены');
 }
 
-// Инициализация выбора города и пола
-function initializeCityAndGenderSelection() {
-    // Обработчики выбора города
-    const cityOptions = document.querySelectorAll('.city-option');
-    cityOptions.forEach(option => {
-        option.addEventListener('click', function() {
-            cityOptions.forEach(opt => opt.classList.remove('active'));
-            this.classList.add('active');
-            selectedCity = this.getAttribute('data-city');
-            console.log('📍 Выбран город:', selectedCity);
-        });
-    });
-
-    // Обработчики выбора пола
-    const genderOptions = document.querySelectorAll('.gender-option');
-    genderOptions.forEach(option => {
-        option.addEventListener('click', function() {
-            genderOptions.forEach(opt => opt.classList.remove('active'));
-            this.classList.add('active');
-            selectedGender = this.getAttribute('data-gender');
-            console.log('👤 Выбран пол:', selectedGender);
-        });
-    });
-}
-
-// Основные функции API
-async function createUser(userData) {
-
- 
+/**
+ * Проверяет подключение к базе данных
+ */
+async function checkDatabaseConnection() {
   try {
-    console.log('📍 Отправка данных пользователя:', userData);
+    const client = await pool.connect();
+    console.log('✅ База данных подключена успешно');
+    client.release();
+    return true;
+  } catch (error) {
+    console.error('❌ Ошибка подключения к базе данных:', error);
+    return false;
+  }
+}
+
+/**
+ * Проверяет существующие сессии для предотвращения дублирования
+ */
+async function checkExistingSessions(client, clientIp, userAgent, sessionId) {
+  try {
+    const existingSessions = await client.query(
+      `SELECT COUNT(*) as count FROM users 
+       WHERE ip_address = $1 AND online = true 
+       AND last_activity > NOW() - INTERVAL '10 minutes'
+       AND station IS NOT NULL`,
+      [clientIp]
+    );
     
-    const response = await fetch(`${API_BASE}/users`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(userData)
-    });
+    const sessionCount = parseInt(existingSessions.rows[0].count);
     
-    console.log('📍 Статус ответа:', response.status);
-    
-    if (!response.ok) {
-      let errorMessage = `HTTP error! status: ${response.status}`;
-      
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.error || errorMessage;
-        console.error('📍 Детали ошибки от сервера:', errorData);
-      } catch (e) {
-        console.error('📍 Не удалось прочитать тело ошибки');
-      }
-      
-      throw new Error(errorMessage);
+    if (sessionCount >= 1000) {
+      return {
+        allowed: false,
+        reason: 'С одного IP-адреса разрешено не более 20 активных сессий одновременно.'
+      };
     }
     
-    const result = await response.json();
-    console.log('✅ Пользователь создан успешно:', result);
-    return result;
+    const exactMatch = await client.query(
+      `SELECT id FROM users 
+       WHERE ip_address = $1 AND user_agent = $2 AND online = true 
+       AND last_activity > NOW() - INTERVAL '1 second'`,
+      [clientIp, userAgent]
+    );
+    
+    if (exactMatch.rows.length > 0) {
+      return {
+        allowed: false,
+        reason: 'У вас уже есть активная сессия в этом браузере. Закройте предыдущую вкладку или подождите несколько минут.'
+      };
+    }
+    
+    return { allowed: true };
+  } catch (error) {
+    console.error('❌ Ошибка проверки сессий:', error);
+    return { allowed: true };
+  }
+}
+
+/**
+ * Выполняет миграцию базы данных - добавляет новые поля и таблицы
+ */
+async function migrateDatabase() {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    console.log('🔄 Запуск миграции базы данных...');
+    
+    // Добавление новых колонок в таблицу users
+    const alterQueries = [
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS ip_address INET`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS position VARCHAR(100)`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS mood VARCHAR(100)`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS user_agent TEXT`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS session_id VARCHAR(255)`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_waiting BOOLEAN DEFAULT true`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_connected BOOLEAN DEFAULT false`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS timer_seconds INTEGER DEFAULT 0`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS timer_end TIMESTAMP`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS show_timer BOOLEAN DEFAULT false`
+    ];
+
+    for (const query of alterQueries) {
+      try {
+        await client.query(query);
+        console.log(`✅ Выполнен: ${query.split('ADD COLUMN IF NOT EXISTS')[1]}`);
+      } catch (error) {
+        console.warn(`⚠️ Предупреждение при выполнении миграции:`, error.message);
+      }
+    }
+
+    // Создание таблиц для комнат
+    const createTables = [
+      `CREATE TABLE IF NOT EXISTS rooms (
+        id SERIAL PRIMARY KEY,
+        host_user_id INTEGER,
+        host_user_name VARCHAR(255),
+        station VARCHAR(255),
+        wagon VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS room_users (
+        id SERIAL PRIMARY KEY,
+        room_id INTEGER,
+        user_id INTEGER,
+        user_name VARCHAR(255),
+        user_station VARCHAR(255),
+        user_wagon VARCHAR(50),
+        user_color VARCHAR(100),
+        user_color_code VARCHAR(7),
+        user_position VARCHAR(100),
+        user_mood VARCHAR(100),
+        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    ];
+
+    for (const query of createTables) {
+      await client.query(query);
+    }
+
+    await client.query('COMMIT');
+    console.log('✅ Миграция базы данных завершена успешно');
     
   } catch (error) {
-    console.error('❌ Ошибка создания пользователя:', error);
+    await client.query('ROLLBACK');
+    console.error('❌ Ошибка миграции базы данных:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Инициализирует базу данных - создает таблицы и выполняет миграции
+ */
+async function initDB() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        station VARCHAR(255) NOT NULL,
+        wagon VARCHAR(50),
+        color VARCHAR(100),
+        color_code VARCHAR(7),
+        status VARCHAR(255) DEFAULT 'Ожидание',
+        timer VARCHAR(50) DEFAULT '00:00',
+        timer_total INTEGER DEFAULT 0,
+        online BOOLEAN DEFAULT true,
+        status_updated BOOLEAN DEFAULT false,
+        room_id INTEGER,
+        city VARCHAR(50) DEFAULT 'spb',
+        gender VARCHAR(20) DEFAULT 'male',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    console.log('✅ База данных инициализирована');
+    await migrateDatabase();
+  } catch (error) {
+    console.error('❌ Ошибка инициализации базы данных:', error);
+  }
+}
+
+/**
+ * Проверяет и сбрасывает неактивных пользователей
+ */
+async function checkAndResetInactiveUsers() {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
     
-    // Fallback: сохраняем данные локально
-    const fallbackUser = {
-      id: Math.floor(Math.random() * 10000) + 1, // Используем случайное число вместо Date.now()
+    console.log('🕒 Проверка активности пользователей...');
+    
+    // Находим пользователей, которые неактивны более 2 минут
+    const inactiveUsers = await client.query(`
+      SELECT id, name, station 
+      FROM users 
+      WHERE online = true 
+      AND last_activity < NOW() - INTERVAL '2 minutes'
+    `);
+    
+    if (inactiveUsers.rows.length > 0) {
+      console.log(`🔍 Найдено ${inactiveUsers.rows.length} неактивных пользователей:`);
+      
+      // Сбрасываем неактивных пользователей
+      const resetResult = await client.query(`
+        UPDATE users 
+        SET 
+          online = false,
+          is_waiting = true,
+          is_connected = false,
+          room_id = NULL,
+          status = 'Не в сети',
+          last_activity = CURRENT_TIMESTAMP
+        WHERE online = true 
+        AND last_activity < NOW() - INTERVAL '2 minutes'
+      `);
+      
+      // Удаляем неактивных пользователей из комнат
+      await client.query(`
+        DELETE FROM room_users 
+        WHERE user_id IN (
+          SELECT id FROM users 
+          WHERE online = false 
+          AND last_activity < NOW() - INTERVAL '2 minutes'
+        )
+      `);
+      
+      // Удаляем пустые комнаты
+      await client.query(`
+        DELETE FROM rooms 
+        WHERE id NOT IN (
+          SELECT DISTINCT room_id FROM room_users WHERE room_id IS NOT NULL
+        )
+      `);
+      
+      await client.query('COMMIT');
+      
+      console.log(`✅ Сброшено ${resetResult.rowCount} неактивных сессий`);
+      inactiveUsers.rows.forEach(user => {
+        console.log(`   - ${user.name} (${user.station})`);
+      });
+      
+      return {
+        success: true,
+        resetCount: resetResult.rowCount,
+        inactiveUsers: inactiveUsers.rows
+      };
+    } else {
+      await client.query('ROLLBACK');
+      console.log('✅ Активных пользователей нет, сброс не требуется');
+      return {
+        success: true,
+        resetCount: 0,
+        inactiveUsers: []
+      };
+    }
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Ошибка проверки активности:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Сбрасывает все неактивные сессии
+ */
+async function resetAllSessions() {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    console.log('🔄 Начинаем мягкий сброс всех сессий...');
+    
+    // Сбрасываем только действительно неактивных пользователей
+    const resetResult = await client.query(`
+      UPDATE users 
+      SET 
+        online = false,
+        is_waiting = true,
+        is_connected = false,
+        room_id = NULL,
+        status = 'Ожидание',
+        last_activity = CURRENT_TIMESTAMP
+      WHERE online = true 
+      AND last_activity < NOW() - INTERVAL '5 minutes'
+    `);
+    
+    // Очищаем комнаты от неактивных пользователей
+    await client.query(`
+      DELETE FROM room_users 
+      WHERE user_id IN (
+        SELECT id FROM users WHERE online = false
+      )
+    `);
+    
+    // Удаляем пустые комнаты
+    await client.query(`
+      DELETE FROM rooms 
+      WHERE id NOT IN (
+        SELECT DISTINCT room_id FROM room_users WHERE room_id IS NOT NULL
+      )
+    `);
+    
+    await client.query('COMMIT');
+    
+    console.log(`✅ Мягкий сброс: ${resetResult.rowCount} неактивных сессий`);
+    
+    return {
+      success: true,
+      resetUsers: resetResult.rowCount,
+      message: `Сброшено ${resetResult.rowCount} неактивных сессий`
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Ошибка сброса сессий:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Автоматически сбрасывает сессии по расписанию
+ */
+async function autoResetSessions() {
+  console.log('🕒 Запуск автоматического сброса сессий...');
+  const result = await resetAllSessions();
+  if (result.success) {
+    console.log(`✅ Автоматический сброс завершен: ${result.message}`);
+  } else {
+    console.error('❌ Ошибка автоматического сброса:', result.error);
+  }
+}
+
+/**
+ * Очищает неактивных пользователей из базы данных
+ */
+async function cleanupInactiveUsers() {
+  try {
+    const result = await pool.query(`
+      DELETE FROM users 
+      WHERE created_at < NOW() - INTERVAL '24 hours' 
+      OR (online = true AND last_activity < NOW() - INTERVAL '2 hours')
+    `);
+    
+    if (result.rowCount > 0) {
+      console.log(`🧹 Очищено ${result.rowCount} неактивных пользователей`);
+    }
+  } catch (error) {
+    console.error('❌ Ошибка очистки неактивных пользователей:', error);
+  }
+}
+
+// =============================================
+// MIDDLEWARE
+// =============================================
+
+// Middleware для сжатия данных
+app.use(compression());
+
+// CORS middleware
+app.use(cors({
+  origin: CORS_ORIGINS,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
+}));
+
+// Rate limiting middleware
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP'
+});
+app.use(limiter);
+
+// Обработка preflight CORS запросов
+app.options('*', cors());
+
+// Парсинг JSON и URL-encoded данных
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Получение IP адреса клиента
+app.use(requestIp.mw());
+
+// Security middleware
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// Таймауты для запросов
+app.use((req, res, next) => {
+  req.setTimeout(30000); // 30 секунд
+  res.setTimeout(30000);
+  next();
+});
+
+// Логирование входящих запросов
+app.use((req, res, next) => {
+  console.log(`📍 ${new Date().toISOString()} ${req.method} ${req.path}`);
+  console.log('📍 Headers:', req.headers);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('📍 Body:', req.body);
+  }
+  next();
+});
+
+// =============================================
+// API ROUTES - ЗДОРОВЬЕ СИСТЕМЫ
+// =============================================
+
+app.get('/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    
+    res.json({
+      status: 'OK',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage()
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'ERROR',
+      database: 'disconnected',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+app.get('/api/health', async (req, res) => {
+  try {
+    const dbResult = await pool.query('SELECT COUNT(*) as user_count FROM users WHERE online = true');
+    
+    res.json({
+      status: 'operational',
+      database: 'connected',
+      activeUsers: parseInt(dbResult.rows[0].user_count),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'degraded',
+      database: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// =============================================
+// API ROUTES - ПОЛЬЗОВАТЕЛИ
+// =============================================
+
+// Получение всех пользователей
+app.get('/api/users', asyncHandler(async (req, res) => {
+  const result = await pool.query(`
+    SELECT * FROM users 
+    WHERE online = true 
+    ORDER BY created_at DESC
+  `);
+  res.json(result.rows);
+}));
+
+// Создание нового пользователя
+app.post('/api/users', asyncHandler(async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    const userData = req.body;
+    const clientIp = req.clientIp;
+    const userAgent = req.get('User-Agent') || 'unknown';
+    const sessionId = generateSessionId(req);
+    
+    console.log('📍 Данные нового пользователя:', userData);
+    console.log(`📍 IP: ${clientIp}, User-Agent: ${userAgent.substring(0, 50)}...`);
+    
+    // Проверяем обязательные поля
+    if (!userData || !userData.name) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        error: 'Отсутствуют обязательные данные пользователя',
+        receivedData: userData
+      });
+    }
+    
+    const sessionCheck = await checkExistingSessions(client, clientIp, userAgent, sessionId);
+    
+    if (!sessionCheck.allowed) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        error: sessionCheck.reason
+      });
+    }
+    
+    // Подготавливаем данные пользователя
+    const userRecord = {
       name: userData.name || 'Аноним',
       station: userData.station || '',
-      wagon: userData.wagon || '',
+      wagon: userData.wagon || null,
       color: userData.color || 'Синий',
       color_code: userData.colorCode || getRandomColor(),
       status: userData.status || 'Ожидание',
+      timer: userData.timer || '00:00',
+      timer_total: userData.timerTotal || 0,
       city: userData.city || 'spb',
       gender: userData.gender || 'male',
-      online: true,
-      isFallback: true
+      ip_address: clientIp,
+      position: userData.position || '',
+      mood: userData.mood || '',
+      last_activity: new Date(),
+      user_agent: userAgent,
+      session_id: sessionId,
+      is_waiting: true,
+      is_connected: false,
+      online: true
     };
     
-    // Сохраняем в localStorage
-    try {
-      const localUsers = JSON.parse(localStorage.getItem('metroUsers') || '[]');
-      localUsers.push(fallbackUser);
-      localStorage.setItem('metroUsers', JSON.stringify(localUsers));
-      console.log('✅ Пользователь сохранен локально');
-    } catch (e) {
-      console.error('❌ Ошибка локального сохранения:', e);
-    }
+    const result = await client.query(
+      `INSERT INTO users (
+        name, station, wagon, color, color_code, status, timer, timer_total, 
+        city, gender, ip_address, position, mood, last_activity, user_agent, session_id,
+        is_waiting, is_connected, online
+      ) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) 
+       RETURNING *`,
+      Object.values(userRecord)
+    );
     
-    return fallbackUser;
+    await client.query('COMMIT');
+    
+    const createdUser = result.rows[0];
+    console.log(`✅ Создан пользователь: ${createdUser.name} (ID: ${createdUser.id})`);
+    
+    res.status(201).json(createdUser);
+    
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Ошибка создания пользователя:', error);
+    
+    res.status(500).json({ 
+      error: 'Внутренняя ошибка сервера при создании пользователя',
+      details: error.message,
+      code: error.code
+    });
+  } finally {
+    client.release();
   }
-     // Добавьте в функцию createUser для отладки
-console.log('📍 Отправка запроса на:', `${API_BASE}/users`);
-console.log('📍 Данные:', JSON.stringify(userData, null, 2));
+}));
 
-}
-
-async function getUsers() {
-    try {
-        const response = await fetch(`${API_BASE}/users`);
-        const users = await response.json();
-        return users.map((user, index) => ({
-            ...user,
-            id: user.id || index + 1
-        }));
-    } catch (error) {
-        console.error('Ошибка получения пользователей:', error);
-        return [];
-    }
-     try {
-        console.log('🔄 Запрос пользователей с сервера...');
-        const response = await fetch(`${API_BASE}/users`);
-        
-        console.log('📡 Статус ответа:', response.status);
-        console.log('📡 URL:', `${API_BASE}/users`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const users = await response.json();
-        console.log('✅ Получены пользователи:', users.length);
-        return users.map((user, index) => ({
-            ...user,
-            id: user.id || index + 1
-        }));
-    } catch (error) {
-        console.error('❌ Ошибка получения пользователей:', error);
-        return [];
-    }
-}
-
-async function updateUser(userId, updates) {
-    try {
-        console.log('📍 Отправка обновления пользователя:', { userId, updates });
-        
-        const response = await fetch(`${API_BASE}/users/${userId}`, {
-            method: 'PUT',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(updates)
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        console.log('✅ Пользователь обновлен:', result);
-        return result;
-    } catch (error) {
-        console.error('❌ Ошибка обновления пользователя:', error);
-        return null;
-    }
-}
-
-async function deleteUser(userId) {
-    try {
-        await fetch(`${API_BASE}/users/${userId}`, { method: 'DELETE' });
-    } catch (error) {
-        console.error('Ошибка удаления пользователя:', error);
-    }
-}
-
-async function pingActivity() {
-    if (userId) {
-        try {
-            await fetch(`${API_BASE}/users/${userId}/ping`, { method: 'POST' });
-            console.log('✅ Активность обновлена');
-            return true;
-        } catch (error) {
-            console.error('Ошибка пинга активности:', error);
-            return false;
-        }
-    }
-}
-
-// Функция для запуска глобального обновления каждые 5 секунд
-function startGlobalRefresh() {
-    if (globalRefreshInterval) {
-        clearInterval(globalRefreshInterval);
-    }
+// Обновление пользователя
+app.put('/api/users/:id', asyncHandler(async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
     
-    globalRefreshInterval = setInterval(async () => {
-        console.log('🔄 Глобальное обновление данных...');
-      
-        if (setupScreen && setupScreen.classList.contains('active')) {
-            // На первом экране ничего не обновляем
-        } else if (waitingRoomScreen && waitingRoomScreen.classList.contains('active')) {
-            // На втором экране обновляем карту станций и запросы
-            if (typeof loadStationsMap === 'function') await loadStationsMap();
-            if (typeof loadRequests === 'function') await loadRequests();
-            if (typeof restoreSelectedStation === 'function') restoreSelectedStation();
-        } else if (joinedRoomScreen && joinedRoomScreen.classList.contains('active')) {
-                // На третьем экране обновляем участников группы и запросы, но не перезаписываем статус
-                if (typeof loadGroupMembers === 'function') {
-                    console.log('🔄 Автообновление участников группы');
-                    await loadGroupMembers();
-                }
-                if (typeof loadRequests === 'function') {
-                    console.log('🔄 Автообновление запросов');
-                    await loadRequests();
-                }
-            
-        }
-
-         // Автоматически обновляем отображение таймеров
-        if (joinedRoomScreen && joinedRoomScreen.classList.contains('active')) {
-            if (typeof loadGroupMembers === 'function') {
-                await loadGroupMembers();
-                    }
-        }
-        
-        await pingActivity();
-        
-    }, 3000); // Уменьшим интервал до 3 секунд для быстрого обновления
+    const { id } = req.params;
+    const updates = req.body;
     
-    console.log('✅ Глобальное обновление запущено каждые 3 секунды');
-}
-
-// Функция остановки глобального обновления
-function stopGlobalRefresh() {
-    if (globalRefreshInterval) {
-        clearInterval(globalRefreshInterval);
-        globalRefreshInterval = null;
-        console.log('⏹️ Глобальное обновление остановлено');
-    }
-}
-// Функция для принудительной инициализации при переходе на страницу
-function forceInitializeJoinedRoom() {
-    console.log('🔄 Принудительная инициализация joined room...');
+    const setClause = [];
+    const values = [];
+    let paramCount = 1;
     
-    // Переинициализируем элементы
-    initializeOptionalDOMElements();
-
-    // Восстанавливаем заголовок станции если есть
-    if (currentGroup && currentGroup.station) {
-        updateStationTitle(currentGroup.station);
-    } else if (currentSelectedStation) {
-        updateStationTitle(currentSelectedStation);
-    }
-    // Восстанавливаем состояния
-    restoreSelectedStates();
-
-      // Инициализируем карточки
-    initializeStateCards();
-
-    // Обновляем индикаторы
-    updateStatusIndicators();
-    updateUserStateDisplay();
+    const fieldMapping = {
+      name: 'name',
+      station: 'station',
+      wagon: 'wagon',
+      color: 'color',
+      colorCode: 'color_code',
+      status: 'status',
+      timer: 'timer',
+      timerTotal: 'timer_total',
+      online: 'online',
+      roomId: 'room_id',
+      city: 'city',
+      gender: 'gender',
+      position: 'position',
+      mood: 'mood',
+      isWaiting: 'is_waiting',
+      isConnected: 'is_connected',
+      timer_seconds: 'timer_seconds',
+      timer_end: 'timer_end',
+      show_timer: 'show_timer'
+    };
     
-    // Загружаем участников
-    if (typeof loadGroupMembers === 'function') {
-        loadGroupMembers();
-    }
-    
-    console.log('✅ Joined room инициализирован');
-}
-// Функция загрузки дополнительных модулей
-async function loadOptionalModules() {
-    if (window.optionalModulesLoaded || window.optionalModulesLoading) return;
-    
-    window.optionalModulesLoading = true;
-    console.log('📦 Загрузка дополнительных модулей...');
-    
-    try {
-         // Сначала инициализируем основные DOM элементы
-        initializeCoreDOMElements();
-          
-        // Затем загружаем скрипт
-        await loadScript('optional-modules.js');
-
-        // Затем инициализируем дополнительные элементы
-        if (typeof initializeOptionalDOMElements === 'function') {
-            initializeOptionalDOMElements();
-        }
-        
-        window.optionalModulesLoaded = true;
-        window.optionalModulesLoading = false;
-        console.log('✅ Дополнительные модули загружены');
-        
-    } catch (error) {
-        console.error('❌ Ошибка загрузки модулей:', error);
-        window.optionalModulesLoading = false;
-    }
-}
-// Вспомогательная функция для загрузки скриптов
-function loadScript(src) {
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
+    Object.keys(updates).forEach(key => {
+      if (fieldMapping[key] && key !== 'id') {
+        setClause.push(`${fieldMapping[key]} = $${paramCount}`);
+        values.push(updates[key]);
+        paramCount++;
+      }
     });
-}
-
-// Функции навигации (ДОБАВЛЕНО для HTML)
-function showSetup() {
-    if (!setupScreen) initializeCoreDOMElements();
-    document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-    setupScreen.classList.add('active');
-    stopGlobalRefresh();
-}
-
-function showWaitingRoom() {
-    if (!userId) {
-        alert('Сначала создайте профиль');
-        return showSetup();
-    }
-    if (!waitingRoomScreen) initializeCoreDOMElements();
-    document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-    waitingRoomScreen.classList.add('active');
     
-    // Загружаем модули если нужно
-    loadOptionalModules().then(() => {
-        startGlobalRefresh();
+    setClause.push('last_activity = $' + paramCount);
+    values.push(new Date());
+    paramCount++;
+    
+    if (updates.status) {
+      setClause.push('status_updated = $' + paramCount);
+      values.push(true);
+      paramCount++;
+    }
+    
+    values.push(id);
+    
+    const result = await client.query(
+      `UPDATE users SET ${setClause.join(', ')} WHERE id = $${paramCount} RETURNING *`,
+      values
+    );
+    
+    await client.query('COMMIT');
+    
+    if (result.rows.length > 0) {
+      res.json(result.rows[0]);
+    } else {
+      res.status(404).json({ error: 'Пользователь не найден' });
+    }
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Ошибка обновления пользователя:', error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+}));
+
+// Удаление пользователя
+app.delete('/api/users/:id', asyncHandler(async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    const { id } = req.params;
+    
+    const userResult = await client.query('SELECT * FROM users WHERE id = $1', [id]);
+    
+    if (userResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+    
+    const user = userResult.rows[0];
+    
+    if (user.is_connected) {
+      await client.query(
+        `UPDATE users 
+         SET is_connected = false, is_waiting = true 
+         WHERE station = $1 AND wagon = $2 AND is_connected = true`,
+        [user.station, user.wagon]
+      );
+    }
+    
+    await client.query('DELETE FROM room_users WHERE user_id = $1', [id]);
+    await client.query('DELETE FROM rooms WHERE host_user_id = $1', [id]);
+    const result = await client.query('DELETE FROM users WHERE id = $1', [id]);
+    
+    await client.query('COMMIT');
+    
+    if (result.rowCount === 1) {
+      console.log(`🗑️ Удален пользователь ID: ${id}`);
+      res.status(204).send();
+    } else {
+      res.status(404).json({ error: 'Пользователь не найден' });
+    }
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Ошибка удаления пользователя:', error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+}));
+
+// Пинг активности пользователя
+app.post('/api/users/:id/ping', asyncHandler(async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { id } = req.params;
+    
+    const userCheck = await client.query('SELECT id FROM users WHERE id = $1', [id]);
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+    
+    const result = await client.query(
+      'UPDATE users SET last_activity = $1 WHERE id = $2 RETURNING id',
+      [new Date(), id]
+    );
+    
+    res.json({ 
+      success: true, 
+      message: 'Активность обновлена',
+      userId: result.rows[0].id
     });
-}
-
-function showJoinedRoom() {
-    if (!currentGroup) {
-        alert('Сначала выберите станцию');
-        return;
-    }
-    if (!joinedRoomScreen) initializeCoreDOMElements();
-    document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-    joinedRoomScreen.classList.add('active');
     
-    // ПРИНУДИТЕЛЬНАЯ ИНИЦИАЛИЗАЦИЯ И ОБНОВЛЕНИЕ
-    setTimeout(() => {
-        forceInitializeJoinedRoom();
-        
-        // ДОПОЛНИТЕЛЬНОЕ ОБНОВЛЕНИЕ ДАННЫХ
-        setTimeout(() => {
-            if (typeof loadGroupMembers === 'function') {
-                console.log('🔄 Принудительное обновление при переходе на страницу');
-                loadGroupMembers();
-            }
-            if (typeof loadRequests === 'function') {
-                loadRequests();
-            }
-        }, 1000);
-    }, 100);
-    
-    // Загружаем модули если нужно
-    loadOptionalModules().then(() => {
-        startGlobalRefresh();
+  } catch (error) {
+    console.error('❌ Ошибка обновления активности:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Внутренняя ошибка сервера' 
     });
-}
+  } finally {
+    client.release();
+  }
+}));
 
-// Вспомогательные функции
-function getRandomColor() {
-    const colors = ['#dc3545', '#007bff', '#28a745', '#ffc107', '#6f42c1', '#e83e8c', '#fd7e14', '#20c997'];
-    return colors[Math.floor(Math.random() * colors.length)];
-}
+// =============================================
+// API ROUTES - СТАНЦИИ И СТАТИСТИКА
+// =============================================
 
-// Основная инициализация при загрузке DOM
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚇 DOM загружен, инициализация ядра...');
-    
-    // Инициализируем основные DOM элементы
-    initializeCoreDOMElements();
-        
-    
+// Получение статистики по станциям для комнаты ожидания
+app.get('/api/stations/waiting-room', asyncHandler(async (req, res) => {
+  const { city } = req.query;
+  
+  let query = `
+    SELECT 
+      station,
+      COUNT(*) as total_users,
+      COUNT(CASE WHEN is_connected = true AND is_waiting = false THEN 1 END) as connected_count,
+      COUNT(CASE WHEN is_waiting = true AND is_connected = false THEN 1 END) as waiting_count
+    FROM users 
+    WHERE online = true
+  `;
+  
+  const values = [];
+  
+  if (city) {
+    query += ` AND city = $1`;
+    values.push(city);
+  }
+  
+  query += ` GROUP BY station ORDER BY total_users DESC, station ASC`;
+  
+  const result = await pool.query(query, values);
+  
+  const totalStats = await pool.query(`
+      SELECT 
+          COUNT(*) as total_users,
+          COUNT(CASE WHEN is_connected = true THEN 1 END) as total_connected,
+          COUNT(CASE WHEN is_waiting = true THEN 1 END) as total_waiting
+      FROM users 
+      WHERE online = true AND city = $1
+  `, [city || 'spb']);
+  
+  const stationStats = result.rows.map(row => ({
+    station: row.station,
+    totalUsers: parseInt(row.total_users),
+    waiting: parseInt(row.waiting_count),
+    connected: parseInt(row.connected_count)
+  }));
+  
+  res.json({
+      stationStats: stationStats,
+      totalStats: totalStats.rows[0]
+  });
+}));
 
+// =============================================
+// API ROUTES - КОМНАТЫ
+// =============================================
 
+// Присоединение к комнате станции
+app.post('/api/rooms/join-station', asyncHandler(async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
     
-    // Инициализация основных обработчиков
-    if (enterWaitingRoomBtn) {
-        enterWaitingRoomBtn.addEventListener('click', handleEnterWaitingRoom);
+    const { userId, station } = req.body;
+    
+    const userResult = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+    if (userResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Пользователь не найден' });
     }
     
-    if (backToSetupBtn) {
-        backToSetupBtn.addEventListener('click', handleBackToSetup);
+    const user = userResult.rows[0];
+    
+    await client.query(
+      `UPDATE users SET 
+        station = $1, 
+        is_waiting = false, 
+        is_connected = true,
+        last_activity = $2,
+        status = 'Ожидание на станции'
+       WHERE id = $3`,
+      [station, new Date(), userId]
+    );
+    
+    const stationUsersResult = await client.query(`
+      SELECT * FROM users 
+      WHERE station = $1 AND is_connected = true AND online = true
+      ORDER BY created_at
+    `, [station]);
+    
+    await client.query('COMMIT');
+    
+    console.log(`✅ Пользователь ${user.name} присоединился к станции: ${station}`);
+    
+    res.json({
+      success: true,
+      station: station,
+      users: stationUsersResult.rows,
+      totalUsers: stationUsersResult.rows.length
+    });
+    
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Ошибка присоединения к станции:', error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+}));
+
+// Выход из комнаты
+app.post('/api/rooms/leave', asyncHandler(async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    const { roomId, userId } = req.body;
+    
+    const userResult = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+    if (userResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Пользователь не найден' });
     }
     
-    if (backToWaitingBtn) {
-        backToWaitingBtn.addEventListener('click', handleBackToWaiting);
+    const user = userResult.rows[0];
+    
+    await client.query(
+      'DELETE FROM room_users WHERE room_id = $1 AND user_id = $2',
+      [roomId, userId]
+    );
+    
+    await client.query(
+      'UPDATE users SET room_id = NULL, last_activity = $1, is_waiting = true, is_connected = false WHERE id = $2',
+      [new Date(), userId]
+    );
+    
+    const roomUsersResult = await client.query(
+      'SELECT COUNT(*) as count FROM room_users WHERE room_id = $1',
+      [roomId]
+    );
+    
+    const userCount = parseInt(roomUsersResult.rows[0].count);
+    if (userCount === 0) {
+      await client.query('DELETE FROM rooms WHERE id = $1', [roomId]);
+      console.log(`🗑️ Удалена пустая комната ID: ${roomId}`);
     }
     
-    if (leaveGroupBtn) {
-        leaveGroupBtn.addEventListener('click', handleLeaveGroup);
+    await client.query('COMMIT');
+    console.log(`👋 Пользователь ${user.name} вышел из комнаты и вернулся в ожидание`);
+    res.json({ success: true });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Ошибка выхода из комнаты:', error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+}));
+
+// Обновление состояния пользователя в комнате
+app.put('/api/rooms/user/:userId/state', asyncHandler(async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    const { userId } = req.params;
+    const { position, mood } = req.body;
+    
+    const userUpdate = await client.query(
+      `UPDATE users SET position = $1, mood = $2, last_activity = $3 
+       WHERE id = $4 RETURNING *`,
+      [position, mood, new Date(), userId]
+    );
+    
+    if (userUpdate.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Пользователь не найден' });
     }
     
-    if (confirmStationBtn) {
-        confirmStationBtn.addEventListener('click', handleConfirmStation);
+    await client.query(
+      `UPDATE room_users SET user_position = $1, user_mood = $2 
+       WHERE user_id = $3`,
+      [position, mood, userId]
+    );
+    
+    await client.query('COMMIT');
+    console.log(`🎯 Обновлено состояние пользователя ID: ${userId} - позиция: ${position}, настроение: ${mood}`);
+    res.json(userUpdate.rows[0]);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Ошибка обновления состояния:', error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+}));
+
+// =============================================
+// API ROUTES - АДМИНИСТРИРОВАНИЕ
+// =============================================
+
+// Сброс сессий через HTTP
+app.post('/api/admin/reset-sessions', asyncHandler(async (req, res) => {
+  try {
+    const result = await resetAllSessions();
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json(result);
     }
-    
-    // Инициализация выбора города и пола
-    initializeCityAndGenderSelection();
-    
-    console.log('✅ Ядро приложения инициализировано');
+  } catch (error) {
+    console.error('❌ Ошибка сброса сессий через API:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+}));
+
+// =============================================
+// ОСНОВНЫЕ МАРШРУТЫ И ОБРАБОТКА ОШИБОК
+// =============================================
+
+// Корневой маршрут
+app.get('/', (req, res) => {
+  res.json({ 
+    message: '🚇 Metro API работает!',
+    version: '2.3.1',
+    features: [
+      'Управление пользователями с проверкой активности',
+      'Интерактивная карта станций',
+      'Позиции и настроения пользователей',
+      'Статистика по станциям в реальном времени',
+      'Автоочистка неактивных пользователей',
+      'Автоматический сброс сессий каждые 15 минут',
+      'Поддержка до 20 сессий с одного IP',
+      'Разделение на ожидающих и подключенных'
+    ],
+    timestamp: new Date().toISOString()
+  });
 });
 
-// Запуск при полной загрузке страницы
-window.addEventListener('load', function() {
-    
-    
-    console.log('🚇 Ядро приложения "Из метро" полностью загружено');
+// Обработка несуществующих маршрутов
+app.use('*', (req, res) => {
+  res.status(404).json({ error: 'Маршрут не найден' });
 });
 
-// Остановка при закрытии страницы
-window.addEventListener('beforeunload', async function() {
-    stopGlobalRefresh();
+// Глобальная обработка ошибок
+app.use((error, req, res, next) => {
+  console.error('❌ Необработанная ошибка:', error);
+  res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+});
+
+// =============================================
+// ЗАПУСК СЕРВЕРА
+// =============================================
+
+/**
+ * Запускает сервер и инициализирует все компоненты
+ */
+async function startServer() {
+  try {
+    // Проверяем окружение
+    checkEnvironment();
     
-    if (userId) {
-        try {
-            await deleteUser(userId);
-        } catch (error) {
-            console.error('Ошибка при удалении пользователя:', error);
-        }
+    // Проверяем подключение к БД
+    const dbConnected = await checkDatabaseConnection();
+    if (!dbConnected) {
+      console.error('❌ Не удалось подключиться к базе данных');
+      process.exit(1);
     }
-});
+    
+    // Инициализируем БД
+    await initDB();
+    
+    // Запускаем автоматические задачи
+    setInterval(autoResetSessions, 15 * 60 * 1000);
+    setInterval(checkAndResetInactiveUsers, 60 * 1000);
+    setInterval(cleanupInactiveUsers, 30 * 60 * 1000);
+    
+    console.log('⏰ Автоматический сброс сессий настроен каждые 15 минут');
+    console.log('⏰ Проверка активности пользователей настроена каждую минуту');
+    console.log('⏰ Очистка неактивных пользователей настроена каждые 30 минут');
+    
+    // Запускаем сервер
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚇 Сервер "Из метро" запущен на порту ${PORT}`);
+      console.log(`📍 URL: http://localhost:${PORT}`);
+      console.log(`📊 Версия: 2.3.1`);
+      console.log(`🕒 Система активности включена`);
+      console.log(`🗺️  Интерактивная карта станций готова`);
+    });
+    
+  } catch (error) {
+    console.error('❌ Ошибка запуска сервера:', error);
+    process.exit(1);
+  }
+}
 
+// Запускаем сервер
+startServer();

@@ -8,56 +8,34 @@ import rateLimit from 'express-rate-limit';
 
 const { Pool } = pkg;
 
-// Сначала создаем app
-const app = express();
+// =============================================
+// КОНСТАНТЫ И НАСТРОЙКИ
+// =============================================
+
 const PORT = process.env.PORT || 3000;
+const CORS_ORIGINS = [
+  'https://frommetro.vercel.app',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:8080',
+  'https://your-frontend-domain.vercel.app'
+];
 
-app.use(compression());
-// Улучшенная CORS конфигурация
-app.use(cors({
-  origin: [
-    'https://frommetro.vercel.app',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:8080',
-    'https://your-frontend-domain.vercel.app'
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
-}));
+const USER_COLORS = [
+  '#dc3545', '#007bff', '#28a745', '#ffc107', 
+  '#6f42c1', '#e83e8c', '#fd7e14', '#20c997'
+];
 
+// =============================================
+// ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
+// =============================================
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP'
-});
-app.use(limiter);
+const app = express();
 
+// =============================================
+// ПОДКЛЮЧЕНИЕ К БАЗЕ ДАННЫХ
+// =============================================
 
-
-// Явно обрабатываем OPTIONS запросы для preflight
-app.options('*', cors());
-
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(requestIp.mw());
-
-// Middleware для безопасности и производительности
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
-}));
-// Увеличьте таймауты
-app.use((req, res, next) => {
-  req.setTimeout(30000); // 30 секунд
-  res.setTimeout(30000);
-  next();
-});
-
-
-// PostgreSQL connection с улучшенной обработкой ошибок
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
@@ -66,18 +44,46 @@ const pool = new Pool({
   connectionTimeoutMillis: 10000,
 });
 
-// Обработчик ошибок пула
+// Обработчик ошибок пула соединений
 pool.on('error', (err, client) => {
   console.error('❌ Unexpected error on idle client', err);
 });
 
-// Функция для генерации случайного цвета
+// =============================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// =============================================
+
+/**
+ * Генерирует случайный цвет из предопределенного списка
+ */
 function getRandomColor() {
-  const colors = ['#dc3545', '#007bff', '#28a745', '#ffc107', '#6f42c1', '#e83e8c', '#fd7e14', '#20c997'];
-  return colors[Math.floor(Math.random() * colors.length)];
+  return USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
 }
 
-// Проверка обязательных переменных окружения
+/**
+ * Генерирует уникальный ID сессии на основе IP и User-Agent
+ */
+function generateSessionId(req) {
+  const ip = req.clientIp || 'unknown';
+  const userAgent = req.get('User-Agent') || 'unknown';
+  const timestamp = Date.now().toString();
+  return Buffer.from(`${ip}-${userAgent}-${timestamp}`).toString('base64').slice(0, 32);
+}
+
+/**
+ * Обертка для обработки ошибок в async функциях
+ */
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+
+// =============================================
+// ФУНКЦИИ ДЛЯ РАБОТЫ С БАЗОЙ ДАННЫХ
+// =============================================
+
+/**
+ * Проверяет наличие обязательных переменных окружения
+ */
 function checkEnvironment() {
   const requiredEnvVars = ['DATABASE_URL'];
   const missing = requiredEnvVars.filter(envVar => !process.env[envVar]);
@@ -90,7 +96,9 @@ function checkEnvironment() {
   console.log('✅ Все переменные окружения настроены');
 }
 
-// Функция для проверки подключения к БД
+/**
+ * Проверяет подключение к базе данных
+ */
 async function checkDatabaseConnection() {
   try {
     const client = await pool.connect();
@@ -103,17 +111,60 @@ async function checkDatabaseConnection() {
   }
 }
 
-// Упрощенная функция миграции
-async function migrateDatabase() {
-  
+/**
+ * Проверяет существующие сессии для предотвращения дублирования
+ */
+async function checkExistingSessions(client, clientIp, userAgent, sessionId) {
+  try {
+    const existingSessions = await client.query(
+      `SELECT COUNT(*) as count FROM users 
+       WHERE ip_address = $1 AND online = true 
+       AND last_activity > NOW() - INTERVAL '10 minutes'
+       AND station IS NOT NULL`,
+      [clientIp]
+    );
+    
+    const sessionCount = parseInt(existingSessions.rows[0].count);
+    
+    if (sessionCount >= 1000) {
+      return {
+        allowed: false,
+        reason: 'С одного IP-адреса разрешено не более 20 активных сессий одновременно.'
+      };
+    }
+    
+    const exactMatch = await client.query(
+      `SELECT id FROM users 
+       WHERE ip_address = $1 AND user_agent = $2 AND online = true 
+       AND last_activity > NOW() - INTERVAL '1 second'`,
+      [clientIp, userAgent]
+    );
+    
+    if (exactMatch.rows.length > 0) {
+      return {
+        allowed: false,
+        reason: 'У вас уже есть активная сессия в этом браузере. Закройте предыдущую вкладку или подождите несколько минут.'
+      };
+    }
+    
+    return { allowed: true };
+  } catch (error) {
+    console.error('❌ Ошибка проверки сессий:', error);
+    return { allowed: true };
+  }
+}
 
+/**
+ * Выполняет миграцию базы данных - добавляет новые поля и таблицы
+ */
+async function migrateDatabase() {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     
     console.log('🔄 Запуск миграции базы данных...');
     
-    // Основные колонки для добавления
+    // Добавление новых колонок в таблицу users
     const alterQueries = [
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS ip_address INET`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS position VARCHAR(100)`,
@@ -126,7 +177,6 @@ async function migrateDatabase() {
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS timer_seconds INTEGER DEFAULT 0`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS timer_end TIMESTAMP`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS show_timer BOOLEAN DEFAULT false`
-      
     ];
 
     for (const query of alterQueries) {
@@ -138,7 +188,7 @@ async function migrateDatabase() {
       }
     }
 
-    // Создание таблиц если не существуют
+    // Создание таблиц для комнат
     const createTables = [
       `CREATE TABLE IF NOT EXISTS rooms (
         id SERIAL PRIMARY KEY,
@@ -179,7 +229,9 @@ async function migrateDatabase() {
   }
 }
 
-// Инициализация базы данных
+/**
+ * Инициализирует базу данных - создает таблицы и выполняет миграции
+ */
 async function initDB() {
   try {
     await pool.query(`
@@ -209,7 +261,9 @@ async function initDB() {
   }
 }
 
-// Функция для проверки и сброса неактивных пользователей
+/**
+ * Проверяет и сбрасывает неактивных пользователей
+ */
 async function checkAndResetInactiveUsers() {
   const client = await pool.connect();
   try {
@@ -293,7 +347,9 @@ async function checkAndResetInactiveUsers() {
   }
 }
 
-// Функция сброса всех сессий
+/**
+ * Сбрасывает все неактивные сессии
+ */
 async function resetAllSessions() {
   const client = await pool.connect();
   try {
@@ -352,7 +408,9 @@ async function resetAllSessions() {
   }
 }
 
-// Функция автоматического сброса сессий
+/**
+ * Автоматически сбрасывает сессии по расписанию
+ */
 async function autoResetSessions() {
   console.log('🕒 Запуск автоматического сброса сессий...');
   const result = await resetAllSessions();
@@ -363,7 +421,9 @@ async function autoResetSessions() {
   }
 }
 
-// Middleware для очистки неактивных пользователей
+/**
+ * Очищает неактивных пользователей из базы данных
+ */
 async function cleanupInactiveUsers() {
   try {
     const result = await pool.query(`
@@ -379,18 +439,53 @@ async function cleanupInactiveUsers() {
     console.error('❌ Ошибка очистки неактивных пользователей:', error);
   }
 }
-// ДИАГНОСТИЧЕСКИЙ MIDDLEWARE ⭐⭐⭐⭐
+
+// =============================================
+// MIDDLEWARE
+// =============================================
+
+// Middleware для сжатия данных
+app.use(compression());
+
+// CORS middleware
+app.use(cors({
+  origin: CORS_ORIGINS,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
+}));
+
+// Rate limiting middleware
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP'
+});
+app.use(limiter);
+
+// Обработка preflight CORS запросов
+app.options('*', cors());
+
+// Парсинг JSON и URL-encoded данных
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Получение IP адреса клиента
+app.use(requestIp.mw());
+
+// Security middleware
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// Таймауты для запросов
 app.use((req, res, next) => {
-  console.log('=== INCOMING REQUEST ===');
-  console.log('Method:', req.method);
-  console.log('URL:', req.url);
-  console.log('Headers:', req.headers);
-  console.log('Body:', req.body);
-  console.log('======================');
+  req.setTimeout(30000); // 30 секунд
+  res.setTimeout(30000);
   next();
 });
 
-// Логирование всех входящих запросов - ПЕРЕМЕСТИТЕ ЭТО ПОСЛЕ app initialization
+// Логирование входящих запросов
 app.use((req, res, next) => {
   console.log(`📍 ${new Date().toISOString()} ${req.method} ${req.path}`);
   console.log('📍 Headers:', req.headers);
@@ -399,66 +494,13 @@ app.use((req, res, next) => {
   }
   next();
 });
-// Генерация уникального ID сессии
-function generateSessionId(req) {
-  const ip = req.clientIp || 'unknown';
-  const userAgent = req.get('User-Agent') || 'unknown';
-  const timestamp = Date.now().toString();
-  return Buffer.from(`${ip}-${userAgent}-${timestamp}`).toString('base64').slice(0, 32);
-}
 
-// Функция для проверки дублирующих сессий
-async function checkExistingSessions(client, clientIp, userAgent, sessionId) {
-  try {
-    const existingSessions = await client.query(
-      `SELECT COUNT(*) as count FROM users 
-       WHERE ip_address = $1 AND online = true 
-       AND last_activity > NOW() - INTERVAL '10 minutes'
-       AND station IS NOT NULL`,
-      [clientIp]
-    );
-    
-    const sessionCount = parseInt(existingSessions.rows[0].count);
-    
-    if (sessionCount >= 1000) {
-      return {
-        allowed: false,
-        reason: 'С одного IP-адреса разрешено не более 20 активных сессий одновременно.'
-      };
-    }
-    
-    const exactMatch = await client.query(
-      `SELECT id FROM users 
-       WHERE ip_address = $1 AND user_agent = $2 AND online = true 
-       AND last_activity > NOW() - INTERVAL '1 second'`,
-      [clientIp, userAgent]
-    );
-    
-    if (exactMatch.rows.length > 0) {
-      return {
-        allowed: false,
-        reason: 'У вас уже есть активная сессия в этом браузере. Закройте предыдущую вкладку или подождите несколько минут.'
-      };
-    }
-    
-    return { allowed: true };
-  } catch (error) {
-    console.error('❌ Ошибка проверки сессий:', error);
-    return { allowed: true };
-  }
-}
+// =============================================
+// API ROUTES - ЗДОРОВЬЕ СИСТЕМЫ
+// =============================================
 
-// Обертка для обработки ошибок async функций
-const asyncHandler = (fn) => (req, res, next) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
-};
-
-// API Routes
-
-// Health check с проверкой БД
 app.get('/health', async (req, res) => {
   try {
-    // Проверяем подключение к БД
     await pool.query('SELECT 1');
     
     res.json({
@@ -478,7 +520,6 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Проверка готовности API
 app.get('/api/health', async (req, res) => {
   try {
     const dbResult = await pool.query('SELECT COUNT(*) as user_count FROM users WHERE online = true');
@@ -499,6 +540,10 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// =============================================
+// API ROUTES - ПОЛЬЗОВАТЕЛИ
+// =============================================
+
 // Получение всех пользователей
 app.get('/api/users', asyncHandler(async (req, res) => {
   const result = await pool.query(`
@@ -509,56 +554,7 @@ app.get('/api/users', asyncHandler(async (req, res) => {
   res.json(result.rows);
 }));
 
-// Получение статистики по станциям для комнаты ожидания
-app.get('/api/stations/waiting-room', asyncHandler(async (req, res) => {
-  const { city } = req.query;
-  
-  let query = `
-    SELECT 
-      station,
-      COUNT(*) as total_users,
-      COUNT(CASE WHEN is_connected = true AND is_waiting = false THEN 1 END) as connected_count,
-      COUNT(CASE WHEN is_waiting = true AND is_connected = false THEN 1 END) as waiting_count
-    FROM users 
-    WHERE online = true
-  `;
-  
-  const values = [];
-  
-  if (city) {
-    query += ` AND city = $1`;
-    values.push(city);
-  }
-  
-  query += ` GROUP BY station ORDER BY total_users DESC, station ASC`;
-  
-  const result = await pool.query(query, values);
-  
-  // Добавить общую статистику по всему городу
-  const totalStats = await pool.query(`
-      SELECT 
-          COUNT(*) as total_users,
-          COUNT(CASE WHEN is_connected = true THEN 1 END) as total_connected,
-          COUNT(CASE WHEN is_waiting = true THEN 1 END) as total_waiting
-      FROM users 
-      WHERE online = true AND city = $1
-  `, [city || 'spb']);
-  
-  const stationStats = result.rows.map(row => ({
-    station: row.station,
-    totalUsers: parseInt(row.total_users),
-    waiting: parseInt(row.waiting_count),
-    connected: parseInt(row.connected_count)
-  }));
-  
-  // Вернуть оба набора данных
-  res.json({
-      stationStats: stationStats,
-      totalStats: totalStats.rows[0]
-  });
-}));
-
-// Создание нового пользователя - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// Создание нового пользователя
 app.post('/api/users', asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
@@ -572,7 +568,7 @@ app.post('/api/users', asyncHandler(async (req, res) => {
     console.log('📍 Данные нового пользователя:', userData);
     console.log(`📍 IP: ${clientIp}, User-Agent: ${userAgent.substring(0, 50)}...`);
     
-    // ВАЖНО: Проверяем обязательные поля
+    // Проверяем обязательные поля
     if (!userData || !userData.name) {
       await client.query('ROLLBACK');
       return res.status(400).json({ 
@@ -590,7 +586,7 @@ app.post('/api/users', asyncHandler(async (req, res) => {
       });
     }
     
-    // Убедимся, что все обязательные поля есть
+    // Подготавливаем данные пользователя
     const userRecord = {
       name: userData.name || 'Аноним',
       station: userData.station || '',
@@ -621,27 +617,7 @@ app.post('/api/users', asyncHandler(async (req, res) => {
       ) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) 
        RETURNING *`,
-      [
-        userRecord.name,
-        userRecord.station,
-        userRecord.wagon,
-        userRecord.color,
-        userRecord.color_code,
-        userRecord.status,
-        userRecord.timer,
-        userRecord.timer_total,
-        userRecord.city,
-        userRecord.gender,
-        userRecord.ip_address,
-        userRecord.position,
-        userRecord.mood,
-        userRecord.last_activity,
-        userRecord.user_agent,
-        userRecord.session_id,
-        userRecord.is_waiting,
-        userRecord.is_connected,
-        userRecord.online
-      ]
+      Object.values(userRecord)
     );
     
     await client.query('COMMIT');
@@ -655,7 +631,6 @@ app.post('/api/users', asyncHandler(async (req, res) => {
     await client.query('ROLLBACK');
     console.error('❌ Ошибка создания пользователя:', error);
     
-    // Отправляем понятную ошибку клиенту
     res.status(500).json({ 
       error: 'Внутренняя ошибка сервера при создании пользователя',
       details: error.message,
@@ -696,7 +671,6 @@ app.put('/api/users/:id', asyncHandler(async (req, res) => {
       mood: 'mood',
       isWaiting: 'is_waiting',
       isConnected: 'is_connected',
-      // ДОБАВЬТЕ ЭТИ НОВЫЕ ПОЛЯ:
       timer_seconds: 'timer_seconds',
       timer_end: 'timer_end',
       show_timer: 'show_timer'
@@ -790,19 +764,17 @@ app.delete('/api/users/:id', asyncHandler(async (req, res) => {
   }
 }));
 
-// Функция пинга активности пользователя - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// Пинг активности пользователя
 app.post('/api/users/:id/ping', asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     const { id } = req.params;
     
-    // Проверяем существование пользователя
     const userCheck = await client.query('SELECT id FROM users WHERE id = $1', [id]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Пользователь не найден' });
     }
     
-    // Обновляем активность
     const result = await client.query(
       'UPDATE users SET last_activity = $1 WHERE id = $2 RETURNING id',
       [new Date(), id]
@@ -824,6 +796,61 @@ app.post('/api/users/:id/ping', asyncHandler(async (req, res) => {
     client.release();
   }
 }));
+
+// =============================================
+// API ROUTES - СТАНЦИИ И СТАТИСТИКА
+// =============================================
+
+// Получение статистики по станциям для комнаты ожидания
+app.get('/api/stations/waiting-room', asyncHandler(async (req, res) => {
+  const { city } = req.query;
+  
+  let query = `
+    SELECT 
+      station,
+      COUNT(*) as total_users,
+      COUNT(CASE WHEN is_connected = true AND is_waiting = false THEN 1 END) as connected_count,
+      COUNT(CASE WHEN is_waiting = true AND is_connected = false THEN 1 END) as waiting_count
+    FROM users 
+    WHERE online = true
+  `;
+  
+  const values = [];
+  
+  if (city) {
+    query += ` AND city = $1`;
+    values.push(city);
+  }
+  
+  query += ` GROUP BY station ORDER BY total_users DESC, station ASC`;
+  
+  const result = await pool.query(query, values);
+  
+  const totalStats = await pool.query(`
+      SELECT 
+          COUNT(*) as total_users,
+          COUNT(CASE WHEN is_connected = true THEN 1 END) as total_connected,
+          COUNT(CASE WHEN is_waiting = true THEN 1 END) as total_waiting
+      FROM users 
+      WHERE online = true AND city = $1
+  `, [city || 'spb']);
+  
+  const stationStats = result.rows.map(row => ({
+    station: row.station,
+    totalUsers: parseInt(row.total_users),
+    waiting: parseInt(row.waiting_count),
+    connected: parseInt(row.connected_count)
+  }));
+  
+  res.json({
+      stationStats: stationStats,
+      totalStats: totalStats.rows[0]
+  });
+}));
+
+// =============================================
+// API ROUTES - КОМНАТЫ
+// =============================================
 
 // Присоединение к комнате станции
 app.post('/api/rooms/join-station', asyncHandler(async (req, res) => {
@@ -927,7 +954,7 @@ app.post('/api/rooms/leave', asyncHandler(async (req, res) => {
   }
 }));
 
-// Обновление состояния пользователя
+// Обновление состояния пользователя в комнате
 app.put('/api/rooms/user/:userId/state', asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
@@ -965,7 +992,11 @@ app.put('/api/rooms/user/:userId/state', asyncHandler(async (req, res) => {
   }
 }));
 
-// API для сброса сессий через HTTP
+// =============================================
+// API ROUTES - АДМИНИСТРИРОВАНИЕ
+// =============================================
+
+// Сброс сессий через HTTP
 app.post('/api/admin/reset-sessions', asyncHandler(async (req, res) => {
   try {
     const result = await resetAllSessions();
@@ -983,7 +1014,11 @@ app.post('/api/admin/reset-sessions', asyncHandler(async (req, res) => {
   }
 }));
 
-// Health check
+// =============================================
+// ОСНОВНЫЕ МАРШРУТЫ И ОБРАБОТКА ОШИБОК
+// =============================================
+
+// Корневой маршрут
 app.get('/', (req, res) => {
   res.json({ 
     message: '🚇 Metro API работает!',
@@ -1007,13 +1042,19 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Маршрут не найден' });
 });
 
-// Обработка ошибок
+// Глобальная обработка ошибок
 app.use((error, req, res, next) => {
   console.error('❌ Необработанная ошибка:', error);
   res.status(500).json({ error: 'Внутренняя ошибка сервера' });
 });
 
-// Инициализация и запуск сервера
+// =============================================
+// ЗАПУСК СЕРВЕРА
+// =============================================
+
+/**
+ * Запускает сервер и инициализирует все компоненты
+ */
 async function startServer() {
   try {
     // Проверяем окружение

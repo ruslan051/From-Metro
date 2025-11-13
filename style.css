@@ -100,7 +100,7 @@ label {
     margin-bottom: 8px;
     font-weight: 600;
     color: #0057b8;
-    font-style: italic;
+    
 }
 
 select, input {
@@ -116,6 +116,7 @@ select:focus, input:focus {
     border-color: #0057b8;
     outline: none;
     box-shadow: 0 0 0 3px rgba(0, 87, 184, 0.2);
+    font-style: italic;
 }
 
 .btn {

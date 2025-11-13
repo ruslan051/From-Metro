@@ -110,6 +110,10 @@ select, input {
     border-radius: 8px;
     font-size: 16px;
     transition: all 0.3s;
+    
+}
+
+color-select, placeholder {
     font-style: italic;
 }
 

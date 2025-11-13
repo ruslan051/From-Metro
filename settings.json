@@ -1,0 +1,9 @@
+{
+  "css.outline.includeConstantValue": true,
+  "css.outline.showProperties": true,
+  "outline.showClasses": true,
+  "outline.showProperties": true,
+  
+  // Для группировки по комментариям
+  "outline.showComments": true
+}

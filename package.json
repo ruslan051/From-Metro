@@ -1,4 +1,6 @@
 {
+  
+  "$schema": "./node_modules/package-json-schema/schema.json",
   "name": "metro-backend",
   "version": "1.0.0",
   "type": "module",

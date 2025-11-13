@@ -1,125 +1,31 @@
-// Добавьте в глобальную область
+// ==================== ГЛОБАЛЬНАЯ ОБЛАСТЬ И ЭКСПОРТ ФУНКЦИЙ ====================
+
+// Регистрация функций в глобальной области
 window.debugTimer = debugTimer;
-// Добавьте в глобальную область
 window.debugUserData = debugUserData;
-// Добавьте в глобальную область
 window.debugTimerFull = debugTimerFull;
-// Добавьте в глобальную область
 window.debugUserStatuses = debugUserStatuses;
-// Добавьте в глобальную область
 window.saveUserState = saveUserState;
-
-// Функции для inline обработчиков карточек состояний
-function selectPosition(position, element) {
-    console.log('📍 Выбрана позиция:', position, element);
-    
-    // Снимаем выделение со всех карточек позиций
-    const allPositionCards = document.querySelectorAll('#position-cards .state-card');
-    allPositionCards.forEach(card => {
-        card.classList.remove('active');
-        card.style.borderColor = '';
-        card.style.backgroundColor = '';
-        card.style.boxShadow = '';
-    });
-    
-    // Выделяем текущую карточку
-    element.classList.add('active');
-    element.style.borderColor = '#28a745';
-    element.style.backgroundColor = '#f8fff9';
-    element.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
-    
-    currentPosition = position;
-    localStorage.setItem('selectedPosition', position);
-    
-     // НЕМЕДЛЕННО сохраняем состояние
-    updateUserState();
-    updateUserStateDisplay();
-    
-    console.log('✅ Позиция установлена:', position);
-}
-// Тестовая функция для проверки работы
-function testSelection() {
-    console.log('🧪 Тестирование выбора...');
-    
-    // Находим и кликаем первую карточку позиции
-    const firstPos = document.querySelector('#position-cards .state-card');
-    if (firstPos) {
-        console.log('📍 Тестируем:', firstPos.getAttribute('data-position'));
-        selectPosition(firstPos.getAttribute('data-position'), firstPos);
-    }
-    
-    // Находим и кликаем первую карточку настроения
-    const firstMood = document.querySelector('#mood-cards .state-card');
-    if (firstMood) {
-        console.log('😊 Тестируем:', firstMood.getAttribute('data-mood'));
-        selectMood(firstMood.getAttribute('data-mood'), firstMood);
-    }
-}
-
-// Добавьте в глобальную область
 window.testSelection = testSelection;
 window.selectPosition = selectPosition;
 window.selectMood = selectMood;
+window.loadStationsMap = loadStationsMap;
+window.loadRequests = loadRequests;
+window.loadGroupMembers = loadGroupMembers;
+window.initializeWaitingRoomTimer = initializeWaitingRoomTimer;
+window.initializeStateCards = initializeStateCards;
+window.restoreSelectedStation = restoreSelectedStation;
+window.joinStation = joinStation;
+window.updateUserState = updateUserState;
+window.startTimer = startTimer;
+window.stopTimer = stopTimer;
+window.debugStateElements = debugStateElements;
+window.testTimerDisplay = testTimerDisplay;
+window.testStateSelection = testStateSelection;
 
-function selectMood(mood, element) {
-    console.log('😊 Выбрано настроение:', mood, element);
-    
-    // Снимаем выделение со всех карточек настроений
-    const allMoodCards = document.querySelectorAll('#mood-cards .state-card');
-    allMoodCards.forEach(card => {
-        card.classList.remove('active');
-        card.style.borderColor = '';
-        card.style.backgroundColor = '';
-        card.style.boxShadow = '';
-    });
-    
-    // Выделяем текущую карточку
-    element.classList.add('active');
-    element.style.borderColor = '#28a745';
-    element.style.backgroundColor = '#f8fff9';
-    element.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
-    
-    currentMood = mood;
-    localStorage.setItem('selectedMood', mood);
-    
-    
-     // НЕМЕДЛЕННО сохраняем состояние
-    updateUserState();
-    updateUserStateDisplay();
-    
-    console.log('✅ Настроение установлено:', mood);
-}
-// Функция для явного сохранения состояния пользователя
-async function saveUserState() {
-    console.log('💾 Явное сохранение состояния пользователя');
-    
-    if (!userId) {
-        console.warn('❌ userId не установлен');
-        return;
-    }
-    
-    try {
-        await updateUser(userId, {
-            position: currentPosition,
-            mood: currentMood,
-            status: [currentPosition, currentMood].filter(Boolean).join(' | ') || 'Ожидание'
-        });
-        
-        console.log('✅ Состояние сохранено на сервере');
-        
-        // Принудительное обновление отображения
-        if (typeof loadGroupMembers === 'function') await loadGroupMembers();
-        if (typeof loadRequests === 'function') await loadRequests();
-        
-    } catch (error) {
-        console.error('❌ Ошибка сохранения состояния:', error);
-    }
-}
+// ==================== КОНСТАНТЫ И ДАННЫЕ ====================
 
-
-
-
-// Станции метро (редко используемые данные)
+// Станции метро
 const stations = {
     spb: [
         'Адмиралтейская', 'Балтийская', 'Василеостровская', 'Владимирская', 'Гостиный двор',
@@ -140,37 +46,28 @@ const stations = {
         'Воробьёвы горы', 'Выставочная', 'Выхино', 'Деловой центр', 'Динамо'
     ]
 };
-// Удаляем глобальную переменную если она существует
-if (typeof totalUsers !== 'undefined') {
-    console.warn('⚠️ Удаляем глобальную переменную totalUsers');
-    delete window.totalUsers;
-}
+
 // Глобальные переменные для DOM элементов
 let wagonSelect, colorSelect, waitingTimer, waitingTimerDisplay, waitingTimerStatus;
 let waitingStartTimerBtn, waitingStopTimerBtn, waitingTimerOptions, waitingTimerExpanded;
 let positionCards, moodCards;
 let groupMembersContainer, metroMap, requestsContainer;
-// Регистрируем функции в глобальной области
-window.loadStationsMap = loadStationsMap;
-window.loadRequests = loadRequests;
-window.loadGroupMembers = loadGroupMembers;
-window.initializeWaitingRoomTimer = initializeWaitingRoomTimer;
-window.initializeStateCards = initializeStateCards;
-window.restoreSelectedStation = restoreSelectedStation;
-window.joinStation = joinStation;
-window.updateUserState = updateUserState;
-window.startTimer = startTimer;
-window.stopTimer = stopTimer;
 
-// Функция инициализации после загрузки
+// Удаляем глобальную переменную если она существует
+if (typeof totalUsers !== 'undefined') {
+    console.warn('⚠️ Удаляем глобальную переменную totalUsers');
+    delete window.totalUsers;
+}
+
+// ==================== ИНИЦИАЛИЗАЦИЯ И ЗАГРУЗКА ====================
+
+// Основная функция инициализации
 function initializeOptionalModules() {
     initializeOptionalDOMElements();
     initializeWaitingRoomTimer();
     initializeStateCards();
     console.log('🎯 Дополнительные модули инициализированы');
 }
-
-
 
 // Инициализация дополнительных DOM элементов
 function initializeOptionalDOMElements() {
@@ -208,30 +105,478 @@ function initializeOptionalDOMElements() {
         console.error('❌ Ошибка инициализации DOM элементов:', error);
     }
 }
-// Функция для отладки - проверяет наличие всех необходимых элементов
-function debugStateElements() {
-    console.log('🔍 Отладка элементов состояний:');
+
+// Инициализация при загрузке документа
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        initializeOptionalDOMElements();
+        initializeWaitingRoomTimer();
+        initializeStateCards();
+    }, 100);
+});
+
+// ==================== УПРАВЛЕНИЕ СОСТОЯНИЯМИ (ПОЗИЦИИ И НАСТРОЕНИЯ) ====================
+
+// Функции для inline обработчиков карточек состояний
+function selectPosition(position, element) {
+    console.log('📍 Выбрана позиция:', position, element);
     
-    const elements = {
-        'position-cards': document.querySelectorAll('#position-cards .state-card').length,
-        'mood-cards': document.querySelectorAll('#mood-cards .state-card').length,
-        'position-indicator': document.getElementById('position-indicator') ? 'найден' : 'не найден',
-        'mood-indicator': document.getElementById('mood-indicator') ? 'найден' : 'не найден',
-        'current-position': document.getElementById('current-position') ? 'найден' : 'не найден',
-        'current-mood': document.getElementById('current-mood') ? 'найден' : 'не найден',
-        'group-members': document.getElementById('group-members') ? 'найден' : 'не найден'
-    };
+    // Снимаем выделение со всех карточек позиций
+    const allPositionCards = document.querySelectorAll('#position-cards .state-card');
+    allPositionCards.forEach(card => {
+        card.classList.remove('active');
+        card.style.borderColor = '';
+        card.style.backgroundColor = '';
+        card.style.boxShadow = '';
+    });
     
-    console.table(elements);
-    console.log('📍 Текущая позиция:', currentPosition);
-    console.log('😊 Текущее настроение:', currentMood);
+    // Выделяем текущую карточку
+    element.classList.add('active');
+    element.style.borderColor = '#28a745';
+    element.style.backgroundColor = '#f8fff9';
+    element.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
+    
+    currentPosition = position;
+    localStorage.setItem('selectedPosition', position);
+    
+    // НЕМЕДЛЕННО сохраняем состояние
+    updateUserState();
+    updateUserStateDisplay();
+    
+    console.log('✅ Позиция установлена:', position);
 }
 
-// Вызовите эту функцию в консоли браузера для отладки
-window.debugStateElements = debugStateElements;
-// Функция загрузки карты станций
+function selectMood(mood, element) {
+    console.log('😊 Выбрано настроение:', mood, element);
+    
+    // Снимаем выделение со всех карточек настроений
+    const allMoodCards = document.querySelectorAll('#mood-cards .state-card');
+    allMoodCards.forEach(card => {
+        card.classList.remove('active');
+        card.style.borderColor = '';
+        card.style.backgroundColor = '';
+        card.style.boxShadow = '';
+    });
+    
+    // Выделяем текущую карточку
+    element.classList.add('active');
+    element.style.borderColor = '#28a745';
+    element.style.backgroundColor = '#f8fff9';
+    element.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
+    
+    currentMood = mood;
+    localStorage.setItem('selectedMood', mood);
+    
+    // НЕМЕДЛЕННО сохраняем состояние
+    updateUserState();
+    updateUserStateDisplay();
+    
+    console.log('✅ Настроение установлено:', mood);
+}
+
+// Инициализация карточек состояний
+function initializeStateCards() {
+    console.log('🎯 Восстановление состояний карточек...');
+    restoreSelectedStates();
+    console.log('✅ Состояния карточек восстановлены');
+}
+
+// Восстановление выбранных состояний
+function restoreSelectedStates() {
+    const savedPosition = localStorage.getItem('selectedPosition');
+    const savedMood = localStorage.getItem('selectedMood');
+    const savedTimerMinutes = localStorage.getItem('selectedTimerMinutes');
+    
+    console.log('🔄 Восстановление состояний:', { savedPosition, savedMood, savedTimerMinutes });
+    
+    // Восстановление позиции
+    if (savedPosition) {
+        currentPosition = savedPosition;
+        const positionCard = document.querySelector(`[data-position="${savedPosition}"]`);
+        if (positionCard) {
+            positionCard.classList.add('active');
+            positionCard.style.borderColor = '#28a745';
+            positionCard.style.backgroundColor = '#f8fff9';
+            positionCard.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
+            console.log('✅ Восстановлена позиция:', savedPosition);
+        }
+    }
+    
+    // Восстановление настроения
+    if (savedMood) {
+        currentMood = savedMood;
+        const moodCard = document.querySelector(`[data-mood="${savedMood}"]`);
+        if (moodCard) {
+            moodCard.classList.add('active');
+            moodCard.style.borderColor = '#28a745';
+            moodCard.style.backgroundColor = '#f8fff9';
+            moodCard.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
+            console.log('✅ Восстановлено настроение:', savedMood);
+        }
+    }
+    
+    // Восстановление таймера
+    if (savedTimerMinutes) {
+        selectedMinutes = parseInt(savedTimerMinutes);
+        const timerDisplay = document.getElementById('waiting-timer-display');
+        if (timerDisplay) {
+            timerDisplay.textContent = `Готов к запуску: ${selectedMinutes} мин`;
+        }
+        
+        const timerOption = document.querySelector(`[data-minutes="${selectedMinutes}"]`);
+        if (timerOption) {
+            document.querySelectorAll('#waiting-timer-expanded .timer-option').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            timerOption.classList.add('active');
+        }
+    }
+    
+    updateUserStateDisplay();
+}
+
+// Обновление отображения состояния пользователя
+function updateUserStateDisplay() {
+    console.log('🔄 Обновление отображения состояния:', { currentPosition, currentMood });
+    
+    updateStatusIndicators();
+    
+    const userStateDetails = document.querySelector('.user-state-details');
+    if (!userStateDetails) {
+        console.warn('❌ user-state-details не найден');
+        return;
+    }
+    
+    let detailsHTML = '';
+    
+    if (currentPosition || currentMood) {
+        if (currentPosition) {
+            detailsHTML += `<span class="state-highlight">${currentPosition}</span>`;
+        }
+        if (currentMood) {
+            if (currentPosition) detailsHTML += ' • ';
+            detailsHTML += `<span class="state-highlight">${currentMood}</span>`;
+        }
+    } else {
+        detailsHTML = 'Позиция не указана • Настроение не указано';
+    }
+    
+    userStateDetails.innerHTML = detailsHTML;
+    console.log('✅ Обновлен user-state-details:', detailsHTML);
+    
+    // Анимация обновления
+    const userStateDisplay = document.querySelector('.user-state-display.current-user');
+    if (userStateDisplay) {
+        userStateDisplay.classList.add('updating');
+        setTimeout(() => {
+            userStateDisplay.classList.remove('updating');
+        }, 800);
+    }
+}
+
+// Обновление индикаторов состояния
+function updateStatusIndicators() {
+    const positionIndicator = document.getElementById('position-indicator');
+    const moodIndicator = document.getElementById('mood-indicator');
+    const currentPositionSpan = document.getElementById('current-position');
+    const currentMoodSpan = document.getElementById('current-mood');
+    
+    console.log('🔄 Обновление индикаторов:', { currentPosition, currentMood });
+    
+    if (currentPositionSpan) {
+        currentPositionSpan.textContent = currentPosition || 'не выбрана';
+        if (positionIndicator) {
+            if (currentPosition) {
+                positionIndicator.classList.add('highlighted');
+                positionIndicator.style.background = '#e8f5e8';
+                positionIndicator.style.borderColor = '#28a745';
+                positionIndicator.style.color = '#155724';
+            } else {
+                positionIndicator.classList.remove('highlighted');
+                positionIndicator.style.background = '';
+                positionIndicator.style.borderColor = '';
+                positionIndicator.style.color = '';
+            }
+        }
+    }
+    
+    if (currentMoodSpan) {
+        currentMoodSpan.textContent = currentMood || 'не выбрано';
+        if (moodIndicator) {
+            if (currentMood) {
+                moodIndicator.classList.add('highlighted');
+                moodIndicator.style.background = '#e8f5e8';
+                moodIndicator.style.borderColor = '#28a745';
+                moodIndicator.style.color = '#155724';
+            } else {
+                moodIndicator.classList.remove('highlighted');
+                moodIndicator.style.background = '';
+                moodIndicator.style.borderColor = '';
+                moodIndicator.style.color = '';
+            }
+        }
+    }
+}
+
+// ==================== УПРАВЛЕНИЕ ТАЙМЕРОМ ====================
+
+// Инициализация таймера
+function initializeWaitingRoomTimer() {
+    console.log('⏰ Инициализация таймера...');
+    
+    // Перезагрузка элементов
+    waitingTimer = document.getElementById('waiting-room-timer');
+    waitingTimerExpanded = document.getElementById('waiting-timer-expanded');
+    waitingStartTimerBtn = document.getElementById('waiting-start-timer');
+    waitingStopTimerBtn = document.getElementById('waiting-stop-timer');
+    waitingTimerDisplay = document.getElementById('waiting-timer-display');
+    waitingTimerStatus = document.getElementById('waiting-timer-status');
+    
+    console.log('📍 Найденные элементы:', {
+        timer: !!waitingTimer,
+        expanded: !!waitingTimerExpanded,
+        startBtn: !!waitingStartTimerBtn,
+        stopBtn: !!waitingStopTimerBtn,
+        display: !!waitingTimerDisplay,
+        status: !!waitingTimerStatus
+    });
+    
+    if (!waitingTimer || !waitingTimerExpanded) {
+        console.error('❌ Элементы таймера не найдены');
+        return;
+    }
+    
+    // Обработчик клика на заголовок таймера
+    waitingTimer.addEventListener('click', function(event) {
+        console.log('🎯 Клик по таймеру!');
+        waitingTimerExpanded.classList.toggle('active');
+        console.log('✅ Класс active:', waitingTimerExpanded.classList.contains('active'));
+    });
+    
+    // Обработчики кнопок таймера
+    if (waitingStartTimerBtn) {
+        waitingStartTimerBtn.addEventListener('click', function() {
+            console.log('🎯 Клик по кнопке запуска таймера');
+            startTimer();
+        });
+    }
+    
+    if (waitingStopTimerBtn) {
+        waitingStopTimerBtn.addEventListener('click', function() {
+            console.log('🎯 Клик по кнопке остановки таймера');
+            stopTimer();
+        });
+    }
+    
+    // Обработчики опций таймера
+    const timerOptions = document.querySelectorAll('#waiting-timer-expanded .timer-option');
+    console.log('📍 Найдено опций таймера:', timerOptions.length);
+    
+    timerOptions.forEach(btn => {
+        btn.addEventListener('click', function() {
+            console.log('🎯 Клик по опции таймера:', this.getAttribute('data-minutes'));
+            timerOptions.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            selectedMinutes = parseInt(this.getAttribute('data-minutes'));
+            if (waitingTimerDisplay) {
+                waitingTimerDisplay.textContent = `Готов к запуску: ${selectedMinutes} мин`;
+            }
+        });
+    });
+    
+    console.log('✅ Таймер инициализирован');
+}
+
+// Запуск таймера
+function startTimer(event) {
+    console.log('🎯 Запуск таймера');
+    
+    if (event) event.stopPropagation();
+    
+    if (timerInterval) {
+        console.log('⏹️ Таймер уже запущен');
+        return;
+    }
+    
+    timerSeconds = selectedMinutes * 60;
+    const timerEnd = new Date(Date.now() + timerSeconds * 1000);
+    
+    updateTimerDisplay();
+    
+    console.log('🔄 Запуск таймера на', selectedMinutes, 'минут');
+    
+    // Сохраняем таймер на сервере
+    if (userId) {
+        updateUser(userId, {
+            timer_seconds: timerSeconds,
+            timer_end: timerEnd.toISOString(),
+            show_timer: true,
+            status: generateUserStatus()
+        }).then((result) => {
+            console.log('✅ Таймер сохранен на сервере');
+            forceRefreshUserDisplay();
+        }).catch(error => {
+            console.error('❌ Ошибка сохранения таймера:', error);
+        });
+    }
+    
+    timerInterval = setInterval(async function() {
+        timerSeconds--;
+        updateTimerDisplay();
+        
+        // Обновляем оставшееся время на сервере каждые 30 секунд
+        if (timerSeconds % 30 === 0 && userId) {
+            try {
+                await updateUser(userId, { 
+                    timer_seconds: timerSeconds
+                });
+            } catch (error) {
+                console.error('Ошибка обновления таймера на сервере:', error);
+            }
+        }
+        
+        if (timerSeconds <= 0) {
+            stopTimer();
+            alert('Время ожидания истекло!');
+        }
+        
+    }, 1000);
+    
+    if (waitingStartTimerBtn) waitingStartTimerBtn.disabled = true;
+    if (waitingStopTimerBtn) waitingStopTimerBtn.disabled = false;
+}
+
+// Остановка таймера
+function stopTimer(event) {
+    console.log('🎯 Остановка таймера');
+    
+    if (event) event.stopPropagation();
+    
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+    
+    timerSeconds = 0;
+    if (waitingTimerDisplay) waitingTimerDisplay.textContent = 'Не запущен';
+    if (waitingTimerStatus) {
+        waitingTimerStatus.textContent = 'Не активен';
+        waitingTimerStatus.style.color = '#666';
+    }
+    
+    if (waitingStartTimerBtn) waitingStartTimerBtn.disabled = false;
+    if (waitingStopTimerBtn) waitingStopTimerBtn.disabled = true;
+    
+    // Убираем таймер на сервере
+    if (userId) {
+        updateUser(userId, {
+            timer_seconds: 0,
+            show_timer: false,
+            status: generateUserStatus()
+        }).then(() => {
+            console.log('✅ Таймер остановлен на сервере');
+            forceRefreshUserDisplay();
+        }).catch(error => {
+            console.error('Ошибка при остановке таймера:', error);
+        });
+    }
+}
+
+// Обновление отображения таймера
+function updateTimerDisplay() {
+    if (timerSeconds <= 0) {
+        if (waitingTimerDisplay) waitingTimerDisplay.textContent = 'Время истекло';
+        if (waitingTimerStatus) {
+            waitingTimerStatus.textContent = 'Истекло';
+            waitingTimerStatus.style.color = '#dc3545';
+        }
+    } else {
+        const minutes = Math.floor(timerSeconds / 60);
+        const seconds = timerSeconds % 60;
+        const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        if (waitingTimerDisplay) waitingTimerDisplay.textContent = timeString;
+        if (waitingTimerStatus) {
+            waitingTimerStatus.textContent = timeString;
+            waitingTimerStatus.style.color = '#28a745';
+        }
+    }
+}
+
+// Выбор опции таймера
+function selectTimerOption(minutes, element, event) {
+    console.log('🎯 Выбрана опция таймера:', minutes);
+    
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    
+    // Снимаем выделение со всех опций
+    document.querySelectorAll('#waiting-timer-expanded .timer-option').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Выделяем текущую опцию
+    element.classList.add('active');
+    selectedMinutes = minutes;
+    
+    const display = document.getElementById('waiting-timer-display');
+    if (display) {
+        display.textContent = `Готов к запуску: ${minutes} мин`;
+    }
+    
+    // Обновляем информацию пользователя с выбранным временем
+    updateUserTimerInfo(minutes);
+    
+    console.log('✅ Установлено время:', minutes, 'минут');
+    
+    setTimeout(() => {
+        if (typeof loadGroupMembers === 'function') {
+            console.log('🔄 Принудительное обновление участников группы');
+            loadGroupMembers();
+        }
+    }, 500);
+}
+
+// Обновление информации о таймере пользователя
+function updateUserTimerInfo(minutes) {
+    if (!userId) {
+        console.warn('❌ userId не установлен');
+        return;
+    }
+    
+    console.log('🔄 Обновление таймера пользователя:', minutes, 'минут');
+    
+    localStorage.setItem('selectedTimerMinutes', minutes);
+    
+    // Обновляем статус с эмодзи
+    const positionPart = currentPosition ? currentPosition : '';
+    const moodPart = currentMood ? currentMood : '';
+    
+    let newStatus = '';
+    if (positionPart && moodPart) {
+        newStatus = `${positionPart} | ${moodPart} | ⏰ Ожидание: ${minutes} мин`;
+    } else if (positionPart || moodPart) {
+        const statePart = positionPart || moodPart;
+        newStatus = `${statePart} | ⏰ Ожидание: ${minutes} мин`;
+    } else {
+        newStatus = `⏰ Ожидание: ${minutes} мин`;
+    }
+    
+    updateUser(userId, {
+        status: newStatus // С ЭМОДЗИ В СТАТУСЕ
+    }).then((result) => {
+        console.log('✅ Статус с таймером обновлен:', newStatus);
+        forceRefreshUserDisplay();
+    }).catch(error => {
+        console.error('❌ Ошибка обновления таймера:', error);
+    });
+}
+
+// ==================== РАБОТА С СТАНЦИЯМИ И ГРУППАМИ ====================
+
+// Загрузка карты станций
 async function loadStationsMap() {
-  // Проверяем инициализацию
     if (!metroMap) {
         metroMap = document.getElementById('metro-map');
         if (!metroMap) {
@@ -239,6 +584,7 @@ async function loadStationsMap() {
             return;
         }
     }
+    
     try {
         const response = await fetch(`${API_BASE}/stations/waiting-room?city=${selectedCity}`);
         const data = await response.json();
@@ -256,22 +602,22 @@ async function loadStationsMap() {
             const stationElement = document.createElement('div');
             stationElement.className = 'station-map-item';
             
-          let userCount = 0;
-let waitingCount = 0;
-let connectedCount = 0;
-let stationClass = 'empty';
-
-if (stationData) {
-    userCount = stationData.totalUsers || 0;  // ← ДОБАВЬ || 0
-    waitingCount = stationData.waiting;
-    connectedCount = stationData.connected;
-    
-    if (connectedCount > 0) {
-        stationClass = 'connected';
-    } else if (waitingCount > 0) {
-        stationClass = 'waiting';
-    }
-}
+            let userCount = 0;
+            let waitingCount = 0;
+            let connectedCount = 0;
+            let stationClass = 'empty';
+            
+            if (stationData) {
+                userCount = stationData.totalUsers || 0;
+                waitingCount = stationData.waiting;
+                connectedCount = stationData.connected;
+                
+                if (connectedCount > 0) {
+                    stationClass = 'connected';
+                } else if (waitingCount > 0) {
+                    stationClass = 'waiting';
+                }
+            }
             
             stationElement.classList.add(stationClass);
             stationElement.setAttribute('data-station', stationName);
@@ -294,7 +640,7 @@ if (stationData) {
             metroMap.appendChild(stationElement);
         });
 
-        // Обновить легенду с общими цифрами
+        // Обновление легенды
         const legendItems = document.querySelectorAll('.legend-item');
         legendItems.forEach(item => {
             const text = item.textContent;
@@ -307,7 +653,7 @@ if (stationData) {
             }
         });
         
-      } catch (error) {
+    } catch (error) {
         console.error('Ошибка загрузки карты станций:', error);
         if (metroMap) {
             metroMap.innerHTML = `
@@ -320,9 +666,9 @@ if (stationData) {
     }
 }
 
+// Выбор станции
 function selectStation(stationName, stationData) {
     currentSelectedStation = stationName;
-    
     localStorage.setItem('selectedStation', stationName);
     
     document.querySelectorAll('.station-map-item').forEach(item => {
@@ -343,9 +689,89 @@ function selectStation(stationName, stationData) {
     console.log('📍 Выбрана станция:', stationName);
 }
 
-// Функция загрузки запросов
+// Восстановление выбранной станции
+function restoreSelectedStation() {
+    const savedStation = localStorage.getItem('selectedStation');
+    if (savedStation) {
+        currentSelectedStation = savedStation;
+        
+        const selectedElement = document.querySelector(`[data-station="${savedStation}"]`);
+        if (selectedElement) {
+            document.querySelectorAll('.station-map-item').forEach(item => {
+                item.style.borderWidth = '2px';
+                item.style.borderColor = '';
+                item.style.boxShadow = '';
+                item.classList.remove('selected');
+            });
+            
+            selectedElement.style.borderWidth = '4px';
+            selectedElement.style.borderColor = '#0057b8';
+            selectedElement.style.boxShadow = '0 0 10px rgba(0, 87, 184, 0.5)';
+            selectedElement.classList.add('selected');
+        }
+    }
+}
+
+// Присоединение к станции
+async function joinStation(station) {
+    try {
+        const response = await fetch(`${API_BASE}/rooms/join-station`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: userId,
+                station: station
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Ошибка присоединения к станции');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            currentGroup = {
+                station: station,
+                users: result.users
+            };
+            
+            // Обновляем заголовок перед показом экрана
+            updateStationTitle(station);
+
+            waitingRoomScreen.classList.remove('active');
+            joinedRoomScreen.classList.add('active');
+            
+            setTimeout(async () => {
+                await loadGroupMembers();
+                await loadRequests();
+            }, 100);
+            
+            console.log(`✅ Успешно присоединились к станции ${station}`);
+        }
+        
+    } catch (error) {
+        console.error('Ошибка при присоединении к станции:', error);
+        alert('Ошибка при присоединении к станции: ' + error.message);
+    }
+}
+
+// Обновление заголовка станции
+function updateStationTitle(stationName) {
+    const titleElement = document.querySelector('#joined-room-screen h2');
+    if (titleElement) {
+        titleElement.innerHTML = `Вы выбрали станцию <span class="station-name-highlight">${stationName}</span>`;
+        console.log('✅ Заголовок обновлен:', stationName);
+    } else {
+        console.warn('❌ Элемент заголовка не найден');
+    }
+}
+
+// ==================== РАБОТА С ПОЛЬЗОВАТЕЛЯМИ И ЗАПРОСАМИ ====================
+
+// Загрузка запросов
 async function loadRequests() {
-    // Проверяем инициализацию
     if (!requestsContainer) {
         requestsContainer = document.getElementById('requests-container');
         if (!requestsContainer) {
@@ -357,13 +783,13 @@ async function loadRequests() {
     const users = await getUsers();
     requestsContainer.innerHTML = '';
     
-    // Фильтруем пользователей: только те, кто на той же станции, что и текущий пользователь
+    // Фильтруем пользователей
     let filteredUsers = users.filter(user => 
         user.city === selectedCity && 
         user.online === true
     );
     
-    // Если мы на третьей странице (joined room), показываем только пользователей текущей станции
+    // Если мы на третьей странице, показываем только пользователей текущей станции
     if (joinedRoomScreen && joinedRoomScreen.classList.contains('active') && currentGroup) {
         filteredUsers = filteredUsers.filter(user => 
             user.station === currentGroup.station
@@ -409,114 +835,64 @@ async function loadRequests() {
         `;
         requestsContainer.appendChild(stationHeader);
         
-        // Исправленная часть функции loadRequests
-                stationUsers.forEach(user => {
-                    const requestCard = document.createElement('div');
-                    requestCard.className = 'request-card';
-                    const isCurrentUser = userId && user.id === userId;
-                    
-                   // ИСПРАВЛЕННЫЙ блок в loadRequests:
-                                const stateInfo = [];
-                                if (user.position) stateInfo.push(`📍 ${user.position}`);
-                                if (user.mood) stateInfo.push(`😊 ${user.mood}`);
+        stationUsers.forEach(user => {
+            const requestCard = document.createElement('div');
+            requestCard.className = 'request-card';
+            const isCurrentUser = userId && user.id === userId;
+            
+            const stateInfo = [];
+            if (user.position) stateInfo.push(`📍 ${user.position}`);
+            if (user.mood) stateInfo.push(`😊 ${user.mood}`);
 
-                                // ИСПРАВЛЕННОЕ извлечение информации о таймере
-                                if (user.status && user.status.includes('⏰')) {
-                                    const timerParts = user.status.split('⏰');
-                                    if (timerParts.length > 1) {
-                                        const timerText = timerParts[1].trim();
-                                        stateInfo.push(`⏰ ${timerText}`);
-                                    }
-                                }
-                    // Формируем дополнительную информацию
-                    const additionalInfo = [];
-                    if (user.color) additionalInfo.push(`🎨 ${user.color}`);
-                    if (user.wagon && user.wagon !== '' && user.wagon !== 'Не указан') {
-                        additionalInfo.push(`🚇 Вагон ${user.wagon}`);
-                    }
-                    
-                    // ИСПРАВЛЕНО: используем const вместо повторного объявления
-                    const stateText = stateInfo.join(' • ');
-                    const additionalText = additionalInfo.join(' • ');
-                    
-                    requestCard.innerHTML = `
-                        <div class="request-header">
-                            <div class="user-info-compact">
-                                <div class="user-avatar-small">${user.name.charAt(0)}</div>
-                                <div class="user-details">
-                                    <div class="user-name">${user.name} ${isCurrentUser ? '(Вы)' : ''}</div>
-                                    <div class="user-status">
-                                        <span class="color-indicator" style="background-color: ${user.color_code || '#007bff'}"></span>
-                                        ${user.is_waiting ? '⏳ Ожидает присоединения' : '✅ На станции'}
-                                    </div>
-                                </div>
+            // Извлечение информации о таймере
+            if (user.status && user.status.includes('⏰')) {
+                const timerParts = user.status.split('⏰');
+                if (timerParts.length > 1) {
+                    const timerText = timerParts[1].trim();
+                    stateInfo.push(`⏰ ${timerText}`);
+                }
+            }
+            
+            // Дополнительная информация
+            const additionalInfo = [];
+            if (user.color) additionalInfo.push(`🎨 ${user.color}`);
+            if (user.wagon && user.wagon !== '' && user.wagon !== 'Не указан') {
+                additionalInfo.push(`🚇 Вагон ${user.wagon}`);
+            }
+            
+            const stateText = stateInfo.join(' • ');
+            const additionalText = additionalInfo.join(' • ');
+            
+            requestCard.innerHTML = `
+                <div class="request-header">
+                    <div class="user-info-compact">
+                        <div class="user-avatar-small">${user.name.charAt(0)}</div>
+                        <div class="user-details">
+                            <div class="user-name">${user.name} ${isCurrentUser ? '(Вы)' : ''}</div>
+                            <div class="user-status">
+                                <span class="color-indicator" style="background-color: ${user.color_code || '#007bff'}"></span>
+                                ${user.is_waiting ? '⏳ Ожидает присоединения' : '✅ На станции'}
                             </div>
-                            ${user.wagon && user.wagon !== 'Не указан' ? `<div class="wagon">Вагон ${user.wagon}</div>` : ''}
                         </div>
-                        
-                        ${stateText ? `<div class="user-state-info" style="margin: 10px 0; padding: 8px; background: #f8f9fa; border-radius: 5px; font-size: 14px;">
-                            <strong>Состояние:</strong> ${stateText}
-                        </div>` : ''}
-                        
-                        ${additionalText ? `<div style="font-size: 13px; color: #666; margin-top: 5px;">
-                            ${additionalText}
-                        </div>` : ''}
-                    `;
-                    
-                    requestsContainer.appendChild(requestCard);
-                });
+                    </div>
+                    ${user.wagon && user.wagon !== 'Не указан' ? `<div class="wagon">Вагон ${user.wagon}</div>` : ''}
+                </div>
+                
+                ${stateText ? `<div class="user-state-info" style="margin: 10px 0; padding: 8px; background: #f8f9fa; border-radius: 5px; font-size: 14px;">
+                    <strong>Состояние:</strong> ${stateText}
+                </div>` : ''}
+                
+                ${additionalText ? `<div style="font-size: 13px; color: #666; margin-top: 5px;">
+                    ${additionalText}
+                </div>` : ''}
+            `;
+            
+            requestsContainer.appendChild(requestCard);
+        });
     });
 }
-// Добавьте эту функцию для отладки
-function debugUserStatuses() {
-    console.log('🔍 Отладка статусов пользователей:');
-    
-    if (userId) {
-        getUsers().then(users => {
-            const currentUserData = users.find(u => u.id === userId);
-            console.log('👤 Ваш статус:', currentUserData?.status);
-            
-            if (currentGroup) {
-                const stationUsers = users.filter(u => u.station === currentGroup.station);
-                console.log('👥 Статусы всех пользователей на станции:');
-                stationUsers.forEach(user => {
-                    console.log(`- ${user.name}: ${user.status}`);
-                });
-            }
-        });
-    }
-}
 
-
-// Функция для проверки данных пользователя
-function debugUserData() {
-    console.log('🔍 Отладка данных пользователя:');
-    console.log('📍 Текущий пользователь ID:', userId);
-    console.log('⏰ Выбранное время:', selectedMinutes);
-    
-    // Проверим данные в localStorage
-    const savedTimer = localStorage.getItem('selectedTimerMinutes');
-    console.log('💾 Сохраненное время в localStorage:', savedTimer);
-    
-    // Проверим текущего пользователя
-    if (userId) {
-        getUsers().then(users => {
-            const currentUserData = users.find(u => u.id === userId);
-            console.log('👤 Данные текущего пользователя:', {
-                id: currentUserData.id,
-                name: currentUserData.name,
-                status: currentUserData.status,
-                timer: currentUserData.timer,
-                timer_total: currentUserData.timer_total,
-                position: currentUserData.position,
-                mood: currentUserData.mood
-            });
-        });
-    }
-}
-
-
-
+// Загрузка участников группы
 async function loadGroupMembers() {
     if (!groupMembersContainer) {
         console.error('Контейнер group-members не найден');
@@ -547,7 +923,7 @@ async function loadGroupMembers() {
             const memberElement = document.createElement('div');
             memberElement.className = `user-state-display ${isCurrentUser ? 'current-user' : ''}`;
             
-            // Форматируем информацию о состоянии
+            // Форматирование информации о состоянии
             let stateDetails = '';
             if (user.position || user.mood) {
                 if (user.position) {
@@ -602,467 +978,9 @@ async function loadGroupMembers() {
     }
 }
 
-// Функция обновления индикаторов текущего состояния
-function updateStatusIndicators() {
-    const positionIndicator = document.getElementById('position-indicator');
-    const moodIndicator = document.getElementById('mood-indicator');
-    const currentPositionSpan = document.getElementById('current-position');
-    const currentMoodSpan = document.getElementById('current-mood');
-    
-    console.log('🔄 Обновление индикаторов:', { currentPosition, currentMood });
-    
-    if (currentPositionSpan) {
-        currentPositionSpan.textContent = currentPosition || 'не выбрана';
-        if (positionIndicator) {
-            if (currentPosition) {
-                positionIndicator.classList.add('highlighted');
-                positionIndicator.style.background = '#e8f5e8';
-                positionIndicator.style.borderColor = '#28a745';
-                positionIndicator.style.color = '#155724';
-            } else {
-                positionIndicator.classList.remove('highlighted');
-                positionIndicator.style.background = '';
-                positionIndicator.style.borderColor = '';
-                positionIndicator.style.color = '';
-            }
-        }
-    }
-    
-    if (currentMoodSpan) {
-        currentMoodSpan.textContent = currentMood || 'не выбрано';
-        if (moodIndicator) {
-            if (currentMood) {
-                moodIndicator.classList.add('highlighted');
-                moodIndicator.style.background = '#e8f5e8';
-                moodIndicator.style.borderColor = '#28a745';
-                moodIndicator.style.color = '#155724';
-            } else {
-                moodIndicator.classList.remove('highlighted');
-                moodIndicator.style.background = '';
-                moodIndicator.style.borderColor = '';
-                moodIndicator.style.color = '';
-            }
-        }
-    }
-}
+// ==================== УПРАВЛЕНИЕ СОСТОЯНИЕМ ПОЛЬЗОВАТЕЛЯ ====================
 
-// Функция для переключения таймера
-function toggleTimer(event) {
-    console.log('🎯 Переключение таймера');
-    
-    // Останавливаем всплытие события, если клик был по кнопке опции
-    if (event && event.target.closest('.timer-option')) {
-        console.log('⏹️ Клик по опции таймера - не закрываем');
-        return;
-    }
-    
-    const expanded = document.getElementById('waiting-timer-expanded');
-    if (expanded) {
-        expanded.classList.toggle('active');
-        console.log('✅ Состояние таймера:', expanded.classList.contains('active') ? 'развернут' : 'свернут');
-    }
-}
-
-// Функция для выбора опции таймера
-function selectTimerOption(minutes, element, event) {
-    console.log('🎯 Выбрана опция таймера:', minutes);
-    
-    // Останавливаем всплытие события
-    if (event) {
-        event.stopPropagation();
-        event.preventDefault();
-    }
-    
-    // Снимаем выделение со всех опций
-    document.querySelectorAll('#waiting-timer-expanded .timer-option').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // Выделяем текущую опцию
-    element.classList.add('active');
-    selectedMinutes = minutes;
-    
-    const display = document.getElementById('waiting-timer-display');
-    if (display) {
-        display.textContent = `Готов к запуску: ${minutes} мин`;
-    }
-    
-    // ОБНОВЛЯЕМ ИНФОРМАЦИЮ ПОЛЬЗОВАТЕЛЯ С ВЫБРАННЫМ ВРЕМЕНЕМ
-    updateUserTimerInfo(minutes);
-    
-    console.log('✅ Установлено время:', minutes, 'минут');
-    
-    // Добавьте в конец updateUserTimerInfo:
-                setTimeout(() => {
-                    if (typeof loadGroupMembers === 'function') {
-                        console.log('🔄 Принудительное обновление участников группы');
-                        loadGroupMembers();
-                    }
-                }, 500);
-}
-
-// ЗАМЕНИТЕ функцию updateUserTimerInfo:
-function updateUserTimerInfo(minutes) {
-    if (!userId) {
-        console.warn('❌ userId не установлен');
-        return;
-    }
-    
-    console.log('🔄 Обновление таймера пользователя:', minutes, 'минут');
-    
-    localStorage.setItem('selectedTimerMinutes', minutes);
-    
-    // ВАЖНО: Обновляем статус с эмодзи
-    const positionPart = currentPosition ? currentPosition : '';
-    const moodPart = currentMood ? currentMood : '';
-    
-    let newStatus = '';
-    if (positionPart && moodPart) {
-        newStatus = `${positionPart} | ${moodPart} | ⏰ Ожидание: ${minutes} мин`;
-    } else if (positionPart || moodPart) {
-        const statePart = positionPart || moodPart;
-        newStatus = `${statePart} | ⏰ Ожидание: ${minutes} мин`;
-    } else {
-        newStatus = `⏰ Ожидание: ${minutes} мин`;
-    }
-    
-    updateUser(userId, {
-        status: newStatus // С ЭМОДЗИ В СТАТУСЕ
-    }).then((result) => {
-        console.log('✅ Статус с таймером обновлен:', newStatus);
-        forceRefreshUserDisplay();
-    }).catch(error => {
-        console.error('❌ Ошибка обновления таймера:', error);
-    });
-}
-// Новая функция для принудительного обновления отображения
-function forceRefreshUserDisplay() {
-    console.log('🔄 Принудительное обновление отображения пользователей');
-    
-    // Обновляем на всех страницах где есть пользователи
-    if (typeof loadGroupMembers === 'function') {
-        console.log('🎯 Вызов loadGroupMembers');
-        loadGroupMembers();
-    }
-    if (typeof loadRequests === 'function') {
-        console.log('🎯 Вызов loadRequests');
-        loadRequests();
-    }
-    
-    // Если мы на второй странице, обновляем карту
-    if (waitingRoomScreen && waitingRoomScreen.classList.contains('active')) {
-        if (typeof loadStationsMap === 'function') {
-            console.log('🎯 Вызов loadStationsMap');
-            loadStationsMap();
-        }
-    }
-}
-// Инициализация таймера в комнате ожидания
-function initializeWaitingRoomTimer() {
-    console.log('⏰ Инициализация таймера...');
-    
-    // Перезагружаем элементы
-    waitingTimer = document.getElementById('waiting-room-timer');
-    waitingTimerExpanded = document.getElementById('waiting-timer-expanded');
-    waitingStartTimerBtn = document.getElementById('waiting-start-timer');
-    waitingStopTimerBtn = document.getElementById('waiting-stop-timer');
-    waitingTimerDisplay = document.getElementById('waiting-timer-display');
-    waitingTimerStatus = document.getElementById('waiting-timer-status');
-    
-    console.log('📍 Найденные элементы:', {
-        timer: !!waitingTimer,
-        expanded: !!waitingTimerExpanded,
-        startBtn: !!waitingStartTimerBtn,
-        stopBtn: !!waitingStopTimerBtn,
-        display: !!waitingTimerDisplay,
-        status: !!waitingTimerStatus
-    });
-    
-    if (!waitingTimer) {
-        console.error('❌ Таймер не найден');
-        return;
-    }
-    
-    if (!waitingTimerExpanded) {
-        console.error('❌ Расширенная часть таймера не найдена');
-        return;
-    }
-    
-    // Обработчик клика на заголовок таймера
-    waitingTimer.addEventListener('click', function(event) {
-        console.log('🎯 Клик по таймеру!');
-        waitingTimerExpanded.classList.toggle('active');
-        console.log('✅ Класс active:', waitingTimerExpanded.classList.contains('active'));
-    });
-    
-    // Обработчики кнопок таймера
-    if (waitingStartTimerBtn) {
-        waitingStartTimerBtn.addEventListener('click', function() {
-            console.log('🎯 Клик по кнопке запуска таймера');
-            startTimer();
-        });
-    }
-    
-    if (waitingStopTimerBtn) {
-        waitingStopTimerBtn.addEventListener('click', function() {
-            console.log('🎯 Клик по кнопке остановки таймера');
-            stopTimer();
-        });
-    }
-    
-    // Обработчики опций таймера
-    const timerOptions = document.querySelectorAll('#waiting-timer-expanded .timer-option');
-    console.log('📍 Найдено опций таймера:', timerOptions.length);
-    
-    timerOptions.forEach(btn => {
-        btn.addEventListener('click', function() {
-            console.log('🎯 Клик по опции таймера:', this.getAttribute('data-minutes'));
-            timerOptions.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            selectedMinutes = parseInt(this.getAttribute('data-minutes'));
-            if (waitingTimerDisplay) {
-                waitingTimerDisplay.textContent = `Готов к запуску: ${selectedMinutes} мин`;
-            }
-        });
-    });
-    
-    console.log('✅ Таймер инициализирован');
-}
-// Новая функция запуска таймера
-function startTimer(event) {
-    console.log('🎯 Запуск таймера');
-    
-    if (event) event.stopPropagation();
-    
-    if (timerInterval) {
-        console.log('⏹️ Таймер уже запущен');
-        return;
-    }
-    
-    timerSeconds = selectedMinutes * 60;
-    const timerEnd = new Date(Date.now() + timerSeconds * 1000);
-    
-    updateTimerDisplay();
-    
-    console.log('🔄 Запуск таймера на', selectedMinutes, 'минут');
-    
-    // Сохраняем таймер на сервере
-    if (userId) {
-        updateUser(userId, {
-            timer_seconds: timerSeconds,
-            timer_end: timerEnd.toISOString(),
-            show_timer: true,
-            status: generateUserStatus() // Обновляем статус без таймера
-        }).then((result) => {
-            console.log('✅ Таймер сохранен на сервере');
-            forceRefreshUserDisplay();
-        }).catch(error => {
-            console.error('❌ Ошибка сохранения таймера:', error);
-        });
-    }
-    
-    timerInterval = setInterval(async function() {
-        timerSeconds--;
-        updateTimerDisplay();
-        
-        // Обновляем оставшееся время на сервере каждые 30 секунд
-        if (timerSeconds % 30 === 0 && userId) {
-            try {
-                await updateUser(userId, { 
-                    timer_seconds: timerSeconds
-                });
-            } catch (error) {
-                console.error('Ошибка обновления таймера на сервере:', error);
-            }
-        }
-        
-        if (timerSeconds <= 0) {
-            stopTimer();
-            alert('Время ожидания истекло!');
-        }
-        
-    }, 1000);
-    
-    if (waitingStartTimerBtn) waitingStartTimerBtn.disabled = true;
-    if (waitingStopTimerBtn) waitingStopTimerBtn.disabled = false;
-}
-
-// Новая функция остановки таймера
-function stopTimer(event) {
-    console.log('🎯 Остановка таймера');
-    
-    if (event) event.stopPropagation();
-    
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
-    
-    timerSeconds = 0;
-    if (waitingTimerDisplay) waitingTimerDisplay.textContent = 'Не запущен';
-    if (waitingTimerStatus) {
-        waitingTimerStatus.textContent = 'Не активен';
-        waitingTimerStatus.style.color = '#666';
-    }
-    
-    if (waitingStartTimerBtn) waitingStartTimerBtn.disabled = false;
-    if (waitingStopTimerBtn) waitingStopTimerBtn.disabled = true;
-    
-    // Убираем таймер на сервере
-    if (userId) {
-        updateUser(userId, {
-            timer_seconds: 0,
-            show_timer: false,
-            status: generateUserStatus()
-        }).then(() => {
-            console.log('✅ Таймер остановлен на сервере');
-            forceRefreshUserDisplay();
-        }).catch(error => {
-            console.error('Ошибка при остановке таймера:', error);
-        });
-    }
-}
-
-// Вспомогательная функция для генерации статуса
-function generateUserStatus() {
-    const positionPart = currentPosition ? currentPosition : '';
-    const moodPart = currentMood ? currentMood : '';
-    
-    if (positionPart && moodPart) {
-        return `${positionPart} | ${moodPart}`;
-    } else if (positionPart || moodPart) {
-        return positionPart || moodPart;
-    } else {
-        return 'Ожидание';
-    }
-}
-
-// CSS. Стили, Для отображения мрбильной вернсии сайта. 
-function initMobileOptimizations() {
-    const metroMap = document.querySelector('.metro-map');
-    
-    // Добавляем индикатор скролла если есть много станций
-    if (metroMap && metroMap.scrollHeight > metroMap.clientHeight) {
-        metroMap.classList.add('scrollable');
-    }
-    
-    // Оптимизация касаний для мобильных
-    if ('ontouchstart' in window) {
-        document.addEventListener('touchstart', function(e) {
-            // Предотвращаем залипание hover-эффектов на мобильных
-            if (e.target.closest('.station-map-item')) {
-                e.target.closest('.station-map-item').classList.add('touch-active');
-            }
-        }, { passive: true });
-        
-        document.addEventListener('touchend', function(e) {
-            const touched = document.querySelector('.station-map-item.touch-active');
-            if (touched) {
-                setTimeout(() => touched.classList.remove('touch-active'), 150);
-            }
-        }, { passive: true });
-    }
-}
-
-// Добавьте этот стиль для touch-улучшений
-const mobileTouchStyles = `
-.station-map-item.touch-active {
-    transform: scale(0.95);
-    opacity: 0.9;
-}
-
-@media (max-width: 768px) {
-    .station-map-item:active {
-        transform: scale(0.98);
-        transition: transform 0.1s;
-    }
-}
-`;
-
-// Вставка стилей в документ
-const styleSheet = document.createElement('style');
-styleSheet.textContent = mobileTouchStyles;
-document.head.appendChild(styleSheet);
-
-// Инициализация при загрузке
-document.addEventListener('DOMContentLoaded', initMobileOptimizations);
-// Временно уменьшите интервал обновления для отладки
-function startDebugRefresh() {
-    setInterval(async () => {
-        console.log('🐛 Дебаг обновление:', new Date().toLocaleTimeString());
-        if (typeof loadGroupMembers === 'function') {
-            await loadGroupMembers();
-        }
-    }, 2000); // Обновляем каждые 2 секунды
-}
-
-// Вызовите в консоли: startDebugRefresh()
-// Функция остановки таймера
-function stopTimer(event) {
-    console.log('🎯 Остановка таймера');
-    
-    if (event) {
-        event.stopPropagation();
-    }
-    
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
-    
-    timerSeconds = 0;
-    if (waitingTimerDisplay) waitingTimerDisplay.textContent = 'Не запущен';
-    if (waitingTimerStatus) {
-        waitingTimerStatus.textContent = 'Не активен';
-        waitingTimerStatus.style.color = '#666';
-    }
-    
-    if (waitingStartTimerBtn) waitingStartTimerBtn.disabled = false;
-    if (waitingStopTimerBtn) waitingStopTimerBtn.disabled = true;
-    
-    // Обновляем статус только один раз при остановке
-    if (userId) {
-        try {
-            const positionPart = currentPosition ? currentPosition : '';
-            const moodPart = currentMood ? currentMood : '';
-            
-            let newStatus = '';
-            if (positionPart && moodPart) {
-                newStatus = `${positionPart} | ${moodPart}`;
-            } else if (positionPart || moodPart) {
-                newStatus = positionPart || moodPart;
-            } else {
-                newStatus = 'Ожидание';
-            }
-            
-            updateUser(userId, { 
-                timer: "00:00",
-                timer_total: 0,
-                status: newStatus
-            }).then(() => {
-                console.log('✅ Таймер остановлен, статус обновлен');
-            });
-        } catch (error) {
-            console.error('Ошибка при остановке таймера:', error);
-        }
-    }
-    
-    console.log('✅ Таймер остановлен');
-}
-
-
-// Добавьте эту функцию для объединения позиции, настроения и таймера
-function combineUserStatus(position, mood, timerStatus = '') {
-    const parts = [];
-    
-    if (position) parts.push(position);
-    if (mood) parts.push(mood);
-    if (timerStatus) parts.push(timerStatus);
-    
-    return parts.join(' • ');
-}
-
-// ЗАМЕНИТЕ функцию updateUserState:
+// Обновление состояния пользователя
 async function updateUserState() {
     if (!userId) return;
     
@@ -1111,44 +1029,147 @@ async function updateUserState() {
         console.error('❌ Ошибка обновления состояния:', error);
     }
 }
-// Добавьте эту функцию для тестирования
-function testTimerDisplay() {
-    console.log('🧪 Тестирование отображения таймера');
+
+// Явное сохранение состояния пользователя
+async function saveUserState() {
+    console.log('💾 Явное сохранение состояния пользователя');
     
-    if (userId) {
-        const testTimerStatus = '⏰ Таймер запущен: 5 мин';
-        updateUser(userId, {
-            status: testTimerStatus
-        }).then(() => {
-            console.log('✅ Тестовый статус установлен:', testTimerStatus);
-            setTimeout(() => {
-                if (typeof loadGroupMembers === 'function') loadGroupMembers();
-                if (typeof loadRequests === 'function') loadRequests();
-            }, 1000);
+    if (!userId) {
+        console.warn('❌ userId не установлен');
+        return;
+    }
+    
+    try {
+        await updateUser(userId, {
+            position: currentPosition,
+            mood: currentMood,
+            status: [currentPosition, currentMood].filter(Boolean).join(' | ') || 'Ожидание'
         });
+        
+        console.log('✅ Состояние сохранено на сервере');
+        
+        // Принудительное обновление отображения
+        if (typeof loadGroupMembers === 'function') await loadGroupMembers();
+        if (typeof loadRequests === 'function') await loadRequests();
+        
+    } catch (error) {
+        console.error('❌ Ошибка сохранения состояния:', error);
     }
 }
 
-window.testTimerDisplay = testTimerDisplay;
-function updateTimerDisplay() {
-    if (timerSeconds <= 0) {
-        if (waitingTimerDisplay) waitingTimerDisplay.textContent = 'Время истекло';
-        if (waitingTimerStatus) {
-            waitingTimerStatus.textContent = 'Истекло';
-            waitingTimerStatus.style.color = '#dc3545';
-        }
+// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+
+// Генерация статуса пользователя
+function generateUserStatus() {
+    const positionPart = currentPosition ? currentPosition : '';
+    const moodPart = currentMood ? currentMood : '';
+    
+    if (positionPart && moodPart) {
+        return `${positionPart} | ${moodPart}`;
+    } else if (positionPart || moodPart) {
+        return positionPart || moodPart;
     } else {
-        const minutes = Math.floor(timerSeconds / 60);
-        const seconds = timerSeconds % 60;
-        const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        if (waitingTimerDisplay) waitingTimerDisplay.textContent = timeString;
-        if (waitingTimerStatus) {
-            waitingTimerStatus.textContent = timeString;
-            waitingTimerStatus.style.color = '#28a745';
+        return 'Ожидание';
+    }
+}
+
+// Объединение позиции, настроения и таймера
+function combineUserStatus(position, mood, timerStatus = '') {
+    const parts = [];
+    
+    if (position) parts.push(position);
+    if (mood) parts.push(mood);
+    if (timerStatus) parts.push(timerStatus);
+    
+    return parts.join(' • ');
+}
+
+// Форматирование времени
+function formatTime(seconds) {
+    if (seconds <= 0) return '00:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Принудительное обновление отображения
+function forceRefreshUserDisplay() {
+    console.log('🔄 Принудительное обновление отображения пользователей');
+    
+    // Обновляем на всех страницах где есть пользователи
+    if (typeof loadGroupMembers === 'function') {
+        console.log('🎯 Вызов loadGroupMembers');
+        loadGroupMembers();
+    }
+    if (typeof loadRequests === 'function') {
+        console.log('🎯 Вызов loadRequests');
+        loadRequests();
+    }
+    
+    // Если мы на второй странице, обновляем карту
+    if (waitingRoomScreen && waitingRoomScreen.classList.contains('active')) {
+        if (typeof loadStationsMap === 'function') {
+            console.log('🎯 Вызов loadStationsMap');
+            loadStationsMap();
         }
     }
 }
-// Функция для отладки таймера
+
+// Принудительное применение стилей
+function forceApplyStyles() {
+    console.log('🎨 Принудительное применение стилей...');
+    
+    // Применяем стили к активным карточкам
+    document.querySelectorAll('.state-card.active').forEach(card => {
+        card.style.borderColor = '#28a745';
+        card.style.backgroundColor = '#f8fff9';
+        card.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
+    });
+    
+    // Применяем стили к выделенным индикаторам
+    if (currentPosition) {
+        const positionIndicator = document.getElementById('position-indicator');
+        if (positionIndicator) {
+            positionIndicator.classList.add('highlighted');
+            positionIndicator.style.background = '#e8f5e8';
+            positionIndicator.style.borderColor = '#28a745';
+        }
+    }
+    
+    if (currentMood) {
+        const moodIndicator = document.getElementById('mood-indicator');
+        if (moodIndicator) {
+            moodIndicator.classList.add('highlighted');
+            moodIndicator.style.background = '#e8f5e8';
+            moodIndicator.style.borderColor = '#28a745';
+        }
+    }
+    
+    console.log('✅ Стили применены');
+}
+
+// ==================== ФУНКЦИИ ОТЛАДКИ ====================
+
+// Отладка элементов состояний
+function debugStateElements() {
+    console.log('🔍 Отладка элементов состояний:');
+    
+    const elements = {
+        'position-cards': document.querySelectorAll('#position-cards .state-card').length,
+        'mood-cards': document.querySelectorAll('#mood-cards .state-card').length,
+        'position-indicator': document.getElementById('position-indicator') ? 'найден' : 'не найден',
+        'mood-indicator': document.getElementById('mood-indicator') ? 'найден' : 'не найден',
+        'current-position': document.getElementById('current-position') ? 'найден' : 'не найден',
+        'current-mood': document.getElementById('current-mood') ? 'найден' : 'не найден',
+        'group-members': document.getElementById('group-members') ? 'найден' : 'не найден'
+    };
+    
+    console.table(elements);
+    console.log('📍 Текущая позиция:', currentPosition);
+    console.log('😊 Текущее настроение:', currentMood);
+}
+
+// Отладка таймера
 function debugTimer() {
     console.log('🔍 Отладка таймера:');
     
@@ -1171,7 +1192,7 @@ function debugTimer() {
     }
 }
 
-// Расширенная функция для отладки таймера
+// Полная отладка таймера
 function debugTimerFull() {
     console.log('🔍 ПОЛНАЯ ОТЛАДКА ТАЙМЕРА:');
     
@@ -1222,341 +1243,93 @@ function debugTimerFull() {
     }
 }
 
-
-// Инициализация карточек состояний (только восстановление)
-function initializeStateCards() {
-    console.log('🎯 Восстановление состояний карточек...');
+// Отладка данных пользователя
+function debugUserData() {
+    console.log('🔍 Отладка данных пользователя:');
+    console.log('📍 Текущий пользователь ID:', userId);
+    console.log('⏰ Выбранное время:', selectedMinutes);
     
-    // Просто восстанавливаем выбранные состояния
-    restoreSelectedStates();
+    // Проверяем данные в localStorage
+    const savedTimer = localStorage.getItem('selectedTimerMinutes');
+    console.log('💾 Сохраненное время в localStorage:', savedTimer);
     
-    console.log('✅ Состояния карточек восстановлены');
-}
-// Функция восстановления выбранных состояний
-function restoreSelectedStates() {
-    const savedPosition = localStorage.getItem('selectedPosition');
-    const savedMood = localStorage.getItem('selectedMood');
-    
-    console.log('🔄 Восстановление состояний:', { savedPosition, savedMood });
-    
-    if (savedPosition) {
-        currentPosition = savedPosition;
-        const positionCard = document.querySelector(`[data-position="${savedPosition}"]`);
-        if (positionCard) {
-            positionCard.classList.add('active');
-            positionCard.style.borderColor = '#28a745';
-            positionCard.style.backgroundColor = '#f8fff9';
-            positionCard.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
-            console.log('✅ Восстановлена позиция:', savedPosition);
-        }
-    }
-    
-    if (savedMood) {
-        currentMood = savedMood;
-        const moodCard = document.querySelector(`[data-mood="${savedMood}"]`);
-        if (moodCard) {
-            moodCard.classList.add('active');
-            moodCard.style.borderColor = '#28a745';
-            moodCard.style.backgroundColor = '#f8fff9';
-            moodCard.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
-            console.log('✅ Восстановлено настроение:', savedMood);
-        }
-    }
-
-    // В функцию restoreSelectedStates добавьте:
-const savedTimerMinutes = localStorage.getItem('selectedTimerMinutes');
-if (savedTimerMinutes) {
-    selectedMinutes = parseInt(savedTimerMinutes);
-    // Обновляем отображение таймера если он есть на странице
-    const timerDisplay = document.getElementById('waiting-timer-display');
-    if (timerDisplay) {
-        timerDisplay.textContent = `Готов к запуску: ${selectedMinutes} мин`;
-    }
-    
-    // Выделяем соответствующую кнопку
-    const timerOption = document.querySelector(`[data-minutes="${selectedMinutes}"]`);
-    if (timerOption) {
-        document.querySelectorAll('#waiting-timer-expanded .timer-option').forEach(btn => {
-            btn.classList.remove('active');
+    // Проверяем текущего пользователя
+    if (userId) {
+        getUsers().then(users => {
+            const currentUserData = users.find(u => u.id === userId);
+            console.log('👤 Данные текущего пользователя:', {
+                id: currentUserData.id,
+                name: currentUserData.name,
+                status: currentUserData.status,
+                timer: currentUserData.timer,
+                timer_total: currentUserData.timer_total,
+                position: currentUserData.position,
+                mood: currentUserData.mood
+            });
         });
-        timerOption.classList.add('active');
     }
 }
-    
-    updateUserStateDisplay();
-}
-// Функция обновления отображения состояния пользователя
-function updateUserStateDisplay() {
-    console.log('🔄 Обновление отображения состояния:', { currentPosition, currentMood });
-    
-    updateStatusIndicators();
-    
-    const userStateDetails = document.querySelector('.user-state-details');
-    if (!userStateDetails) {
-        console.warn('❌ user-state-details не найден');
-        return;
-    }
-    
-    let detailsHTML = '';
-    
-    if (currentPosition || currentMood) {
-        if (currentPosition) {
-            detailsHTML += `<span class="state-highlight">${currentPosition}</span>`;
-        }
-        if (currentMood) {
-            if (currentPosition) detailsHTML += ' • ';
-            detailsHTML += `<span class="state-highlight">${currentMood}</span>`;
-        }
-    } else {
-        detailsHTML = 'Позиция не указана • Настроение не указано';
-    }
-    
-    userStateDetails.innerHTML = detailsHTML;
-    console.log('✅ Обновлен user-state-details:', detailsHTML);
-    
-    // Добавляем анимацию обновления
-    const userStateDisplay = document.querySelector('.user-state-display.current-user');
-    if (userStateDisplay) {
-        userStateDisplay.classList.add('updating');
-        setTimeout(() => {
-            userStateDisplay.classList.remove('updating');
-        }, 800);
-    }
-}
- // Добавляем анимацию обновления
-    const userStateDisplay = document.querySelector('.user-state-display.current-user');
-    if (userStateDisplay) {
-        userStateDisplay.classList.add('updating');
-        setTimeout(() => {
-            userStateDisplay.classList.remove('updating');
-        }, 800);
-    }
 
-// Функция обновления состояния пользователя - ИСПРАВЛЕННАЯ ВЕРСИЯ
-async function updateUserState() {
-    if (!userId) return;
+// Отладка статусов пользователей
+function debugUserStatuses() {
+    console.log('🔍 Отладка статусов пользователей:');
     
-    try {
-        // Получаем актуальные данные пользователя
-        const users = await getUsers();
-        const currentUserData = users.find(u => u.id === userId);
-        
-        if (!currentUserData) return;
-
-        // Проверяем, есть ли активный таймер в статусе
-        const hasActiveTimer = currentUserData.status && currentUserData.status.includes('⏰');
-        
-        let newStatus = '';
-        const stateParts = [];
-        
-        if (currentPosition) stateParts.push(currentPosition);
-        if (currentMood) stateParts.push(currentMood);
-        
-        // Если есть активный таймер, сохраняем его
-        if (hasActiveTimer) {
-            const timerMatch = currentUserData.status.match(/⏰\s*(.+)/);
-            if (timerMatch) {
-                stateParts.push(`⏰ ${timerMatch[1].trim()}`);
+    if (userId) {
+        getUsers().then(users => {
+            const currentUserData = users.find(u => u.id === userId);
+            console.log('👤 Ваш статус:', currentUserData?.status);
+            
+            if (currentGroup) {
+                const stationUsers = users.filter(u => u.station === currentGroup.station);
+                console.log('👥 Статусы всех пользователей на станции:');
+                stationUsers.forEach(user => {
+                    console.log(`- ${user.name}: ${user.status}`);
+                });
             }
-        }
-        
-        newStatus = stateParts.join(' | ');
-        
-        // Если ничего нет, ставим стандартный статус
-        if (!newStatus) {
-            newStatus = 'Ожидание';
-        }
-
-        // Обновляем пользователя только если статус изменился
-        if (newStatus !== currentUserData.status) {
-            await updateUser(userId, { 
-                status: newStatus,
-                position: currentPosition,
-                mood: currentMood
-            });
-            console.log('✅ Состояние обновлено:', newStatus);
-        }
-        
-    } catch (error) {
-        console.error('❌ Ошибка обновления состояния:', error);
-    }
-}
-
-// Функция восстановления выбранной станции
-function restoreSelectedStation() {
-    const savedStation = localStorage.getItem('selectedStation');
-    if (savedStation) {
-        currentSelectedStation = savedStation;
-        
-        const selectedElement = document.querySelector(`[data-station="${savedStation}"]`);
-        if (selectedElement) {
-            document.querySelectorAll('.station-map-item').forEach(item => {
-                item.style.borderWidth = '2px';
-                item.style.borderColor = '';
-                item.style.boxShadow = '';
-                item.classList.remove('selected');
-            });
-            
-            selectedElement.style.borderWidth = '4px';
-            selectedElement.style.borderColor = '#0057b8';
-            selectedElement.style.boxShadow = '0 0 10px rgba(0, 87, 184, 0.5)';
-            selectedElement.classList.add('selected');
-        }
-    }
-}
-
-
-
-// Вспомогательные функции
-function formatTime(seconds) {
-    if (seconds <= 0) return '00:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-}
-
-// API функция для присоединения к станции
-async function joinStation(station) {
-    try {
-        const response = await fetch(`${API_BASE}/rooms/join-station`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: userId,
-                station: station
-            })
         });
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка присоединения к станции');
-        }
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            currentGroup = {
-                station: station,
-                users: result.users
-            };
-             // ОБНОВЛЯЕМ ЗАГОЛОВОК ПЕРЕД ПОКАЗОМ ЭКРАНА
-            updateStationTitle(station);
-
-            waitingRoomScreen.classList.remove('active');
-            joinedRoomScreen.classList.add('active');
-            
-            setTimeout(async () => {
-                await loadGroupMembers();
-                await loadRequests();
-            }, 100);
-            
-            console.log(`✅ Успешно присоединились к станции ${station}`);
-        }
-        
-    } catch (error) {
-        console.error('Ошибка при присоединении к станции:', error);
-        alert('Ошибка при присоединении к станции: ' + error.message);
     }
 }
-// Функция обновления заголовка с названием станции
-function updateStationTitle(stationName) {
-    const titleElement = document.querySelector('#joined-room-screen h2');
-    if (titleElement) {
-        titleElement.innerHTML = `Вы выбрали станцию <span class="station-name-highlight">${stationName}</span>`;
-        console.log('✅ Заголовок обновлен:', stationName);
-    } else {
-        console.warn('❌ Элемент заголовка не найден');
+
+// ==================== ТЕСТОВЫЕ ФУНКЦИИ ====================
+
+// Тестовая функция для проверки выбора
+function testSelection() {
+    console.log('🧪 Тестирование выбора...');
+    
+    // Находим и кликаем первую карточку позиции
+    const firstPos = document.querySelector('#position-cards .state-card');
+    if (firstPos) {
+        console.log('📍 Тестируем:', firstPos.getAttribute('data-position'));
+        selectPosition(firstPos.getAttribute('data-position'), firstPos);
+    }
+    
+    // Находим и кликаем первую карточку настроения
+    const firstMood = document.querySelector('#mood-cards .state-card');
+    if (firstMood) {
+        console.log('😊 Тестируем:', firstMood.getAttribute('data-mood'));
+        selectMood(firstMood.getAttribute('data-mood'), firstMood);
     }
 }
-// Инициализация дополнительных модулей при загрузке
-document.addEventListener('DOMContentLoaded', function() {
-    // Отложенная инициализация дополнительных элементов
-    setTimeout(() => {
-        initializeOptionalDOMElements();
-        initializeWaitingRoomTimer();
-        initializeStateCards();
-    }, 100);
-});
-// Принудительное применение стилей
-function forceApplyStyles() {
-    console.log('🎨 Принудительное применение стилей...');
+
+// Тестирование отображения таймера
+function testTimerDisplay() {
+    console.log('🧪 Тестирование отображения таймера');
     
-    // Применяем стили к активным карточкам
-    document.querySelectorAll('.state-card.active').forEach(card => {
-        card.style.borderColor = '#28a745';
-        card.style.backgroundColor = '#f8fff9';
-        card.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
-    });
-    
-    // Применяем стили к выделенным индикаторам
-    if (currentPosition) {
-        const positionIndicator = document.getElementById('position-indicator');
-        if (positionIndicator) {
-            positionIndicator.classList.add('highlighted');
-            positionIndicator.style.background = '#e8f5e8';
-            positionIndicator.style.borderColor = '#28a745';
-        }
+    if (userId) {
+        const testTimerStatus = '⏰ Таймер запущен: 5 мин';
+        updateUser(userId, {
+            status: testTimerStatus
+        }).then(() => {
+            console.log('✅ Тестовый статус установлен:', testTimerStatus);
+            setTimeout(() => {
+                if (typeof loadGroupMembers === 'function') loadGroupMembers();
+                if (typeof loadRequests === 'function') loadRequests();
+            }, 1000);
+        });
     }
-    
-    if (currentMood) {
-        const moodIndicator = document.getElementById('mood-indicator');
-        if (moodIndicator) {
-            moodIndicator.classList.add('highlighted');
-            moodIndicator.style.background = '#e8f5e8';
-            moodIndicator.style.borderColor = '#28a745';
-        }
-    }
-    
-    console.log('✅ Стили применены');
 }
 
-// Обновите forceInitializeJoinedRoom
-function forceInitializeJoinedRoom() {
-    console.log('🔄 Принудительная инициализация joined room...');
-    
-    // Переинициализируем элементы
-    initializeOptionalDOMElements();
-
-     // Восстанавливаем заголовок станции если есть
-    if (currentGroup && currentGroup.station) {
-        updateStationTitle(currentGroup.station);
-    } else if (currentSelectedStation) {
-        updateStationTitle(currentSelectedStation);
-    }
-
-    // Восстанавливаем состояния
-    restoreSelectedStates();
-    
-    // Инициализируем карточки
-    initializeStateCards();
-    
-    // Обновляем индикаторы
-    updateStatusIndicators();
-    updateUserStateDisplay();
-    
-     // ОБНОВЛЯЕМ УЧАСТНИКОВ - ВАЖНО!
-    setTimeout(() => {
-        if (typeof loadGroupMembers === 'function') {
-            console.log('🔄 Принудительная загрузка участников группы');
-            loadGroupMembers();
-        }
-        if (typeof loadRequests === 'function') {
-            console.log('🔄 Принудительная загрузка запросов');
-            loadRequests();
-        }
-    }, 500);
-    
-    // Применяем стили
-    setTimeout(forceApplyStyles, 200);
-    
-    // Загружаем участников
-    if (typeof loadGroupMembers === 'function') {
-        loadGroupMembers();
-    }
-    
-    console.log('✅ Joined room инициализирован');
-}
-// Тестовая функция для проверки кликов
+// Тестирование выбора состояний
 function testStateSelection() {
     console.log('🧪 Тестирование выбора состояний...');
     
@@ -1575,7 +1348,55 @@ function testStateSelection() {
     }
 }
 
-// Добавьте в глобальную область для тестирования
-window.testStateSelection = testStateSelection;
+// ==================== МОБИЛЬНАЯ ОПТИМИЗАЦИЯ ====================
+
+function initMobileOptimizations() {
+    const metroMap = document.querySelector('.metro-map');
+    
+    // Добавляем индикатор скролла если есть много станций
+    if (metroMap && metroMap.scrollHeight > metroMap.clientHeight) {
+        metroMap.classList.add('scrollable');
+    }
+    
+    // Оптимизация касаний для мобильных
+    if ('ontouchstart' in window) {
+        document.addEventListener('touchstart', function(e) {
+            // Предотвращаем залипание hover-эффектов на мобильных
+            if (e.target.closest('.station-map-item')) {
+                e.target.closest('.station-map-item').classList.add('touch-active');
+            }
+        }, { passive: true });
+        
+        document.addEventListener('touchend', function(e) {
+            const touched = document.querySelector('.station-map-item.touch-active');
+            if (touched) {
+                setTimeout(() => touched.classList.remove('touch-active'), 150);
+            }
+        }, { passive: true });
+    }
+}
+
+// Стили для touch-улучшений
+const mobileTouchStyles = `
+.station-map-item.touch-active {
+    transform: scale(0.95);
+    opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+    .station-map-item:active {
+        transform: scale(0.98);
+        transition: transform 0.1s;
+    }
+}
+`;
+
+// Вставка стилей в документ
+const styleSheet = document.createElement('style');
+styleSheet.textContent = mobileTouchStyles;
+document.head.appendChild(styleSheet);
+
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', initMobileOptimizations);
 
 console.log('✅ Дополнительные модули загружены');

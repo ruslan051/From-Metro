@@ -9,6 +9,41 @@ import rateLimit from 'express-rate-limit';
 const { Pool } = pkg;
 
 // =============================================
+// ПРОСТОЙ КЭШ БЕЗ ДОПОЛНИТЕЛЬНЫХ ЗАВИСИМОСТЕЙ
+// =============================================
+
+class SimpleCache {
+  constructor() {
+    this.data = new Map();
+  }
+  
+  set(key, value, ttl = 10000) {
+    this.data.set(key, {
+      value,
+      expiry: Date.now() + ttl
+    });
+  }
+  
+  get(key) {
+    const item = this.data.get(key);
+    if (!item) return null;
+    
+    if (Date.now() > item.expiry) {
+      this.data.delete(key);
+      return null;
+    }
+    
+    return item.value;
+  }
+  
+  clear() {
+    this.data.clear();
+  }
+}
+
+const cache = new SimpleCache();
+
+// =============================================
 // КОНСТАНТЫ И НАСТРОЙКИ
 // =============================================
 
@@ -25,10 +60,6 @@ const USER_COLORS = [
   '#dc3545', '#007bff', '#28a745', '#ffc107', 
   '#6f42c1', '#e83e8c', '#fd7e14', '#20c997'
 ];
-// Добавьте в backend
-import NodeCache from 'node-cache';
-const cache = new NodeCache({ stdTTL: 10 }); // 10 секунд
-
 
 // =============================================
 // ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
@@ -459,10 +490,10 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
 }));
 
-// В backend коде увеличьте лимиты
+// Rate limiting middleware
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 300, // Увеличьте до 300 запросов в минуту
+  max: 300, // Увеличено до 300 запросов в минуту
   message: 'Too many requests from this IP',
   standardHeaders: true,
   legacyHeaders: false,
@@ -494,10 +525,6 @@ app.use((req, res, next) => {
 // Логирование входящих запросов
 app.use((req, res, next) => {
   console.log(`📍 ${new Date().toISOString()} ${req.method} ${req.path}`);
-  console.log('📍 Headers:', req.headers);
-  if (req.body && Object.keys(req.body).length > 0) {
-    console.log('📍 Body:', req.body);
-  }
   next();
 });
 
@@ -550,23 +577,24 @@ app.get('/api/health', async (req, res) => {
 // API ROUTES - ПОЛЬЗОВАТЕЛИ
 // =============================================
 
-// Получение всех пользователей
+// Получение всех пользователей С КЭШИРОВАНИЕМ
 app.get('/api/users', asyncHandler(async (req, res) => {
   const cacheKey = 'online_users';
   const cachedUsers = cache.get(cacheKey);
   
   if (cachedUsers) {
+    console.log('📦 Возвращаем кэшированных пользователей');
     return res.json(cachedUsers);
   }
   
   const result = await pool.query(`
-    SELECT id, name, station, color_code, status, position, mood, timer_seconds
-    FROM users 
+    SELECT * FROM users 
     WHERE online = true 
     ORDER BY created_at DESC
   `);
   
-  cache.set(cacheKey, result.rows);
+  cache.set(cacheKey, result.rows, 10000); // Кэш на 10 секунд
+  console.log('✅ Пользователи закэшированы');
   res.json(result.rows);
 }));
 
@@ -582,7 +610,6 @@ app.post('/api/users', asyncHandler(async (req, res) => {
     const sessionId = generateSessionId(req);
     
     console.log('📍 Данные нового пользователя:', userData);
-    console.log(`📍 IP: ${clientIp}, User-Agent: ${userAgent.substring(0, 50)}...`);
     
     // Проверяем обязательные поля
     if (!userData || !userData.name) {
@@ -638,6 +665,10 @@ app.post('/api/users', asyncHandler(async (req, res) => {
     
     await client.query('COMMIT');
     
+    // Очищаем кэш при добавлении нового пользователя
+    cache.clear();
+    console.log('🧹 Кэш очищен после добавления пользователя');
+    
     const createdUser = result.rows[0];
     console.log(`✅ Создан пользователь: ${createdUser.name} (ID: ${createdUser.id})`);
     
@@ -657,7 +688,7 @@ app.post('/api/users', asyncHandler(async (req, res) => {
   }
 }));
 
-// Обновление пользователя
+// Обновление пользователя С ОЧИСТКОЙ КЭША
 app.put('/api/users/:id', asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
@@ -719,6 +750,10 @@ app.put('/api/users/:id', asyncHandler(async (req, res) => {
     
     await client.query('COMMIT');
     
+    // Очищаем кэш при обновлении пользователя
+    cache.clear();
+    console.log('🧹 Кэш очищен после обновления пользователя');
+    
     if (result.rows.length > 0) {
       res.json(result.rows[0]);
     } else {
@@ -733,7 +768,7 @@ app.put('/api/users/:id', asyncHandler(async (req, res) => {
   }
 }));
 
-// Удаление пользователя
+// Удаление пользователя С ОЧИСТКОЙ КЭША
 app.delete('/api/users/:id', asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
@@ -764,6 +799,10 @@ app.delete('/api/users/:id', asyncHandler(async (req, res) => {
     const result = await client.query('DELETE FROM users WHERE id = $1', [id]);
     
     await client.query('COMMIT');
+    
+    // Очищаем кэш при удалении пользователя
+    cache.clear();
+    console.log('🧹 Кэш очищен после удаления пользователя');
     
     if (result.rowCount === 1) {
       console.log(`🗑️ Удален пользователь ID: ${id}`);
@@ -903,6 +942,10 @@ app.post('/api/rooms/join-station', asyncHandler(async (req, res) => {
     
     await client.query('COMMIT');
     
+    // Очищаем кэш при изменении статуса пользователя
+    cache.clear();
+    console.log('🧹 Кэш очищен после присоединения к станции');
+    
     console.log(`✅ Пользователь ${user.name} присоединился к станции: ${station}`);
     
     res.json({
@@ -959,6 +1002,11 @@ app.post('/api/rooms/leave', asyncHandler(async (req, res) => {
     }
     
     await client.query('COMMIT');
+    
+    // Очищаем кэш при выходе из комнаты
+    cache.clear();
+    console.log('🧹 Кэш очищен после выхода из комнаты');
+    
     console.log(`👋 Пользователь ${user.name} вышел из комнаты и вернулся в ожидание`);
     res.json({ success: true });
   } catch (error) {
@@ -997,6 +1045,11 @@ app.put('/api/rooms/user/:userId/state', asyncHandler(async (req, res) => {
     );
     
     await client.query('COMMIT');
+    
+    // Очищаем кэш при изменении состояния
+    cache.clear();
+    console.log('🧹 Кэш очищен после обновления состояния пользователя');
+    
     console.log(`🎯 Обновлено состояние пользователя ID: ${userId} - позиция: ${position}, настроение: ${mood}`);
     res.json(userUpdate.rows[0]);
   } catch (error) {
@@ -1016,6 +1069,11 @@ app.put('/api/rooms/user/:userId/state', asyncHandler(async (req, res) => {
 app.post('/api/admin/reset-sessions', asyncHandler(async (req, res) => {
   try {
     const result = await resetAllSessions();
+    
+    // Очищаем кэш при сбросе сессий
+    cache.clear();
+    console.log('🧹 Кэш очищен после сброса сессий');
+    
     if (result.success) {
       res.json(result);
     } else {
@@ -1047,7 +1105,8 @@ app.get('/', (req, res) => {
       'Автоочистка неактивных пользователей',
       'Автоматический сброс сессий каждые 15 минут',
       'Поддержка до 20 сессий с одного IP',
-      'Разделение на ожидающих и подключенных'
+      'Разделение на ожидающих и подключенных',
+      'Кэширование пользователей (10 секунд)'
     ],
     timestamp: new Date().toISOString()
   });
@@ -1094,6 +1153,7 @@ async function startServer() {
     console.log('⏰ Автоматический сброс сессий настроен каждые 15 минут');
     console.log('⏰ Проверка активности пользователей настроена каждую минуту');
     console.log('⏰ Очистка неактивных пользователей настроена каждые 30 минут');
+    console.log('📦 Кэширование пользователей включено (10 секунд)');
     
     // Запускаем сервер
     app.listen(PORT, '0.0.0.0', () => {

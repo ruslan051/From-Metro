@@ -113,7 +113,7 @@ select, input {
     
 }
 
-color-select, placeholder {
+#color-select::placeholder {
     font-style: italic;
 }
 

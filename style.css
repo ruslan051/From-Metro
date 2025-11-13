@@ -1,13 +1,8 @@
 
-/* СБРОС И БАЗОВЫЕ СТИЛИ */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+ /* СБРОС И БАЗОВЫЕ СТИЛИ */
+ 
 
-body {
+ body {
     background: linear-gradient(135deg, #0057b8 0%, #ffd700 100%);
     color: #333;
     min-height: 100vh;
@@ -18,6 +13,7 @@ body {
 }
 
 /* ===== ОСНОВНАЯ СТРУКТУРА ===== */
+
 .container { 
     width: 100%;
     max-width: 900px;
@@ -27,6 +23,8 @@ body {
     overflow: hidden;
     margin-top: 20px;
 }
+
+
 
 .content {
     padding: 25px;

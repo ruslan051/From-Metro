@@ -489,6 +489,14 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
 }));
+// В вашем backend
+app.use(cors({
+  origin: [
+    'https://vk.com',
+    'https://localhost:5173', // для разработки
+    // другие домены ВК
+  ]
+}));
 
 // Rate limiting middleware
 const limiter = rateLimit({

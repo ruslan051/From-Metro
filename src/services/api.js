@@ -2,23 +2,7 @@
 let useMockData = false; // переключите на false когда CORS заработает
 
 const BASE_URL = 'https://metro-backend-xlkt.onrender.com/api';
-const express = require('express');
-const cors = require('cors');
 
-const app = express();
-
-// Разрешить все домены
-app.use(cors());
-
-// Или только конкретные домены
-app.use(cors({
-  origin: [
-    'https://frommetro.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:5173'
-  ],
-  credentials: true
-}));
 
 async function makeRequest(endpoint, options = {}) {
   if (useMockData) {

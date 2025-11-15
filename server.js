@@ -489,10 +489,9 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
 }));
-// В вашем backend
 app.use(cors({
   origin: [
-      'https://frommetro.vercel.app',
+    'https://frommetro.vercel.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:8080',
@@ -506,8 +505,15 @@ app.use(cors({
     'https://*.userapi.com',
     // Для локальной разработки VK:
     'http://localhost:5173',
-    'http://127.0.0.1:5173'
-      ],
+    'http://127.0.0.1:5173',
+    // ДОБАВЬТЕ ВАШ ТЕКУЩИЙ АДРЕС:
+    'http://172.28.192.1:5173',
+    'http://192.168.1.139:5173',
+    'http://172.30.80.1:5173',
+    'http://172.29.112.1:5173',
+    // Или разрешите все для разработки:
+    '*'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']

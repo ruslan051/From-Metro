@@ -492,10 +492,25 @@ app.use(cors({
 // В вашем backend
 app.use(cors({
   origin: [
+      'https://frommetro.vercel.app',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:8080',
+    'https://your-frontend-domain.vercel.app',
+    // ДОБАВЬТЕ ЭТИ ДОМЕНЫ VK:
     'https://vk.com',
-    'https://localhost:5173', // для разработки
-    // другие домены ВК
-  ]
+    'https://vk.ru', 
+    'https://*.vk.com',
+    'https://*.vk.ru',
+    'https://*.vk-apps.com',
+    'https://*.userapi.com',
+    // Для локальной разработки VK:
+    'http://localhost:5173',
+    'http://127.0.0.1:5173'
+      ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
 }));
 
 // Rate limiting middleware

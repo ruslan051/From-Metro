@@ -2,14 +2,17 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  base: './',
   plugins: [react()],
   build: {
-    outDir: 'dist',  // ИЛИ 'build' - выбери один вариант
-    target: 'es2015'
+    outDir: 'dist',
   },
+  base: '/',
   server: {
-    port: 5173,
-    host: true
+    proxy: {
+      '/api': {
+        target: 'https://metro-backend-xlkt.onrender.com',
+        changeOrigin: true
+      }
+    }
   }
 })

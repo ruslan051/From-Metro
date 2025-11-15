@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 
+
 const { Pool } = pkg;
 
 // =============================================
@@ -482,36 +483,30 @@ async function cleanupInactiveUsers() {
 // Middleware для сжатия данных
 app.use(compression());
 
-// CORS middleware
-app.use(cors({
-  origin: CORS_ORIGINS,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
-}));
+// CORS middleware - ОДИН РАЗ
 app.use(cors({
   origin: [
     'https://frommetro.vercel.app',
     'http://localhost:3000',
-    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3000', 
     'http://localhost:8080',
     'https://your-frontend-domain.vercel.app',
-    // ДОБАВЬТЕ ЭТИ ДОМЕНЫ VK:
+    // Домены VK:
     'https://vk.com',
     'https://vk.ru', 
     'https://*.vk.com',
     'https://*.vk.ru',
     'https://*.vk-apps.com',
     'https://*.userapi.com',
-    // Для локальной разработки VK:
+    // Локальная разработка VK:
     'http://localhost:5173',
     'http://127.0.0.1:5173',
-    // ДОБАВЬТЕ ВАШ ТЕКУЩИЙ АДРЕС:
+    // Ваши текущие адреса:
     'http://172.28.192.1:5173',
-    'http://192.168.1.139:5173',
+    'http://192.168.1.139:5173', 
     'http://172.30.80.1:5173',
     'http://172.29.112.1:5173',
-    // Или разрешите все для разработки:
+    // Для разработки можно разрешить все:
     '*'
   ],
   credentials: true,

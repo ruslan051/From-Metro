@@ -49,12 +49,19 @@ const cache = new SimpleCache();
 // =============================================
 
 const PORT = process.env.PORT || 3000;
+// В бэкенде (server.js) обнови CORS:
 const CORS_ORIGINS = [
   'https://frommetro.vercel.app',
+  'https://your-app-name.vercel.app', // твой новый домен
   'http://localhost:3000',
   'http://127.0.0.1:3000',
-  'http://localhost:8080',
-  'https://your-frontend-domain.vercel.app'
+  'http://localhost:5173',
+  'https://vk.com',
+  'https://vk.ru',
+  'https://*.vk.com',
+  'https://*.vk.ru',
+  'https://*.vk-apps.com',
+  '*'
 ];
 
 const USER_COLORS = [

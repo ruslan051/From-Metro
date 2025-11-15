@@ -1,0 +1,28 @@
+{
+  "name": "mini-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tunnel": "vk-tunnel --http-protocol=http --host=localhost --port=5173",
+    "deploy": "vite build && vk-miniapps-deploy"
+  },
+  "dependencies": {
+    "@vkontakte/vk-bridge": "^2.13.0",
+    "@vkontakte/vk-bridge-react": "^1.1.0",
+    "@vkontakte/vk-mini-apps-router": "^1.8.1",
+    "@vkontakte/vkui": "^7.10.0",
+    "eruda": "^3.4.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.0.0",
+    "@vkontakte/vk-miniapps-deploy": "^0.1.6",
+    "@vkontakte/vk-tunnel": "^0.2.4",
+    "vite": "^4.5.0"
+  }
+}

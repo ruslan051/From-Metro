@@ -4,6 +4,7 @@ let useMockData = false; // переключите на false когда CORS з
 const BASE_URL = 'https://metro-backend-xlkt.onrender.com/api';
 
 
+
 async function makeRequest(endpoint, options = {}) {
   if (useMockData) {
     console.log('🎭 Используем мок данные для:', endpoint);

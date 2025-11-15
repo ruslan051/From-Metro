@@ -1,23 +1,16 @@
 {
-  "name": "mini-app",
-  "private": true,
-  "version": "0.0.0",
+  "name": "metro-backend",
   "type": "module",
   "scripts": {
-    "start": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "tunnel": "vk-tunnel --http-protocol=http --host=localhost --port=5173",
-    "deploy": "vite build && vk-miniapps-deploy"
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "echo 'No build needed for backend'"
   },
-  "dependencies": {
-    "@vkontakte/vk-bridge": "^2.13.0",
-    "@vkontakte/vk-bridge-react": "^1.1.0",
-    "@vkontakte/vk-mini-apps-router": "^1.8.1",
-    "@vkontakte/vkui": "^7.10.0",
-    "eruda": "^3.4.3",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+  
+    "dependencies": {
+    "express": "^4.18.0",
+    "cors": "^2.8.5"
+    
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.0.0",

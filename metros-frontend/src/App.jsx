@@ -1086,7 +1086,7 @@ const updateUserState = async () => {
         </div>
         
         <footer>
-          &copy; 2025 | Метрос | Санкт-Петербург
+          &copy; 2025 |Гаджи Латипов| Метрос | Санкт-Петербург
         </footer>
       </div>
     </div>

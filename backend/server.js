@@ -98,6 +98,32 @@ app.put('/api/users/:id', (req, res) => {
   }
 });
 
+// Добавляем недостающий endpoint для join-station
+app.post('/api/rooms/join-station', (req, res) => {
+  console.log('📥 POST /api/rooms/join-station', req.body);
+  
+  const { station, userId } = req.body;
+  
+  // Находим пользователя и обновляем его станцию
+  const userIndex = mockUsers.findIndex(user => user.id === userId);
+  if (userIndex !== -1) {
+    mockUsers[userIndex].station = station;
+    mockUsers[userIndex].isWaiting = false;
+    mockUsers[userIndex].isConnected = true;
+    mockUsers[userIndex].status = `Выбрал станцию: ${station}`;
+    
+    console.log('✅ Пользователь присоединился к станции:', mockUsers[userIndex]);
+  }
+  
+  // Возвращаем всех пользователей на этой станции
+  const stationUsers = mockUsers.filter(user => user.station === station && user.isConnected === true);
+  
+  res.json({ 
+    success: true,
+    users: stationUsers
+  });
+});
+
 // Health check для Render
 app.get('/healthz', (req, res) => {
   res.status(200).send('OK');

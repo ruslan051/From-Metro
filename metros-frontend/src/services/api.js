@@ -145,13 +145,14 @@ function mockResponse(endpoint, options) {
 }
 
 export const api = {
-   createUser: async (userData) => {
+  createUser: async (userData) => {
     console.log('📍 Отправка данных пользователя:', userData);
     return makeRequest('/users', {
       method: 'POST',
       body: JSON.stringify(userData)
     });
   },
+
   getStationsStats: async (city) => {
     return makeRequest(`/stations/waiting-room?city=${city}`);
   },
@@ -159,16 +160,6 @@ export const api = {
   getUsers: async () => {
     return makeRequest('/users');
   },
-
-  createUser: async (userData) => {
-    console.log('📍 Отправка данных пользователя:', userData);
-    
-    return makeRequest('/users', {
-      method: 'POST',
-      body: JSON.stringify(userData)
-    });
-  },
-  
 
   updateUser: async (userId, data) => {
     console.log('📝 Обновление пользователя:', userId, data);
@@ -185,13 +176,13 @@ export const api = {
     });
   },
 
- joinStation: async (data) => {
-  console.log('🚇 Присоединение к станции:', data);
-  return makeRequest('/rooms/join-station', {  // УБЕДИТЕСЬ что путь правильный
-    method: 'POST',
-    body: JSON.stringify(data)
-  });
-},
+  joinStation: async (data) => {
+    console.log('🚇 Присоединение к станции:', data);
+    return makeRequest('/rooms/join-station', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
 
   pingActivity: async (userId) => {
     console.log('📡 Пинг активности:', userId);

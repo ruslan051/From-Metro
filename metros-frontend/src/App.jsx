@@ -182,19 +182,89 @@ useEffect(() => {
     }
   };
 
-  // Загрузка карты станций
-  const loadStationsMap = async () => {
+// Загрузка карты станций
+const loadStationsMap = async () => {
   try {
     const data = await api.getStationsStats(selectedCity);
     setStationsData(data);
     
-    // ОБНОВЛЯЕМ ЛЕГЕНДУ С КОЛИЧЕСТВОМ ПОЛЬЗОВАТЕЛЕЙ
-    console.log('📊 Статистика станций:', data.totalStats);
+    console.log('📊 Статистика станций:', data);
+    console.log('📊 stationStats:', data.stationStats);
+    console.log('📊 totalStats:', data.totalStats);
   } catch (error) {
     console.error('Ошибка загрузки карты станций:', error);
   }
 };
+
+// Рендер карты станций
+const renderStationsMap = () => {
+  console.log('🔍 renderStationsMap вызван:', {
+    stationsData,
+    stationStats: stationsData.stationStats,
+    selectedCity,
+    allStations: helpers.stations[selectedCity]
+  });
   
+  if (!stationsData.stationStats) return <div className="loading">Загрузка карты станций...</div>;
+  
+  const allStations = helpers.stations[selectedCity];
+  const stationsMap = {};
+  
+  // Создаем карту станций для быстрого доступа
+  stationsData.stationStats.forEach(station => {
+    stationsMap[station.station] = station;
+  });
+  
+  console.log('🔍 stationsMap:', stationsMap);
+  
+  return allStations.map(stationName => {
+    const stationData = stationsMap[stationName];
+    let userCount = 0;
+    let waitingCount = 0;
+    let connectedCount = 0;
+    let stationClass = 'empty';
+    
+    if (stationData) {
+      userCount = stationData.totalUsers || 0;
+      waitingCount = stationData.waiting || 0;
+      connectedCount = stationData.connected || 0;
+      
+      if (connectedCount > 0) {
+        stationClass = 'connected';
+      } else if (waitingCount > 0) {
+        stationClass = 'waiting';
+      }
+    }
+    
+    const isSelected = currentSelectedStation === stationName;
+    
+    console.log(`🔍 Станция ${stationName}:`, {
+      stationData,
+      userCount,
+      waitingCount,
+      connectedCount,
+      stationClass
+    });
+    
+    return (
+      <div 
+        key={stationName}
+        className={`station-map-item ${stationClass} ${isSelected ? 'selected' : ''}`}
+        onClick={() => handleStationSelect(stationName)}
+      >
+        <div className="station-name">{stationName}</div>
+        {userCount > 0 ? (
+          <div className="station-counts">
+            {waitingCount > 0 && <span className="station-count count-waiting">{waitingCount}⏳</span>}
+            {connectedCount > 0 && <span className="station-count count-connected">{connectedCount}✅</span>}
+          </div>
+        ) : (
+          <div style={{fontSize: '10px', color: '#666'}}>Пусто</div>
+        )}
+      </div>
+    );
+  });
+};
 
 // Загрузка участников группы
 const loadGroupMembers = async () => {

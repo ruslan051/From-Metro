@@ -98,23 +98,36 @@ function mockResponse(endpoint, options) {
         }
       ];
 
-    case '/stations/waiting-room':
-      const url = new URL(`http://test.com${endpoint}`);
-      const city = url.searchParams.get('city') || 'spb';
-      return {
-        stationStats: [
-          { station: 'Площадь Восстания', waiting: 2, connected: 1, totalUsers: 3 },
-          { station: 'Владимирская', waiting: 1, connected: 0, totalUsers: 1 },
-          { station: 'Пушкинская', waiting: 0, connected: 3, totalUsers: 3 },
-          { station: 'Технологический институт', waiting: 1, connected: 1, totalUsers: 2 },
-          { station: 'Балтийская', waiting: 0, connected: 0, totalUsers: 0 }
-        ],
-        totalStats: {
-          total_waiting: 4,
-          total_connected: 5,
-          total_users: 9
-        }
-      };
+  case '/stations/waiting-room':
+  const url = new URL(`http://test.com${endpoint}`);
+  const city = url.searchParams.get('city') || 'spb';
+  
+  // Все станции для выбранного города
+  const allStations = city === 'moscow' ? [
+    'Авиамоторная', 'Автозаводская', 'Академическая', 'Александровский сад', 'Алексеевская'
+  ] : [
+    'Адмиралтейская', 'Балтийская', 'Василеостровская', 'Владимирская', 'Гостиный двор'
+  ];
+  
+  // Создаем статистику для всех станций
+  const stationStats = allStations.map(station => ({
+    station,
+    waiting: Math.floor(Math.random() * 3),
+    connected: Math.floor(Math.random() * 3),
+    totalUsers: Math.floor(Math.random() * 5)
+  }));
+  
+  const total_waiting = stationStats.reduce((sum, stat) => sum + stat.waiting, 0);
+  const total_connected = stationStats.reduce((sum, stat) => sum + stat.connected, 0);
+  
+  return {
+    stationStats,
+    totalStats: {
+      total_waiting,
+      total_connected,
+      total_users: total_waiting + total_connected
+    }
+  };
 
     case '/stations/join':
       return {

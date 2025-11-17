@@ -251,8 +251,7 @@ useEffect(() => {
   }
 }, [currentScreen, currentGroup]);
   const handleEnterWaitingRoom = async () => {
-    console.log('🔗 Проверяем подключение к API...');
-console.log('📍 API_BASE:', api.API_BASE); // или как у тебя называется переменная
+   
 
 // Тестовый запрос
 try {
@@ -353,72 +352,68 @@ console.log('- setCurrentScreen функция:', typeof setCurrentScreen);
 
   // Подтверждение выбора станции
   const handleConfirmStation = async () => {
-    
-    if (!clothingColor) {
-      bridge.send("VKWebAppShowSnackbar", {
-        text: 'Пожалуйста, укажите цвет верхней одежды'
+  if (!clothingColor) {
+    bridge.send("VKWebAppShowSnackbar", {
+      text: 'Пожалуйста, укажите цвет верхней одежды'
+    });
+    return;
+  }
+  
+  if (!currentSelectedStation) {
+    bridge.send("VKWebAppShowSnackbar", {
+      text: 'Пожалуйста, выберите станцию на карте'
+    });
+    return;
+  }
+  
+  if (userIdRef.current) {
+    setIsLoading(true);
+    try {
+      await api.updateUser(userIdRef.current, {
+        station: currentSelectedStation,
+        wagon: wagonNumber,
+        color: clothingColor,
+        is_waiting: false,
+        is_connected: true,
+        status: 'Выбрал станцию: ' + currentSelectedStation
       });
-      return;
-    }
-    
-    if (!currentSelectedStation) {
-      bridge.send("VKWebAppShowSnackbar", {
-        text: 'Пожалуйста, выберите станцию на карте'
+
+      const result = await api.joinStation({
+        userId: userIdRef.current,
+        station: currentSelectedStation
       });
-      return;
-    }
-    
-    if (userIdRef.current) {
-      setIsLoading(true);
-      try {
-        await api.updateUser(userIdRef.current, {
+      
+      console.log('🔍 Результат joinStation:', result);
+
+      // ИСПРАВЛЕННАЯ ПРОВЕРКА РЕЗУЛЬТАТА
+      if (result && result.success) {
+        updateStationTitle(currentSelectedStation);
+
+        setCurrentGroup({
           station: currentSelectedStation,
-          wagon: wagonNumber,
-          color: clothingColor,
-          is_waiting: false,
-          is_connected: true,
-          status: 'Выбрал станцию: ' + currentSelectedStation
+          users: result.users || [] // ЗАЩИТА ОТ UNDEFINED
         });
-
-        const result = await api.joinStation({
-          userId: userIdRef.current,
-          station: currentSelectedStation
-        });
-              console.log('🔍 Результат joinStation:', result);
-
-          console.log('🔍 Переход на экран joined:', {
-          station: currentSelectedStation,
-          usersCount: result.users.length,
-          users: result.users
-        });
+        setCurrentScreen('joined');
         
-        if (result.success) {
-            updateStationTitle(currentSelectedStation);
-
-          setCurrentGroup({
-            station: currentSelectedStation,
-            users: result.users
-          });
-          setCurrentScreen('joined');
-          
-          
-          // Загружаем данные для комнаты станции
-          setTimeout(() => {
-            loadGroupMembers();
-            loadRequests(true);
-          }, 100);
-        }
-        
-      } catch (error) {
-        console.error('Ошибка при обновлении параметров:', error);
-        bridge.send("VKWebAppShowSnackbar", {
-          text: 'Ошибка: ' + error.message
-        });
-      } finally {
-        setIsLoading(false);
+        // Загружаем данные для комнаты станции
+        setTimeout(() => {
+          loadGroupMembers();
+          loadRequests(true);
+        }, 100);
+      } else {
+        throw new Error('Не удалось присоединиться к станции');
       }
+      
+    } catch (error) {
+      console.error('Ошибка при обновлении параметров:', error);
+      bridge.send("VKWebAppShowSnackbar", {
+        text: 'Ошибка: ' + error.message
+      });
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }
+};
 
   // Выход из группы
   const handleLeaveGroup = async () => {

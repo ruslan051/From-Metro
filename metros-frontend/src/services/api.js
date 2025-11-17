@@ -185,14 +185,13 @@ export const api = {
     });
   },
 
-  joinStation: async (data) => 
-  {
+ joinStation: async (data) => {
   console.log('🚇 Присоединение к станции:', data);
-  return makeRequest('/rooms/join-station', {
+  return makeRequest('/rooms/join-station', {  // УБЕДИТЕСЬ что путь правильный
     method: 'POST',
     body: JSON.stringify(data)
   });
-  },
+},
 
   pingActivity: async (userId) => {
     console.log('📡 Пинг активности:', userId);

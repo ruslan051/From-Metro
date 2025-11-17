@@ -92,7 +92,7 @@ app.put('/api/users/:id', (req, res) => {
     // Обновляем пользователя
     mockUsers[userIndex] = { ...mockUsers[userIndex], ...req.body };
     console.log('✅ Пользователь обновлен:', mockUsers[userIndex]);
-    res.json(mockUsers[userIndex]); // Возвращаем обновленного пользователя
+    res.json(mockUsers[userIndex]);
   } else {
     res.status(404).json({ error: 'Пользователь не найден' });
   }

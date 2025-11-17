@@ -1,8 +1,9 @@
-// Сначала VKUI стили, потом твои
+// Сначала VKUI стили, потом мои
 // import '@vkontakte/vkui/dist/vkui.css';
-import './App.css';
 import { useState, useEffect, useRef } from 'react';
 import bridge from '@vkontakte/vk-bridge';
+import './App.css';
+
 import { api, helpers } from './services/api';
 
 
@@ -540,17 +541,6 @@ const handleMoodSelect = (mood) => {
   
   // НЕМЕДЛЕННОЕ ОБНОВЛЕНИЕ
   updateUserState();
-};
-
- const handleMoodSelect = (mood) => {
-  setSelectedMood(mood);
-  localStorage.setItem('selectedMood', mood);
-  
-  // НЕМЕДЛЕННОЕ ОБНОВЛЕНИЕ
-  setTimeout(() => {
-    updateUserState();
-    forceRefreshUserDisplay();
-  }, 100);
 };
 
   const handleStationSelect = (stationName) => {

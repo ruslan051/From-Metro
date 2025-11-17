@@ -84,15 +84,18 @@ app.post('/api/users/:id/ping', (req, res) => {
 
 app.put('/api/users/:id', (req, res) => {
   console.log('📥 PUT /api/users/:id', req.params.id, req.body);
-  res.json({ success: true });
-});
-
-app.post('/api/rooms/join-station', (req, res) => {
-  console.log('📥 POST /api/rooms/join-station', req.body);
-  res.json({ 
-    success: true,
-    users: mockUsers.filter(user => user.station === req.body.station)
-  });
+  
+  const userId = parseInt(req.params.id);
+  const userIndex = mockUsers.findIndex(user => user.id === userId);
+  
+  if (userIndex !== -1) {
+    // Обновляем пользователя
+    mockUsers[userIndex] = { ...mockUsers[userIndex], ...req.body };
+    console.log('✅ Пользователь обновлен:', mockUsers[userIndex]);
+    res.json(mockUsers[userIndex]); // Возвращаем обновленного пользователя
+  } else {
+    res.status(404).json({ error: 'Пользователь не найден' });
+  }
 });
 
 // Health check для Render

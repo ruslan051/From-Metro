@@ -536,10 +536,15 @@ console.log('- setCurrentScreen функция:', typeof setCurrentScreen);
   localStorage.setItem('selectedPosition', position);
   
   // НЕМЕДЛЕННОЕ ОБНОВЛЕНИЕ
-  setTimeout(() => {
-    updateUserState();
-    forceRefreshUserDisplay();
-  }, 100);
+  updateUserState();
+};
+
+const handleMoodSelect = (mood) => {
+  setSelectedMood(mood);
+  localStorage.setItem('selectedMood', mood);
+  
+  // НЕМЕДЛЕННОЕ ОБНОВЛЕНИЕ
+  updateUserState();
 };
 
  const handleMoodSelect = (mood) => {
@@ -563,53 +568,39 @@ console.log('- setCurrentScreen функция:', typeof setCurrentScreen);
     localStorage.setItem('selectedTimerMinutes', minutes);
   };
 
-  // Обновление состояния пользователя
 const updateUserState = async () => {
   if (!userIdRef.current) return;
   
   try {
-    const users = await api.getUsers();
-    const currentUserData = users.find(u => u.id === userIdRef.current);
+    const newStatus = generateUserStatus();
     
-    if (!currentUserData) return;
-
-    const hasActiveTimer = currentUserData.status && currentUserData.status.includes('⏰');
+    // ОБНОВЛЯЕМ СЕРВЕР
+    await api.updateUser(userIdRef.current, { 
+      status: newStatus,
+      position: selectedPosition,
+      mood: selectedMood
+    });
     
-    let newStatus = '';
-    const stateParts = [];
+    // ОБНОВЛЯЕМ ЛОКАЛЬНОЕ СОСТОЯНИЕ СРАЗУ
+    setGroupMembers(prevMembers => 
+      prevMembers.map(member => 
+        member.id === userIdRef.current 
+          ? { 
+              ...member, 
+              status: newStatus,
+              position: selectedPosition,
+              mood: selectedMood
+            }
+          : member
+      )
+    );
     
-    if (selectedPosition) stateParts.push(selectedPosition);
-    if (selectedMood) stateParts.push(selectedMood);
-    
-    if (hasActiveTimer) {
-      const timerMatch = currentUserData.status.match(/⏰\s*(.+)/);
-      if (timerMatch) {
-        stateParts.push(`⏰ ${timerMatch[1].trim()}`);
-      }
-    }
-    
-    newStatus = stateParts.join(' | ');
-    
-    if (!newStatus) {
-      newStatus = 'Ожидание';
-    }
-
-    // ОБНОВЛЯЕМ СЕРВЕР И МЕСТНОЕ СОСТОЯНИЕ
-    if (newStatus !== currentUserData.status) {
-      await api.updateUser(userIdRef.current, { 
-        status: newStatus,
-        position: selectedPosition,
-        mood: selectedMood
-      });
-      
-      // ВАЖНО: ОБНОВЛЯЕМ ОТОБРАЖЕНИЕ СРАЗУ
-      forceRefreshUserDisplay();
-    }
+    // ОБНОВЛЯЕМ ДАННЫЕ С СЕРВЕРА
+    await loadGroupMembers();
     
   } catch (error) {
     console.error('❌ Ошибка обновления состояния:', error);
-  }
-};
+  }};
 
   const improvedPingActivity = async () => {
     if (!userIdRef.current) return false;
